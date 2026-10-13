@@ -2,7 +2,7 @@
   "name": "alvee-community",
   "version": "1.0.0",
   "scripts": {
-    "start": "npx serve . -l 8080"
+    "start": "npx serve ."
   },
   "dependencies": {
     "serve": "^14.2.4"
