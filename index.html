@@ -7,17 +7,42 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        
+        /* বডি এবং ব্যাকগ্রাউন্ড ভিডিও কন্টেইনার স্টাইল */
         body { 
             background-color: #0a0a0a; 
-            background-size: cover; 
-            background-position: center; 
             height: 100vh; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             justify-content: center;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ব্যাকগ্রাউন্ড ভিডিও ফুল-স্ক্রিন ও ব্লার সেটআপ */
+        .video-background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: -1;
+            background-color: #000;
+        }
+
+        #bgVideo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: cover; /* কোনো কালো লেয়ার বা স্কিন ছাড়াই ফুল স্ক্রিন ফিট করবে */
+            filter: blur(3px); /* ৩% বা হালকা ব্লার ইফেক্ট */
         }
 
         /* Glassmorphism বক্স উইথ রেড লাইন ইফেক্ট */
@@ -95,7 +120,7 @@
         /* I'm 18+ বাটন (শুধু #0088CC কালার, কোনো লাল বর্ডার নেই এবং জুম অ্যানিমেশন) */
         .btn-verify {
             background: #0088CC;
-            border: none; /* লাল বর্ডার পুরোপুরি বাদ দেওয়া হলো */
+            border: none;
             box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
             animation: zoomInOut 1.3s infinite alternate;
         }
@@ -110,6 +135,11 @@
 </head>
 <body>
     
+    <!-- ব্যাকগ্রাউন্ড ভিডিও কন্টেইনার -->
+    <div class="video-background-container">
+        <video autoplay muted playsinline id="bgVideo"></video>
+    </div>
+
     <div class="glass-box">
         
         <!-- Title with Custom Effects (এক লাইনে সেট করা) -->
@@ -144,17 +174,49 @@
 
     </div>
 
-    <!-- Background Images Script -->
+    <!-- Background Videos Script -->
     <script>
-        const images = [
-            "https://carder.top/imagens/1791918460640-323067073.jpg",
-            "https://carder.top/imagens/1791918463157-201532531.jpg",
-            "https://carder.top/imagens/1791918465627-141146469.jpg",
-            "https://carder.top/imagens/1791918468080-915885205.jpg",
-            "https://carder.top/imagens/1791918470834-230739368.jpg",
-            "https://carder.top/imagens/1791918473218-302493896.jpg"
+        const videoSources = [
+            "https://videotourl.com/videos/1791991670528-243ba2f3-6a72-42b5-98f4-801958896e9b.mp4",
+            "https://videotourl.com/videos/1791991701911-23cc06b5-2882-4bcb-a48d-c81820d32180.mp4",
+            "https://videotourl.com/videos/1791991728635-19dc579c-62b9-4ee8-91ac-46f932877833.mp4",
+            "https://videotourl.com/videos/1791993979245-a093a9e9-103f-4e2e-a8b0-2523d7142591.mp4",
+            "https://videotourl.com/videos/1791994015612-3933609e-371c-4400-ab5b-84e1e4500efc.mp4",
+            "https://videotourl.com/videos/1791994060700-53af3ed0-9dcb-4141-9903-5367ae01e143.mp4",
+            "https://videotourl.com/videos/1791994088573-f8b10466-29dc-4bb9-b217-1e625c9c42c6.mp4",
+            "https://videotourl.com/videos/1791994156983-0c21b204-5411-4384-bad8-9db9e60de1d1.mp4",
+            "https://videotourl.com/videos/1791994181045-963a2b15-fd0d-43e3-947e-b6ad093a6396.mp4",
+            "https://videotourl.com/videos/1791994231550-432da1b2-6076-4964-8e91-8ecb22b74bf5.mp4",
+            "https://videotourl.com/videos/1791994496087-6554b067-6cbc-432a-bf12-b6aa650a0370.mp4",
+            "https://videotourl.com/videos/1791994562902-d9177bc7-f170-4392-84cd-abe50aa147a3.mp4",
+            "https://videotourl.com/videos/1791994605318-8745fec1-7d01-4e1a-88b3-f784520ab1e2.mp4",
+            "https://videotourl.com/videos/1791994675281-d4a58dc3-bfd5-42bb-9908-7b082fbcf9a2.mp4",
+            "https://videotourl.com/videos/1791995038968-2fe59a9b-852a-4edc-b07b-c64ed7187313.mp4",
+            "https://videotourl.com/videos/1791995081237-bbeddb4a-59f8-4b06-9c3e-bb44840bf923.mp4",
+            "https://videotourl.com/videos/1791995149408-90f4a576-3bf9-44a5-a995-d7d865850801.mp4",
+            "https://videotourl.com/videos/1791995210347-fa2a856c-5908-42a7-bfa0-0826bfcc7957.mp4",
+            "https://videotourl.com/videos/1791995318455-368db434-138b-4cc4-9663-e16a291dfc69.mp4"
         ];
-        document.body.style.backgroundImage = "url('" + images[Math.floor(Math.random() * images.length)] + "')";
+
+        let currentVideoIndex = 0;
+        const videoElement = document.getElementById('bgVideo');
+
+        function playVideo(index) {
+            videoElement.src = videoSources[index];
+            videoElement.load();
+            videoElement.play().catch(error => {
+                console.log("Auto-play prevented: ", error);
+            });
+        }
+
+        // একটি ভিডিও শেষ হলে স্বয়ংক্রিয়ভাবে পরবর্তী ভিডিও প্লে হবে
+        videoElement.addEventListener('ended', function() {
+            currentVideoIndex = (currentVideoIndex + 1) % videoSources.length;
+            playVideo(currentVideoIndex);
+        });
+
+        // প্রথম ভিডিও প্লে করা শুরু করুন
+        playVideo(currentVideoIndex);
     </script>
 </body>
 </html>
