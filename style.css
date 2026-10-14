@@ -17,14 +17,16 @@ body {
     overflow: hidden;
 }
 
-/* Dark Overlay Effect */
+/* Blur and Bright Overlay Effect (আপনার পছন্দমতো পরিবর্তন করা হয়েছে) */
 .overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.75); /* Deep black shade */
+    background: rgba(0, 0, 0, 0.15); /* কালো রং কমিয়ে দেওয়া হয়েছে */
+    backdrop-filter: blur(6px) brightness(1.1) saturate(1.2); /* 10-12% ব্লার এবং ঝলমলে ইফেক্ট */
+    -webkit-backdrop-filter: blur(6px) brightness(1.1) saturate(1.2);
     z-index: 1;
 }
 
