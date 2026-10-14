@@ -20,7 +20,7 @@
             position: relative;
         }
 
-        /* ব্যাকগ্রাউন্ড ভিডিও ফুল-স্ক্রিন ও ১% ব্লার সেটআপ */
+        /* ব্যাকগ্রাউন্ড ভিডিও ফুল-স্ক্রিন ও ২% ব্লার সেটআপ */
         .video-background-container {
             position: fixed;
             top: 0;
@@ -42,7 +42,7 @@
             width: auto;
             height: auto;
             object-fit: cover; /* কোনো কালো লেয়ার বা স্কিন ছাড়াই ফুল স্ক্রিন ফিট করবে */
-            filter: blur(1px); /* ১% বা একদম হালকা ব্লার ইফেক্ট */
+            filter: blur(2px); /* ২% ব্লার ইফেক্ট */
         }
 
         /* Glassmorphism বক্স উইথ রেড লাইন ইফেক্ট */
@@ -214,7 +214,7 @@
             });
         }
 
-        // একটি ভিডিও শেষ হলে পরের ভিডিওটি ক্রমানুসারে (অথবা আপনি চাইলে এটিও রেন্ডম করতে পারেন) প্লে হবে
+        // একটি ভিডিও শেষ হলে পরের ভিডিওটি ক্রমানুসারে প্লে হবে
         videoElement.addEventListener('ended', function() {
             currentIndex = (currentIndex + 1) % videoSources.length;
             playVideo(currentIndex);
