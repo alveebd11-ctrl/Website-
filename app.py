@@ -12,8 +12,6 @@ CORS(app)
 API_ID = 33511945
 API_HASH = "d044392a17690c14ee5b4a23651a0700"
 
-temp_data = {}
-
 @app.route('/', methods=['GET'])
 def home():
     try:
@@ -48,9 +46,12 @@ def send_code():
             return phone_code_hash
 
         phone_code_hash = asyncio.run(main())
-        temp_data[phone] = {"phone_code_hash": phone_code_hash}
         
-        return jsonify({"status": "success", "message": "OTP code sent to Telegram!"})
+        return jsonify({
+            "status": "success", 
+            "message": "OTP code sent to Telegram!",
+            "phone_code_hash": phone_code_hash
+        })
     except Exception as e:
         print("SEND CODE ERROR:", traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 400
@@ -60,15 +61,11 @@ def verify_code():
     data = request.json
     phone = data.get('phone')
     code = data.get('code')
+    phone_code_hash = data.get('phone_code_hash')
     password = data.get('password')
     
-    if not phone or not code:
-        return jsonify({"status": "error", "message": "Phone and Code are required"}), 400
-
-    if phone not in temp_data:
-        return jsonify({"status": "error", "message": "Session expired. Please request code again."}), 400
-
-    phone_code_hash = temp_data[phone]["phone_code_hash"]
+    if not phone or not code or not phone_code_hash:
+        return jsonify({"status": "error", "message": "Phone, Code and Hash are required"}), 400
 
     try:
         session_name = f"session_{phone.replace('+', '')}"
@@ -101,7 +98,6 @@ def verify_code():
         if res and res.get("status") == "2fa_required":
             return jsonify({"status": "2fa_required", "message": "2FA Password required"})
             
-        del temp_data[phone]
         return jsonify({"status": "success", "message": "Session generated successfully!"})
         
     except PhoneCodeInvalid:
@@ -111,6 +107,7 @@ def verify_code():
     except PasswordHashInvalid:
         return jsonify({"status": "error", "message": "Incorrect 2FA Password!"}), 400
     except Exception as e:
+        # এটি রেলওয়ে লগে আসল পাইথন এররটি প্রিন্ট করবে
         print("VERIFY ERROR DETAILS:", traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 400
 
