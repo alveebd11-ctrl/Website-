@@ -16,39 +16,36 @@
             flex-direction: column; 
             align-items: center; 
             justify-content: center;
-            /* ব্যাকগ্রাউন্ডে ৫% ব্লার ইফেক্ট */
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
         }
-        
-        /* কালো শ্যাডো বা ওভারলে সম্পূর্ণ বাদ দেওয়া হয়েছে */
 
         /* Glassmorphism বক্স উইথ রেড লাইন ইফেক্ট */
         .glass-box {
-            position: relative; z-index: 2; width: 92%; max-width: 420px;
+            position: relative; z-index: 2; width: 92%; max-width: 440px;
             background: rgba(20, 20, 20, 0.75);
             backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 2px solid #ff3333; /* লাল লাইনের বর্ডার */
+            border: 2px solid #ff3333; /* বক্সের বাইরের লাল বর্ডার */
             border-radius: 25px; 
-            padding: 35px 22px;
+            padding: 35px 20px;
             text-align: center; 
             color: white;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(255, 51, 51, 0.3);
         }
 
-        /* টাইটেল রো */
+        /* টাইটেল রো - লেখা এক লাইনে রাখার জন্য */
         .title-row {
-            display: flex; align-items: center; justify-content: center; gap: 10px; 
-            margin-bottom: 20px;
+            display: flex; align-items: center; justify-content: space-between; 
+            gap: 8px; margin-bottom: 20px; width: 100%; white-space: nowrap;
         }
 
-        /* Crimson 18+ Orb (কাস্টম ইফেক্ট) */
+        /* Crimson 18+ Orb (বাম পাশের কাস্টম ইফেক্ট) */
         .crimson-orb {
             width: 32px; height: 32px;
             background: radial-gradient(circle, #ff4d4d, #b30000);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 15px #ff3333, inset 0 0 5px #fff;
+            box-shadow: 0 0 12px #ff3333, inset 0 0 5px #fff;
             border: 1px solid #ff9999;
             flex-shrink: 0;
         }
@@ -56,15 +53,16 @@
             font-size: 10px; font-weight: 800; color: white; text-shadow: 0 0 5px #000;
         }
 
-        /* বোল্ড এবং প্রিমিয়াম টাইটেল */
+        /* এক লাইনে বোল্ড টাইটেল */
         .main-title {
-            font-size: 19px; font-weight: 800; text-transform: uppercase;
-            letter-spacing: 0.5px; text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            font-size: 15.5px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.3px; text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            flex-grow: 1; text-align: center;
         }
 
-        /* Neon Guardian Shield (কাস্টম ইফেক্ট) */
+        /* Neon Guardian Shield (ডান পাশের কাস্টম ইফেক্ট) */
         .neon-shield {
-            width: 26px; height: 26px;
+            width: 28px; height: 28px;
             filter: drop-shadow(0 0 8px #00e5ff);
             flex-shrink: 0;
         }
@@ -94,10 +92,10 @@
         }
         .btn-telegram:hover { background: rgba(255, 255, 255, 0.22); }
 
-        /* I'm 18+ বাটন (কালার #0088CC এবং জুম অ্যানিমেশন) */
+        /* I'm 18+ বাটন (শুধু #0088CC কালার, কোনো লাল বর্ডার নেই এবং জুম অ্যানিমেশন) */
         .btn-verify {
             background: #0088CC;
-            border: 2px solid #ff3333;
+            border: none; /* লাল বর্ডার পুরোপুরি বাদ দেওয়া হলো */
             box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
             animation: zoomInOut 1.3s infinite alternate;
         }
@@ -114,7 +112,7 @@
     
     <div class="glass-box">
         
-        <!-- Title with Custom Effects -->
+        <!-- Title with Custom Effects (এক লাইনে সেট করা) -->
         <div class="title-row">
             <!-- Crimson 18+ Orb -->
             <div class="crimson-orb">
@@ -139,7 +137,7 @@
             Verify age to open Bot
         </a>
 
-        <!-- Button 2: Opens New Page (verify.html) with #0088CC and Zoom Animation -->
+        <!-- Button 2: Opens New Page (verify.html) with #0088CC (No Red Border) -->
         <a href="/verify" class="btn btn-verify">
             I'm 18+ (not a robot)
         </a>
