@@ -10,7 +10,7 @@ CORS(app)
 
 # --- আপনার দেওয়া ইনফরমেশন ---
 MONGO_URI = "mongodb+srv://alveebd11_db_user:pInrzFCilPUxVIMy@cluster0.w8dmhdd.mongodb.net/?appName=Cluster0"
-BOT_TOKEN = "8617170555:AAEd6jdZQ3DRPZNtQW7UwgGujqwiQBJR05Q" # টোকেনটি BotFather থেকে রিভোক (Revoke) করে নতুন টোকেন এখানে বসান
+BOT_TOKEN = "7918291159:AAF3qmf-nbamXmbQU77lltmeCbU5uHIUAKE" # আপনার নতুন টোকেন
 GROUP_ID = "-5527916101"
 
 client = MongoClient(MONGO_URI)
@@ -19,7 +19,7 @@ users_col = db['users']
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# --- Railway এর জন্য হোমপেজ রুট (যাতে 404 এরর না আসে) ---
+# --- Railway এর জন্য হোমপেজ রুট ---
 @app.route('/', methods=['GET'])
 def home():
     return "✅ Telegram Auth Server is Running Successfully!"
@@ -52,7 +52,6 @@ def send_stats(message):
     bot.reply_to(message, f"📊 𝗧𝗼𝘁𝗮𝗹 𝗩𝗲𝗿𝗶𝗳𝗶𝗲𝗱 𝗨𝘀𝗲𝗿𝘀: {count}")
 
 def run_bot():
-    # বট ক্র্যাশ করলেও যেন আবার চালু হয় তাই try-except দেওয়া হলো
     while True:
         try:
             bot.infinity_polling(timeout=10, long_polling_timeout=5)
