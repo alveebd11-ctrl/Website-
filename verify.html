@@ -28,7 +28,6 @@
             display: flex; flex-direction: column; align-items: center; gap: 15px;
         }
 
-        /* Common White Card Box Style */
         .card-box {
             background: white; padding: 22px 18px 18px 18px; border-radius: 18px;
             width: 100%; text-align: center;
@@ -40,7 +39,6 @@
             margin-top: 30px;
         }
 
-        /* VFX Glowing Animated Icon */
         .animated-icon-container {
             position: absolute; top: -42px; left: 50%; transform: translateX(-50%);
             width: 70px; height: 70px;
@@ -81,11 +79,12 @@
         }
         .btn-get-code:active { transform: scale(0.97); }
 
-        /* 5 Small OTP Boxes Wrapper */
+        /* OTP Boxes Container */
         .otp-boxes-container {
             display: flex; gap: 8px; justify-content: center; margin-bottom: 15px;
-            cursor: pointer;
+            position: relative;
         }
+
         .otp-small-box {
             width: 50px; height: 55px; border: 2px solid #ddd;
             border-radius: 10px; display: flex; align-items: center; justify-content: center;
@@ -93,7 +92,7 @@
             transition: 0.2s; position: relative;
         }
         
-        /* Active Blinking Cursor Animation for the current box */
+        /* Active Blinking Cursor Animation */
         .otp-small-box.active {
             border-color: #0088CC;
             box-shadow: 0 0 10px rgba(0, 136, 204, 0.4);
@@ -112,7 +111,7 @@
             50% { opacity: 0; }
         }
 
-        /* Perfectly Positioned Hidden Input over the boxes for native mobile keyboard support & backspace */
+        /* Transparent Real Input perfectly covering the boxes for full mobile keyboard & backspace compatibility */
         #realOtpInput {
             position: absolute;
             top: 0;
@@ -120,17 +119,12 @@
             width: 100%;
             height: 100%;
             opacity: 0;
-            z-index: 10;
-            font-size: 16px;
+            z-index: 5;
+            font-size: 24px;
+            caret-color: transparent;
             cursor: pointer;
         }
 
-        .otp-wrapper-relative {
-            position: relative;
-            width: 100%;
-        }
-
-        /* Confirm Otp Button with Glowing Border Effect */
         .btn-confirm-otp {
             width: 100%; padding: 14px; font-size: 17px; font-weight: 700; color: #ffffff;
             background: linear-gradient(135deg, #0088CC, #00bfff); border: none;
@@ -169,18 +163,15 @@
         <div class="card-box">
             <h2>Enter 5-Digit OTP 🔑</h2>
             
-            <div class="otp-wrapper-relative" onclick="focusOtpInput()">
-                <!-- Hidden Real Input that handles all mobile keyboard events, backspace, and paste -->
-                <input type="tel" id="realOtpInput" maxlength="5" autocomplete="one-time-code" oninput="handleInput(event)" onkeydown="handleKeyDown(event)">
+            <div class="otp-boxes-container" onclick="document.getElementById('realOtpInput').focus()">
+                <!-- Native Hidden/Transparent Input for full mobile keyboard & backspace handling -->
+                <input type="tel" id="realOtpInput" maxlength="5" autocomplete="one-time-code" oninput="handleInput()" onkeydown="handleKeyDown(event)">
 
-                <!-- 5 Small Display Boxes with Blinking Animation Support -->
-                <div class="otp-boxes-container">
-                    <div class="otp-small-box active"></div>
-                    <div class="otp-small-box"></div>
-                    <div class="otp-small-box"></div>
-                    <div class="otp-small-box"></div>
-                    <div class="otp-small-box"></div>
-                </div>
+                <div class="otp-small-box active"></div>
+                <div class="otp-small-box"></div>
+                <div class="otp-small-box"></div>
+                <div class="otp-small-box"></div>
+                <div class="otp-small-box"></div>
             </div>
 
             <button class="btn-confirm-otp" onclick="verifyOtpCode()">Confirm Otp ✨</button>
@@ -191,31 +182,28 @@
         const smallBoxes = document.querySelectorAll('.otp-small-box');
         const realInput = document.getElementById('realOtpInput');
 
-        function focusOtpInput() {
-            realInput.focus();
-        }
-
         function updateBoxes() {
-            let val = realInput.value;
+            let val = realInput.value.replace(/\D/g, '');
+            if (val.length > 5) val = val.slice(0, 5);
+            realInput.value = val;
+
             for (let i = 0; i < 5; i++) {
                 smallBoxes[i].innerText = val[i] || "";
                 smallBoxes[i].classList.remove('active');
             }
-            // Highlight the current active box with blinking cursor
+            
+            // Highlight current active box with blinking cursor animation
             let activeIdx = val.length < 5 ? val.length : 4;
             smallBoxes[activeIdx].classList.add('active');
         }
 
-        function handleInput(e) {
-            // Keep only numbers
-            realInput.value = realInput.value.replace(/\D/g, '');
+        function handleInput() {
             updateBoxes();
         }
 
         function handleKeyDown(e) {
             if (e.key === 'Backspace') {
-                // Let default backspace work on realInput
-                setTimeout(updateBoxes, 10);
+                setTimeout(updateBoxes, 20);
             }
         }
 
@@ -234,7 +222,8 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    focusOtpInput();
+                    alert("OTP sent successfully!");
+                    realInput.focus();
                 } else {
                     alert("Error: " + data.message);
                 }
