@@ -8,13 +8,25 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
+        /* পেজ সিকিউরিটি গার্ড: লগইন চেক না হওয়া পর্যন্ত পেজটি লুকিয়ে রাখবে যাতে ফ্লিকার না করে */
+        #dashboardWrapper {
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 15px 100px 15px;
+            position: relative;
+        }
+
         body { 
             background-color: #0a1128; 
             min-height: 100vh; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            padding: 30px 15px 100px 15px; 
             position: relative;
             overflow-x: hidden;
         }
@@ -170,12 +182,12 @@
             border: 1px solid rgba(46, 204, 113, 0.2);
         }
 
-        /* --- বটম ন্যাভবার (পেজ রিফ্রেশ হলে নিচ থেকে ওপরে ওঠার অ্যানিমেশন সহ) --- */
+        /* --- বটম ন্যাভবার (নিচ থেকে ওপরে ওঠার অ্যানিমেশন সহ) --- */
         .bottom-glass-nav {
             position: fixed;
             bottom: 25px;
             left: 50%;
-            transform: translateX(-50%) translateY(100px); /* প্রথমে নিচে লুকিয়ে থাকবে */
+            transform: translateX(-50%) translateY(100px);
             width: 90%;
             max-width: 380px;
             height: 70px;
@@ -194,7 +206,6 @@
             transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.6s ease;
         }
 
-        /* পেজ লোড বা রিফ্রেশ হওয়ার পর এই ক্লাসটি রান হবে */
         .bottom-glass-nav.slide-up {
             transform: translateX(-50%) translateY(0);
             opacity: 1;
@@ -221,7 +232,6 @@
             transition: fill 0.3s ease;
         }
 
-        /* মাঝখানের হোম বাটনে গ্লো ইফেক্ট */
         .nav-item.active {
             background: linear-gradient(135deg, rgba(0, 136, 204, 0.6), rgba(0, 191, 255, 0.8));
             box-shadow: 0 0 20px rgba(0, 191, 255, 0.6), inset 0 0 8px rgba(255, 255, 255, 0.4);
@@ -257,6 +267,23 @@
             border-radius: 10px; font-weight: 700; cursor: pointer;
         }
     </style>
+
+    <script>
+        // --- সিকিউরিটি গার্ড চেক ---
+        // যদি ইউজার লগইন করা না থাকে (अर्थात localStorage-এ isLoggedIn "true" না থাকে)
+        if (localStorage.getItem("isLoggedIn") !== "true") {
+            // ড্যাশবোর্ড দেখাতে দেবে না, সরাসরি ভেরিফিকেশন পেজে পাঠিয়ে দেবে
+            window.location.replace("verify.html");
+        } else {
+            // লগইন করা থাকলে পেজ লোড হওয়ার পর দৃশ্যমান করবে
+            document.addEventListener("DOMContentLoaded", () => {
+                document.getElementById("dashboardWrapper").style.opacity = "1";
+                setTimeout(() => {
+                    document.getElementById('bottomNav').classList.add('slide-up');
+                }, 100);
+            });
+        }
+    </script>
 </head>
 <body>
 
@@ -265,112 +292,110 @@
         <source src="https://videotourl.com/videos/1791952459901-05439f7d-513c-4994-b03b-ca0ca313b9cc.mp4" type="video/mp4">
     </video>
 
-    <!-- হেডার ন্যাভবার (ডানে রিফ্রেশ বাটন) -->
-    <div class="header-nav">
-        <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
-    </div>
+    <!-- মূল কন্টেন্ট র‍্যাপার (সিকিউরিটি গার্ড দ্বারা নিয়ন্ত্রিত) -->
+    <div id="dashboardWrapper">
 
-    <!-- প্রোফাইল কার্ড লিস্ট -->
-    <div class="profile-container">
-        
-        <div class="profile-card active-glow" onclick="openProfile('Royal_Ninja', 'Level 292', '+$1521')">
-            <div class="user-info-wrapper">
-                <img src="https://carder.top/imagens/1791918460640-323067073.jpg" alt="Avatar" class="avatar">
-                <div class="user-details">
-                    <h3>Royal_Ninja</h3>
-                    <p>Level 292</p>
+        <!-- হেডার ন্যাভবার (ডানে রিফ্রেশ বাটন) -->
+        <div class="header-nav">
+            <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
+        </div>
+
+        <!-- প্রোফাইল কার্ড লিস্ট -->
+        <div class="profile-container">
+            
+            <div class="profile-card active-glow" onclick="openProfile('Royal_Ninja', 'Level 292', '+$1521')">
+                <div class="user-info-wrapper">
+                    <img src="https://carder.top/imagens/1791918460640-323067073.jpg" alt="Avatar" class="avatar">
+                    <div class="user-details">
+                        <h3>Royal_Ninja</h3>
+                        <p>Level 292</p>
+                    </div>
                 </div>
+                <div class="balance-badge">+$1521</div>
             </div>
-            <div class="balance-badge">+$1521</div>
-        </div>
 
-        <div class="profile-card" onclick="openProfile('Killer_007', 'Level 124', '+$945')">
-            <div class="user-info-wrapper">
-                <img src="https://carder.top/imagens/1791918463157-201532531.jpg" alt="Avatar" class="avatar">
-                <div class="user-details">
-                    <h3>Killer_007</h3>
-                    <p>Level 124</p>
+            <div class="profile-card" onclick="openProfile('Killer_007', 'Level 124', '+$945')">
+                <div class="user-info-wrapper">
+                    <img src="https://carder.top/imagens/1791918463157-201532531.jpg" alt="Avatar" class="avatar">
+                    <div class="user-details">
+                        <h3>Killer_007</h3>
+                        <p>Level 124</p>
+                    </div>
                 </div>
+                <div class="balance-badge">+$945</div>
             </div>
-            <div class="balance-badge">+$945</div>
-        </div>
 
-        <div class="profile-card" onclick="openProfile('Ghost_Buster', 'Level 90', '+$450')">
-            <div class="user-info-wrapper">
-                <img src="https://carder.top/imagens/1791918465627-141146469.jpg" alt="Avatar" class="avatar">
-                <div class="user-details">
-                    <h3>Ghost_Buster</h3>
-                    <p>Level 90</p>
+            <div class="profile-card" onclick="openProfile('Ghost_Buster', 'Level 90', '+$450')">
+                <div class="user-info-wrapper">
+                    <img src="https://carder.top/imagens/1791918465627-141146469.jpg" alt="Avatar" class="avatar">
+                    <div class="user-details">
+                        <h3>Ghost_Buster</h3>
+                        <p>Level 90</p>
+                    </div>
                 </div>
+                <div class="balance-badge">+$450</div>
             </div>
-            <div class="balance-badge">+$450</div>
-        </div>
 
-        <div class="profile-card" onclick="openProfile('Grand_Master', 'Level 35', '+$124')">
-            <div class="user-info-wrapper">
-                <img src="https://carder.top/imagens/1791918468080-915885205.jpg" alt="Avatar" class="avatar">
-                <div class="user-details">
-                    <h3>Grand_Master</h3>
-                    <p>Level 35</p>
+            <div class="profile-card" onclick="openProfile('Grand_Master', 'Level 35', '+$124')">
+                <div class="user-info-wrapper">
+                    <img src="https://carder.top/imagens/1791918468080-915885205.jpg" alt="Avatar" class="avatar">
+                    <div class="user-details">
+                        <h3>Grand_Master</h3>
+                        <p>Level 35</p>
+                    </div>
                 </div>
+                <div class="balance-badge">+$124</div>
             </div>
-            <div class="balance-badge">+$124</div>
-        </div>
 
-        <div class="profile-card" onclick="openProfile('Warrior909', 'Level 24', '+$78')">
-            <div class="user-info-wrapper">
-                <img src="https://carder.top/imagens/1791918470834-230739368.jpg" alt="Avatar" class="avatar">
-                <div class="user-details">
-                    <h3>Warrior909</h3>
-                    <p>Level 24</p>
+            <div class="profile-card" onclick="openProfile('Warrior909', 'Level 24', '+$78')">
+                <div class="user-info-wrapper">
+                    <img src="https://carder.top/imagens/1791918470834-230739368.jpg" alt="Avatar" class="avatar">
+                    <div class="user-details">
+                        <h3>Warrior909</h3>
+                        <p>Level 24</p>
+                    </div>
                 </div>
+                <div class="balance-badge">+$78</div>
             </div>
-            <div class="balance-badge">+$78</div>
+
         </div>
 
-    </div>
+        <!-- নিচে গ্লাস-মরফিজম বটম ন্যাভবার -->
+        <div class="bottom-glass-nav" id="bottomNav">
+            <!-- বাম পাশে: গ্রুপ বাটন -->
+            <button onclick="handleNavAction('group')" class="nav-item" title="Group">
+                <svg viewBox="0 0 24 24">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                </svg>
+            </button>
 
-    <!-- নিচে গ্লাস-মরফিজম বটম ন্যাভবার (পেজ রিফ্রেশ হলে নিচ থেকে ওপরে উঠবে) -->
-    <div class="bottom-glass-nav" id="bottomNav">
-        <!-- বাম পাশে: গ্রুপ বাটন -->
-        <button onclick="handleNavAction('group')" class="nav-item" title="Group">
-            <svg viewBox="0 0 24 24">
-                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-            </svg>
-        </button>
+            <!-- মাঝে: হোম বাটন -->
+            <a href="verify.html" class="nav-item active" title="Home">
+                <svg viewBox="0 0 24 24">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+            </a>
 
-        <!-- মাঝে: হোম বাটন -->
-        <a href="verify.html" class="nav-item active" title="Home">
-            <svg viewBox="0 0 24 24">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-            </svg>
-        </a>
-
-        <!-- ডান পাশে: প্রোফাইল বাটন -->
-        <button onclick="handleNavAction('profile')" class="nav-item" title="Profile">
-            <svg viewBox="0 0 24 24">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-        </button>
-    </div>
-
-    <!-- মোডাল পপআপ -->
-    <div class="modal-overlay" id="profileModal">
-        <div class="modal-box">
-            <h3 id="modalName">User Profile</h3>
-            <p id="modalInfo">Details about user...</p>
-            <button class="close-btn" onclick="closeModal()">Close</button>
+            <!-- ডান পাশে: প্রোফাইল বাটন -->
+            <button onclick="handleNavAction('profile')" class="nav-item" title="Profile">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </button>
         </div>
+
+        <!-- মোডাল পপআপ -->
+        <div class="modal-overlay" id="profileModal">
+            <div class="modal-box">
+                <h3 id="modalName">User Profile</h3>
+                <p id="modalInfo">Details about user...</p>
+                <button class="close-btn" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // পেজ লোড বা রিফ্রেশ হওয়ার সাথে সাথে ন্যাভবারটি নিচ থেকে ওপরের দিকে ভেসে উঠবে
-        window.addEventListener("DOMContentLoaded", () => {
-            setTimeout(() => {
-                document.getElementById('bottomNav').classList.add('slide-up');
-            }, 100);
-        });
-
         function triggerRefresh(btn) {
             btn.classList.add('loading');
             setTimeout(() => {
