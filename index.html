@@ -50,17 +50,17 @@
             opacity: 1;
         }
 
-        /* আয়নার মতো স্বচ্ছ এবং পরিষ্কার গ্লাসমorphism বক্স */
+        /* একদম আগের মতো স্বচ্ছ ও আয়নার মতো গ্লাস ইফেক্ট বক্স */
         .glass-box {
             position: relative; z-index: 2; width: 92%; max-width: 440px;
-            background: rgba(20, 20, 20, 0.70); /* আগের মতো স্বচ্ছ ও ট্রান্সপারেন্ট লুক */
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); /* আয়নার মতো মিরর ব্লার ইফেক্ট */
+            background: rgba(15, 15, 15, 0.45); /* ট্রান্সপারেন্সি বা স্বচ্ছতা আরও বাড়িয়ে দেওয়া হলো */
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             border: 2px solid #ff3333; 
             border-radius: 25px; 
             padding: 35px 20px;
             text-align: center; 
             color: white;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(255, 51, 51, 0.3);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(255, 51, 51, 0.3);
         }
 
         .title-row {
@@ -93,10 +93,10 @@
             flex-shrink: 0;
         }
 
-        /* সাব-মেসেজ ট্রান্সপারেন্ট ব্যাকগ্রাউন্ডে পরিষ্কার দেখানোর জন্য শ্যাডো সহ */
+        /* সাব-মেসেজ যাতে স্বচ্ছ ব্যাকগ্রাউন্ডেও স্পষ্টভাবে পড়া যায় */
         .sub-message {
-            font-size: 14px; color: #f0f0f0; line-height: 1.6; margin-bottom: 25px;
-            padding: 0 5px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            font-size: 14px; color: #ffffff; line-height: 1.6; margin-bottom: 25px;
+            padding: 0 5px; text-shadow: 0 1px 4px rgba(0,0,0,0.9);
         }
         .small-icon {
             vertical-align: middle; margin: 0 2px;
