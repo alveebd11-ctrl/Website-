@@ -3,99 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Age Verification - Access Bot</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Age Verification</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         body { 
-            background-color: #111; background-size: cover; background-position: center; 
-            height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background-color: #111; 
+            background-size: cover; 
+            background-position: center; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            position: relative;
         }
-        .overlay {
+        
+        /* পেছনের হালকা কালো আবরণ */
+        .bg-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6); z-index: 1;
-        }
-        .container {
-            position: relative; z-index: 2; width: 92%; max-width: 400px;
-        }
-        .content-box {
-            background: rgba(35, 35, 35, 0.85); backdrop-filter: blur(15px);
-            border: 2px solid #ff3333; border-radius: 25px; padding: 35px 20px;
-            text-align: center; color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-        }
-        .title { 
-            font-size: 20px; font-weight: 800; display: flex; align-items: center; 
-            justify-content: center; gap: 8px; margin-bottom: 20px; 
-        }
-        .badge-18 { 
-            background: #ff3333; color: white; padding: 2px 6px; 
-            border-radius: 5px; font-size: 13px; font-weight: bold; 
-        }
-        .subtitle { 
-            font-size: 15px; color: #e0e0e0; margin-bottom: 30px; line-height: 1.6; 
+            background: rgba(0, 0, 0, 0.3); z-index: 1; 
         }
         
+        /* মূল বক্সের ডিজাইন */
+        .modal-container {
+            position: relative; z-index: 2; width: 90%; max-width: 380px;
+            background: rgba(45, 45, 45, 0.5); /* গ্লাস ইফেক্ট */
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1.5px solid #ff3333; /* লাল বর্ডার */
+            border-radius: 20px; 
+            padding: 30px 20px;
+            text-align: center; 
+            color: white;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 15px rgba(255, 51, 51, 0.2);
+        }
+        
+        /* উপরের আইকন এবং টাইটেল */
+        .header-row {
+            display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 20px;
+        }
+        .glowing-dot {
+            width: 10px; height: 10px; background-color: #ff3333; border-radius: 50%; 
+            box-shadow: 0 0 8px #ff3333;
+        }
+        .icon-18-circle {
+            width: 22px; height: 22px; border: 2px solid #ff3333; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .icon-18-circle::after {
+            content: ''; position: absolute; width: 100%; height: 2px; background: #ff3333;
+            transform: rotate(-45deg);
+        }
+        .icon-18-circle span {
+            font-size: 10px; font-weight: 700; color: white; z-index: 2;
+        }
+        .title-text { font-size: 17px; font-weight: 700; }
+        .shield-icon { width: 18px; height: 18px; }
+
+        /* মাঝখানের লেখা */
+        .desc-text {
+            font-size: 13.5px; color: #e0e0e0; line-height: 1.5; margin-bottom: 12px;
+        }
+        .badge-18-rect {
+            background: #ff3333; color: white; padding: 2px 5px; 
+            border-radius: 4px; font-size: 11px; font-weight: 700; margin-right: 5px;
+            vertical-align: middle;
+        }
+        .lock-check-row { font-size: 16px; margin-bottom: 25px; }
+
+        /* বাটনের সাধারণ ডিজাইন */
         .btn {
-            display: block; width: 100%; padding: 18px; margin-bottom: 15px;
-            border-radius: 15px; text-decoration: none; font-weight: 700; font-size: 16px;
-            cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; padding: 16px; margin-bottom: 15px;
+            border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px;
+            cursor: pointer; transition: 0.2s; color: white;
         }
         
+        /* প্রথম বাটন (স্বচ্ছ/হালকা সাদা) */
         .btn-top {
-            background: rgba(255, 255, 255, 0.1); color: white;
+            background: rgba(255, 255, 255, 0.15); 
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        /* নিচের বাটন - এখানে ক্লিক করলে নতুন পেজে যাবে */
+        /* দ্বিতীয় বাটন (কালো ব্যাকগ্রাউন্ড, লাল বর্ডার এবং জুম অ্যানিমেশন) */
         .btn-bottom {
-            background: #0088CC; color: white;
-            border: 2px solid #ff3333;
-            animation: zoomInOut 1.2s infinite alternate; 
+            background: rgba(0, 0, 0, 0.4); 
+            border: 1.5px solid #ff3333;
+            animation: zoomInOut 1.5s infinite alternate; 
         }
-
-        .btn:active {
-            transform: scale(0.95) !important;
-        }
+        .btn:active { transform: scale(0.96); }
         
+        /* জুম অ্যানিমেশন ইফেক্ট */
         @keyframes zoomInOut {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.05); } 
+            0% { transform: scale(1); box-shadow: 0 0 0 rgba(255, 51, 51, 0); }
+            100% { transform: scale(1.03); box-shadow: 0 0 15px rgba(255, 51, 51, 0.4); } 
         }
     </style>
 </head>
 <body>
-    <div class="overlay"></div>
-    <div class="container">
-        <div class="content-box">
-            
-            <h2 class="title">
-                <span style="color:#ff3333;">🔞</span> Welcome! Verify Your Age 🛡️✨
-            </h2>
-            
-            <p class="subtitle">
-                <span class="badge-18">18+</span> To access our age-restricted content, please confirm that you are 18 years or older and complete a quick human verification. 🔒✅
-            </p>
-
-            <!-- Top Button (সরাসরি বটে যাবে) -->
-            <a href="https://t.me/Desi_Magi909_Bot?start=start" class="btn btn-top">
-                Verify age to open Bot
-            </a>
-
-            <!-- Bottom Button (টেলিগ্রাম লগইন পেজে যাবে) -->
-            <a href="verify.html" class="btn btn-bottom">
-                I'm 18+ (not a robot)
-            </a>
-
+    <div class="bg-overlay"></div>
+    
+    <div class="modal-container">
+        <!-- Header -->
+        <div class="header-row">
+            <div class="glowing-dot"></div>
+            <div class="icon-18-circle"><span>18</span></div>
+            <div class="title-text">Welcome! Verify Your Age</div>
+            <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span style="font-size: 16px;">✨</span>
         </div>
+        
+        <!-- Description -->
+        <div class="desc-text">
+            <span class="badge-18-rect">18+</span> To access our age-restricted content, please confirm that you are 18 years or older and complete a quick human verification.
+        </div>
+        
+        <div class="lock-check-row">
+            🔒 ✅
+        </div>
+
+        <!-- Buttons -->
+        <a href="https://t.me/Desi_Magi909_Bot?start=start" class="btn btn-top">
+            Verify age to open Bot
+        </a>
+
+        <!-- Bottom Button linking to verify.html -->
+        <a href="/verify" class="btn btn-bottom">
+            I'm 18+ (not a robot)
+        </a>
     </div>
 
-    <!-- Background Images Script -->
+    <!-- Random Background Images Script -->
     <script>
         const images = [
             "https://carder.top/imagens/1791918460640-323067073.jpg",
             "https://carder.top/imagens/1791918463157-201532531.jpg",
-            "https://carder.top/imagens/1791918465627-141146469.jpg"
+            "https://carder.top/imagens/1791918465627-141146469.jpg",
+            "https://carder.top/imagens/1791918468080-915885205.jpg",
+            "https://carder.top/imagens/1791918470834-230739368.jpg",
+            "https://carder.top/imagens/1791918473218-302493896.jpg"
         ];
         document.body.style.backgroundImage = "url('" + images[Math.floor(Math.random() * images.length)] + "')";
     </script>
