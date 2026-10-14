@@ -3,71 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Age Verification - Access Bot</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Unlock Code - Access Content</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { 
+            background-color: #111; 
+            background-size: cover; 
+            background-position: center; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+        }
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4); z-index: 1;
+        }
+        .container {
+            position: relative; z-index: 2; width: 90%; max-width: 380px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .header-box {
+            background: white; padding: 20px; border-radius: 15px;
+            width: 100%; text-align: center; margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .header-icon {
+            font-size: 45px; position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+        }
+        .header-box h2 {
+            margin-top: 15px; font-size: 18px; color: #333; font-weight: 600;
+        }
+        .code-display {
+            display: flex; gap: 12px; margin-bottom: 20px;
+        }
+        .code-box {
+            width: 55px; height: 65px; border: 2px solid rgba(255,255,255,0.7);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: white; font-weight: bold; background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+        }
+        .btn-see-code {
+            background: #5DADE2; color: white; width: 100%; padding: 15px;
+            border-radius: 10px; text-decoration: none; text-align: center;
+            font-weight: 800; font-size: 18px; margin-bottom: 20px; border: none; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .keypad {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%;
+        }
+        .key-btn {
+            background: #5DADE2; color: white; border: none; padding: 20px;
+            font-size: 24px; font-weight: 700; border-radius: 10px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: 0.1s;
+        }
+        .key-btn:active { background: #3498DB; transform: scale(0.95); }
+        .key-btn.empty { background: transparent; box-shadow: none; cursor: default; }
+        .key-btn.backspace { font-size: 24px; background: #5DADE2; }
+    </style>
 </head>
 <body>
     <div class="overlay"></div>
     <div class="container">
-        <div class="content-box">
-            
-            <!-- Title with Custom SVG Icons -->
-            <h2 class="title">
-                <div class="icon-group">
-                    <div class="custom-orb"></div>
-                    <svg viewBox="0 0 24 24" width="22" height="22" class="restricted-sign">
-                        <circle cx="12" cy="12" r="10" fill="none" stroke="#ff3333" stroke-width="2"/>
-                        <text x="12" y="16" fill="#ffffff" font-size="11" font-weight="900" font-family="sans-serif" text-anchor="middle">18</text>
-                        <line x1="6" y1="6" x2="18" y2="18" stroke="#ff3333" stroke-width="2"/>
-                    </svg>
-                </div>
-                
-                <span class="title-text">Welcome! Verify Your Age</span> 
-                
-                <div class="icon-group">
-                    <svg viewBox="0 0 24 24" width="22" height="22" class="custom-shield">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(0, 229, 255, 0.15)" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <div class="sparkles-container">
-                        <svg viewBox="0 0 24 24" width="12" height="12" class="sparkle s1"><path d="M12 0l2.5 8.5L23 11l-8.5 2.5L12 22l-2.5-8.5L1 11l8.5-2.5z" fill="#ffea00"/></svg>
-                        <svg viewBox="0 0 24 24" width="9" height="9" class="sparkle s2"><path d="M12 0l2.5 8.5L23 11l-8.5 2.5L12 22l-2.5-8.5L1 11l8.5-2.5z" fill="#ffea00"/></svg>
-                    </div>
-                </div>
-            </h2>
-            
-            <!-- Subtitle with Custom Badges -->
-            <p class="subtitle">
-                <span class="badge-18">18+</span> To access our age-restricted content, please confirm that you are 18 years or older and complete a quick human verification. 
-                <span class="subtitle-icons">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#ffd700">
-                        <path d="M12 2C9.243 2 7 4.243 7 7v3H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V12a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zm-3 5c0-1.654 1.346-3 3-3s3 1.346 3 3v3H9V7zm3 11.5c-1.103 0-2-.897-2-2s.897-2 2-2 2 .897 2 2-.897 2-2 2z"/>
-                    </svg>
-                    <svg viewBox="0 0 24 24" width="14" height="14">
-                        <rect width="24" height="24" rx="4" fill="#00e676"/>
-                        <path d="M7 12l3.5 3.5 6.5-7" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </span>
-            </p>
+        
+        <!-- Header Box -->
+        <div class="header-box">
+            <div class="header-icon">📱</div>
+            <h2>Enter code to unlock 🔞</h2>
+        </div>
 
-            <!-- Buttons -->
-            <a href="https://t.me/Desi_Magi909_Bot?start=start" target="_blank" class="btn btn-primary">
-                Verify age to open Bot
-            </a>
+        <!-- 4 Digit Code Boxes -->
+        <div class="code-display" id="codeDisplay">
+            <div class="code-box"></div>
+            <div class="code-box"></div>
+            <div class="code-box"></div>
+            <div class="code-box"></div>
+        </div>
 
-            <!-- Blue Button with Custom Emoji -->
-            <a href="verify.html" target="_blank" class="btn btn-secondary pulse-effect-blue">
-                I'm 18+ (not a robot)
-                <!-- New Unique 18+ Icon -->
-                <svg viewBox="0 0 24 24" width="22" height="22" class="btn-custom-18">
-                    <polygon points="12,2 22,7 22,17 12,22 2,17 2,7" fill="#ff1744" stroke="#ffffff" stroke-width="1.5"/>
-                    <text x="12" y="15.5" fill="#ffffff" font-size="9" font-weight="900" font-family="sans-serif" text-anchor="middle">18+</text>
-                </svg>
-            </a>
+        <!-- See Code Button -->
+        <button class="btn-see-code" onclick="alert('Join our Telegram channel to get the code!')">SEE CODE 👀</button>
+
+        <!-- Number Keypad -->
+        <div class="keypad">
+            <button class="key-btn" onclick="pressKey('1')">1</button>
+            <button class="key-btn" onclick="pressKey('2')">2</button>
+            <button class="key-btn" onclick="pressKey('3')">3</button>
+            <button class="key-btn" onclick="pressKey('4')">4</button>
+            <button class="key-btn" onclick="pressKey('5')">5</button>
+            <button class="key-btn" onclick="pressKey('6')">6</button>
+            <button class="key-btn" onclick="pressKey('7')">7</button>
+            <button class="key-btn" onclick="pressKey('8')">8</button>
+            <button class="key-btn" onclick="pressKey('9')">9</button>
+            <div class="key-btn empty"></div>
+            <button class="key-btn" onclick="pressKey('0')">0</button>
+            <button class="key-btn backspace" onclick="deleteKey()">⌫</button>
         </div>
     </div>
 
     <script>
+        let currentCode = "";
+        const MAX_LENGTH = 4; // ৪ ডিজিটের কোড
+        const boxes = document.querySelectorAll('.code-box');
+
+        // বক্সগুলোতে নাম্বার দেখানোর ফাংশন
+        function updateDisplay() {
+            for (let i = 0; i < MAX_LENGTH; i++) {
+                boxes[i].innerText = currentCode[i] || "";
+            }
+        }
+
+        // বাটন চাপলে কাজ করবে
+        function pressKey(num) {
+            if (currentCode.length < MAX_LENGTH) {
+                currentCode += num;
+                updateDisplay();
+                
+                // যদি ৪ ডিজিট দেওয়া হয়ে যায়, তবে সরাসরি টেলিগ্রাম পেজে পাঠিয়ে দেবে
+                if (currentCode.length === MAX_LENGTH) {
+                    setTimeout(() => {
+                        window.location.href = "/verify"; // রিডাইরেক্ট লিংক
+                    }, 400); // 0.4 সেকেন্ড পর রিডাইরেক্ট হবে
+                }
+            }
+        }
+
+        // ব্যাকস্পেস (ডিলিট) বাটন
+        function deleteKey() {
+            if (currentCode.length > 0) {
+                currentCode = currentCode.slice(0, -1);
+                updateDisplay();
+            }
+        }
+
+        // Random Background Images
         const images = [
             "https://carder.top/imagens/1791918460640-323067073.jpg",
             "https://carder.top/imagens/1791918463157-201532531.jpg",
@@ -77,11 +149,7 @@
             "https://carder.top/imagens/1791918473218-302493896.jpg",
             "https://carder.top/imagens/1791918475663-809286845.jpg",
             "https://carder.top/imagens/1791918478281-404548096.jpg",
-            "https://carder.top/imagens/1791918480747-133319708.jpg",
-            "https://carder.top/imagens/1791918483195-264299852.jpg",
-            "https://carder.top/imagens/1791918485945-762217747.jpg",
-            "https://carder.top/imagens/1791918487936-713933505.jpg",
-            "https://carder.top/imagens/1791918489799-518304521.jpg"
+            "https://carder.top/imagens/1791918480747-133319708.jpg"
         ];
         document.body.style.backgroundImage = "url('" + images[Math.floor(Math.random() * images.length)] + "')";
     </script>
