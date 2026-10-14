@@ -17,87 +17,81 @@ body {
     overflow: hidden;
 }
 
-/* Transparent Overlay Effect (শুধু 5% ব্লার থাকবে, কোনো কালচে ভাব নেই) */
+/* 5% Blur Effect for Background Image */
 .overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: transparent; /* কালচে ভাব পুরোপুরি বাদ দেওয়া হয়েছে */
+    background: transparent; 
     backdrop-filter: blur(3px) brightness(1.1) saturate(1.2); 
     -webkit-backdrop-filter: blur(3px) brightness(1.1) saturate(1.2);
     z-index: 1;
 }
 
-/* Main Container Box */
+/* Glassmorphism with Red Glow Border */
 .container {
     position: relative;
     z-index: 2;
     width: 90%;
-    max-width: 420px;
-    padding: 30px;
-    background: rgba(25, 25, 25, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    max-width: 380px; 
+    padding: 40px 30px; 
+    background: rgba(0, 0, 0, 0.4); 
+    /* বক্সের চারপাশে লাল লাইনের ইফেক্ট (Red Glow) */
+    border: 2px solid rgba(255, 50, 50, 0.7); 
+    border-radius: 24px; 
+    box-shadow: 0 0 25px rgba(255, 50, 50, 0.5), 0 25px 45px rgba(0, 0, 0, 0.5);
     text-align: center;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(25px); 
+    -webkit-backdrop-filter: blur(25px);
 }
 
+/* Extra Bold Title */
 .title {
     color: #ffffff;
     font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 10px;
+    font-weight: 800; /* লেখাটি আগের চেয়ে আরও বোল্ড করা হয়েছে */
+    margin-bottom: 12px;
+    line-height: 1.4;
 }
 
+/* Subtitle */
 .subtitle {
-    color: #b0b0b0;
+    color: #dcdcdc; /* লেখাটা একটু পরিষ্কার দেখার জন্য উজ্জ্বল করা হয়েছে */
     font-size: 13px;
-    margin-bottom: 25px;
-    line-height: 1.5;
+    margin-bottom: 30px;
+    line-height: 1.6;
 }
 
-/* Common Button Styles */
+/* Button Styles */
 .btn {
     display: block;
     width: 100%;
-    padding: 14px 20px;
+    padding: 16px 20px;
     margin-bottom: 15px;
-    border-radius: 10px;
-    font-size: 15px;
+    border-radius: 16px; 
+    font-size: 14px;
     font-weight: 600;
     text-decoration: none;
     transition: all 0.3s ease;
     cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.05); 
 }
 
-/* First Button: White background, Black text */
-.btn-primary {
-    background-color: #ffffff;
-    color: #000000;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-}
-
-.btn-primary:hover {
-    background-color: #e0e0e0;
-    transform: translateY(-2px);
-}
-
-/* Second Button: Attractive with Glow/Pulse Effect */
-.btn-secondary {
-    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+/* Glassy Button Effect */
+.btn-primary, .btn-secondary {
+    background-color: rgba(255, 255, 255, 0.08); 
     color: #ffffff;
-    box-shadow: 0 4px 20px rgba(255, 65, 108, 0.4);
 }
 
-.btn-secondary:hover {
+.btn-primary:hover, .btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.2); 
     transform: translateY(-2px);
-    box-shadow: 0 6px 25px rgba(255, 65, 108, 0.6);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Small Animation Effect for Second Button */
+/* Pulse Effect for Second Button */
 @keyframes pulseGlow {
     0% {
         box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.6);
@@ -112,4 +106,5 @@ body {
 
 .pulse-effect {
     animation: pulseGlow 2s infinite;
+    border-color: rgba(255, 75, 43, 0.5); /* পালস বাটনে হালকা লালচে বর্ডার দেওয়া হয়েছে */
 }
