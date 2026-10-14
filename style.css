@@ -35,10 +35,9 @@ body {
     position: relative;
     z-index: 2;
     width: 90%;
-    max-width: 380px; 
-    padding: 40px 30px; 
+    max-width: 400px; /* বক্সটা একটু চওড়া করা হয়েছে যাতে লেখা ধরে */
+    padding: 40px 20px; 
     background: rgba(0, 0, 0, 0.4); 
-    /* বক্সের চারপাশে লাল লাইনের ইফেক্ট (Red Glow) */
     border: 2px solid rgba(255, 50, 50, 0.7); 
     border-radius: 24px; 
     box-shadow: 0 0 25px rgba(255, 50, 50, 0.5), 0 25px 45px rgba(0, 0, 0, 0.5);
@@ -47,19 +46,45 @@ body {
     -webkit-backdrop-filter: blur(25px);
 }
 
-/* Extra Bold Title */
+/* Title on One Single Line */
 .title {
     color: #ffffff;
-    font-size: 22px;
-    font-weight: 800; /* লেখাটি আগের চেয়ে আরও বোল্ড করা হয়েছে */
+    font-size: 16px; /* এক লাইনে রাখার জন্য সাইজ ছোট করা হয়েছে */
+    font-weight: 800;
     margin-bottom: 12px;
-    line-height: 1.4;
+    display: flex; /* ফ্লেক্স ব্যবহার করা হয়েছে এক লাইনে রাখার জন্য */
+    justify-content: center;
+    align-items: center;
+    gap: 6px; /* ইমোজি ও লেখার মাঝে ফাঁকা জায়গা */
+    white-space: nowrap; /* কোনোভাবেই যেন দুই লাইনে না যায় */
+}
+
+/* Custom Emoji Effects */
+.emoji-orb {
+    font-size: 18px;
+    filter: drop-shadow(0 0 10px #ff3333); /* Crimson Red Glow */
+    animation: customEmojiPulse 2s infinite;
+}
+
+.emoji-shield {
+    font-size: 18px;
+    filter: drop-shadow(0 0 10px #00e5ff); /* Neon Blue Glow */
+    animation: customEmojiPulse 2s infinite 1s; /* Delay for alternate pulsing */
+}
+
+.emoji-small {
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.6)); /* Subtle glow for small emojis */
+}
+
+@keyframes customEmojiPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
 }
 
 /* Subtitle */
 .subtitle {
-    color: #dcdcdc; /* লেখাটা একটু পরিষ্কার দেখার জন্য উজ্জ্বল করা হয়েছে */
-    font-size: 13px;
+    color: #dcdcdc; 
+    font-size: 12px;
     margin-bottom: 30px;
     line-height: 1.6;
 }
@@ -93,18 +118,12 @@ body {
 
 /* Pulse Effect for Second Button */
 @keyframes pulseGlow {
-    0% {
-        box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.6);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(255, 75, 43, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(255, 75, 43, 0);
-    }
+    0% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.6); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 75, 43, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); }
 }
 
 .pulse-effect {
     animation: pulseGlow 2s infinite;
-    border-color: rgba(255, 75, 43, 0.5); /* পালস বাটনে হালকা লালচে বর্ডার দেওয়া হয়েছে */
+    border-color: rgba(255, 75, 43, 0.5); 
 }
