@@ -50,22 +50,22 @@
             opacity: 1;
         }
 
-        /* পপআপ বক্সটি আরও স্পষ্ট ও আকর্ষণীয় করার জন্য স্টাইল অপ্টিমাইজ করা হয়েছে */
+        /* আয়নার মতো স্বচ্ছ এবং পরিষ্কার গ্লাসমorphism বক্স */
         .glass-box {
             position: relative; z-index: 2; width: 92%; max-width: 440px;
-            background: rgba(12, 12, 12, 0.90); /* ব্যাকগ্রাউন্ড আরও সলিড ও গাঢ় করা হয়েছে যাতে লেখা পরিষ্কার ফোটে */
-            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            border: 2.5px solid #ff3333; /* লাল বর্ডার আরও স্পষ্ট করা হয়েছে */
+            background: rgba(20, 20, 20, 0.70); /* আগের মতো স্বচ্ছ ও ট্রান্সপারেন্ট লুক */
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); /* আয়নার মতো মিরর ব্লার ইফেক্ট */
+            border: 2px solid #ff3333; 
             border-radius: 25px; 
-            padding: 35px 22px;
+            padding: 35px 20px;
             text-align: center; 
             color: white;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(255, 51, 51, 0.4);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 20px rgba(255, 51, 51, 0.3);
         }
 
         .title-row {
             display: flex; align-items: center; justify-content: space-between; 
-            gap: 8px; margin-bottom: 22px; width: 100%; white-space: nowrap;
+            gap: 8px; margin-bottom: 20px; width: 100%; white-space: nowrap;
         }
 
         .crimson-orb {
@@ -83,7 +83,7 @@
 
         .main-title {
             font-size: 15.5px; font-weight: 800; text-transform: uppercase;
-            letter-spacing: 0.5px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+            letter-spacing: 0.3px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);
             flex-grow: 1; text-align: center;
         }
 
@@ -93,10 +93,10 @@
             flex-shrink: 0;
         }
 
-        /* সাব-মেসেজ আরও উজ্জ্বল ও স্পষ্ট করা হয়েছে */
+        /* সাব-মেসেজ ট্রান্সপারেন্ট ব্যাকগ্রাউন্ডে পরিষ্কার দেখানোর জন্য শ্যাডো সহ */
         .sub-message {
-            font-size: 14.5px; color: #ececec; line-height: 1.6; margin-bottom: 25px;
-            padding: 0 5px; font-weight: 400; text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            font-size: 14px; color: #f0f0f0; line-height: 1.6; margin-bottom: 25px;
+            padding: 0 5px; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
         }
         .small-icon {
             vertical-align: middle; margin: 0 2px;
@@ -110,16 +110,16 @@
         }
         
         .btn-telegram {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             backdrop-filter: blur(10px);
         }
-        .btn-telegram:hover { background: rgba(255, 255, 255, 0.25); }
+        .btn-telegram:hover { background: rgba(255, 255, 255, 0.22); }
 
         .btn-verify {
             background: #0088CC;
             border: none;
-            box-shadow: 0 0 18px rgba(0, 136, 204, 0.6);
+            box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
             animation: zoomInOut 1.3s infinite alternate;
         }
         .btn:active { transform: scale(0.95); }
