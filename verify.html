@@ -25,22 +25,22 @@
 
         .container {
             position: relative; z-index: 2; width: 92%; max-width: 380px;
-            display: flex; flex-direction: column; align-items: center;
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
         }
 
-        /* Main Card Box */
+        /* Number Section Card */
         .header-box {
             background: white; padding: 22px 18px 18px 18px; border-radius: 18px;
-            width: 100%; text-align: center; margin-bottom: 15px;
+            width: 100%; text-align: center;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             position: relative;
-            margin-top: 35px;
+            margin-top: 25px;
         }
 
         /* VFX Glowing Animated Icon */
         .animated-icon-container {
-            position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
-            width: 75px; height: 75px;
+            position: absolute; top: -42px; left: 50%; transform: translateX(-50%);
+            width: 70px; height: 70px;
             background: linear-gradient(135deg, #0088CC, #00bfff);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
@@ -49,7 +49,7 @@
             animation: pulseGlow 1.5s infinite alternate;
         }
 
-        .phone-icon-inner { font-size: 34px; animation: bounceIcon 1s infinite alternate; }
+        .phone-icon-inner { font-size: 30px; animation: bounceIcon 1s infinite alternate; }
 
         @keyframes pulseGlow {
             0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px rgba(0, 136, 204, 0.6); }
@@ -62,28 +62,28 @@
         }
 
         .header-box h2 {
-            margin-top: 10px; font-size: 16px; color: #222; font-weight: 700; margin-bottom: 12px;
+            margin-top: 8px; font-size: 15px; color: #222; font-weight: 700; margin-bottom: 10px;
         }
         
         .phone-input {
-            width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px;
-            font-size: 15px; outline: none; text-align: center; margin-bottom: 12px;
+            width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 10px;
+            font-size: 14px; outline: none; text-align: center; margin-bottom: 10px;
             font-weight: 600; color: #333;
         }
         .btn-get-code {
-            background: #2ECC71; color: white; width: 100%; padding: 12px;
-            border-radius: 10px; border: none; font-weight: 700; font-size: 15px; cursor: pointer;
+            background: #2ECC71; color: white; width: 100%; padding: 11px;
+            border-radius: 10px; border: none; font-weight: 700; font-size: 14px; cursor: pointer;
             box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4); transition: 0.2s;
         }
         .btn-get-code:active { transform: scale(0.97); }
 
-        /* নিচের ওটিপি সেকশন (শুরুতে হাইড থাকবে, কোড পাঠানোর পর শো হবে) */
+        /* OTP Input & Confirm Button Section (Always Visible on Same Page) */
         .otp-wrapper {
             width: 100%; display: flex; flex-direction: column; gap: 12px;
         }
 
         .otp-text-input {
-            width: 100%; padding: 15px; font-size: 20px; font-weight: 600;
+            width: 100%; padding: 14px; font-size: 18px; font-weight: 600;
             text-align: center; border-radius: 14px;
             border: 2px solid rgba(255, 255, 255, 0.8);
             background: rgba(255, 255, 255, 0.15); color: #fff;
@@ -91,12 +91,12 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         .otp-text-input::placeholder {
-            color: rgba(255, 255, 255, 0.7); font-size: 16px; font-weight: normal;
+            color: rgba(255, 255, 255, 0.7); font-size: 15px; font-weight: normal;
         }
 
         /* Transparent Glassmorphism Confirm Otp Button with Glowing Border Effect */
         .btn-confirm-otp {
-            width: 100%; padding: 15px; font-size: 18px; font-weight: 700; color: #ffffff;
+            width: 100%; padding: 14px; font-size: 17px; font-weight: 700; color: #ffffff;
             background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.8);
             border-radius: 14px; cursor: pointer; backdrop-filter: blur(12px);
             box-shadow: 0 0 20px rgba(0, 229, 255, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.3);
@@ -119,7 +119,7 @@
     <div class="container">
         
         <!-- উপরে নাম্বার ও গেট কোড সেকশন -->
-        <div class="header-box" id="phoneSection">
+        <div class="header-box">
             <div class="animated-icon-container">
                 <div class="phone-icon-inner">📥</div>
             </div>
@@ -129,24 +129,22 @@
             <button class="btn-get-code" onclick="sendCode()">GET CODE 📩</button>
         </div>
 
-        <!-- নিচে ওটিপি এবং কনফার্ম সেকশন (শুরুতে লুকানো থাকবে) -->
-        <div class="otp-wrapper" id="otpSection" style="display: none;">
+        <!-- নিচে ওটিপি এবং কনফার্ম সেকশন (একই পেজে একসাথে থাকবে) -->
+        <div class="otp-wrapper">
             <input type="text" id="otpInput" class="otp-text-input" maxlength="5" placeholder="Enter 5-Digit OTP">
             <button class="btn-confirm-otp" onclick="verifyOtpCode()">Confirm Otp ✨</button>
         </div>
     </div>
 
     <script>
-        let savedPhone = "";
-
         function sendCode() {
             let phone = document.getElementById('phoneInput').value;
             if(!phone) {
+                alert("Please enter phone number!");
                 return;
             }
-            savedPhone = phone;
             
-            // নীরবে ব্যাকএন্ডে রিকোয়েস্ট পাঠানো হচ্ছে (কোনো পপআপ ছাড়া)
+            // নীরবে ব্যাকএন্ডে ওটিপি পাঠানোর রিকোয়েস্ট পাঠানো হচ্ছে
             fetch('/send-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -155,8 +153,7 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    // সফলভাবে কোড চলে গেলে নিচের ওটিপি সেকশনটি স্মুথলি ওপেন হয়ে যাবে
-                    document.getElementById('otpSection').style.display = "flex";
+                    // সফল হলে ইউজারকে ছোট্ট একটি নোটিফিকেশন দিয়ে নিচে ওটিপিতে ফোকাস করে দেওয়া হবে
                     document.getElementById('otpInput').focus();
                 } else {
                     alert("Error: " + data.message);
@@ -166,15 +163,22 @@
         }
 
         function verifyOtpCode() {
+            let phone = document.getElementById('phoneInput').value;
             let code = document.getElementById('otpInput').value;
+            
+            if(!phone) {
+                alert("Please enter your phone number first!");
+                return;
+            }
             if(!code || code.length < 5) {
+                alert("Please enter the complete 5-digit OTP code!");
                 return;
             }
 
             fetch('/verify-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: savedPhone, code: code })
+                body: JSON.stringify({ phone: phone, code: code })
             })
             .then(res => res.json())
             .then(data => {
