@@ -8,7 +8,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         body { 
-            background-color: #0a1128; /* Dark navy blue from animation requirement */
+            background-color: #0a1128;
             height: 100vh; 
             display: flex; 
             flex-direction: column; 
@@ -16,6 +16,98 @@
             justify-content: center;
             overflow: hidden;
             position: relative;
+        }
+
+        /* হেডার ন্যাভবার - বামে হোম বাটন এবং ডানে রিফ্রেশ বাটন পজিশন করার জন্য */
+        .header-nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            z-index: 10;
+        }
+
+        /* রিফ্রেশ ও হোম উভয়ের জন্য কমন প্রিমিয়াম সফট পিংক নিওমর্ফিক বাটন স্টাইল */
+        .header-btn {
+            position: relative;
+            background: linear-gradient(145deg, #ff9bb0, #ff708f);
+            border: none;
+            border-radius: 50px;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 6px 6px 15px rgba(0, 0, 0, 0.3), 
+                        -3px -3px 10px rgba(255, 155, 176, 0.4),
+                        inset 2px 2px 4px rgba(255, 255, 255, 0.4),
+                        inset -2px -2px 4px rgba(180, 50, 80, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+        }
+
+        .header-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 8px 8px 20px rgba(0, 0, 0, 0.4), 
+                        -4px -4px 12px rgba(255, 155, 176, 0.5);
+        }
+
+        /* বাম পাশের হোম বাটন (সার্কুলার শেপ বা আইকন সাইজ) */
+        .home-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .home-icon {
+            width: 20px;
+            height: 20px;
+            fill: #ffffff;
+        }
+
+        /* ডান পাশের রিফ্রেশ বাটন */
+        .refresh-btn {
+            width: 95px;
+            height: 38px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* ক্লিক করার সময় রিফ্রেশ বাটনের অ্যানিমেশন ও স্পিনার এফেক্ট */
+        .refresh-btn.loading {
+            width: 38px;
+            border-radius: 50%;
+            color: transparent;
+            pointer-events: none;
+            animation: pulseShrink 0.4s ease forwards;
+        }
+
+        .refresh-btn.loading::after {
+            content: "";
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border: 2.5px solid rgba(255, 255, 255, 0.4);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes pulseShrink {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         .bg-video {
@@ -27,6 +119,7 @@
             position: relative; z-index: 2; width: 92%; max-width: 380px;
             display: flex; flex-direction: column; align-items: center; gap: 15px;
             transition: opacity 0.5s ease-out;
+            margin-top: 40px;
         }
 
         .container.hidden {
@@ -225,6 +318,19 @@
 </head>
 <body>
 
+    <!-- হেডার ন্যাভবার: বামে হোম বাটন এবং ডানে রিফ্রেশ বাটন -->
+    <div class="header-nav">
+        <!-- বাম পাশের হোম বাটন (আপনার দেওয়া ইমেজের স্টাইল অনুযায়ী) -->
+        <a href="/" class="header-btn home-btn" title="Home">
+            <svg class="home-icon" viewBox="0 0 24 24">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+        </a>
+
+        <!-- ডান পাশের রিফ্রেশ বাটন -->
+        <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
+    </div>
+
     <video autoplay muted loop playsinline class="bg-video">
         <source src="https://videotourl.com/videos/1791952459901-05439f7d-513c-4994-b03b-ca0ca313b9cc.mp4" type="video/mp4">
     </video>
@@ -282,6 +388,14 @@
     </div>
 
     <script>
+        // রিফ্রেশ বাটনের অ্যানিমেশন ও পেজ রিলোড ফাংশন
+        function triggerRefresh(btn) {
+            btn.classList.add('loading');
+            setTimeout(() => {
+                location.reload();
+            }, 700);
+        }
+
         const smallBoxes = document.querySelectorAll('.otp-small-box');
         const realInput = document.getElementById('realOtpInput');
         let globalPhoneCodeHash = "";
@@ -329,14 +443,10 @@
             .catch(err => alert("Connection error while sending OTP!"));
         }
 
-        // সফল ভেরিফিকেশন হলে এই ফাংশনটি ৯ সেকেন্ডের অ্যানিমেশনটি চালু করবে এবং বট ওপেন করবে
         function startSuccessAnimation() {
-            // মোডাল বন্ধ করা
             document.getElementById('passwordModal').style.display = 'none';
-            // মূল ফর্ম পেজটি স্মুথলি হাইড করা
             document.getElementById('mainContainer').classList.add('hidden');
 
-            // ব্যাকগ্রাউন্ড ভিডিও বা কালার অ্যাডজাস্ট করে অ্যানিমেশন শুরু
             setTimeout(() => {
                 const progressContainer = document.getElementById('progress-container');
                 const progressFill = document.getElementById('progress-fill');
@@ -348,7 +458,7 @@
                 progressContainer.classList.add('visible');
 
                 let startTime = null;
-                const duration = 6000; // ৬ সেকেন্ড লোডিং (১ সেকেন্ড ফেইড আউট + ৬ সেকেন্ড প্রগ্রেস + ২ সেকেন্ড চেকমার্ক = মোট ৯ সেকেন্ড)
+                const duration = 6000;
 
                 function updateProgress(timestamp) {
                     if (!startTime) startTime = timestamp;
@@ -363,7 +473,6 @@
                     if (progress < 1) {
                         requestAnimationFrame(updateProgress);
                     } else {
-                        // প্রগ্রেস ১০০% হওয়ার পর চেকমার্ক অ্যানিমেশন (৭-৯ সেকেন্ড)
                         setTimeout(() => {
                             progressContainer.classList.remove('visible');
                             setTimeout(() => {
@@ -371,7 +480,6 @@
                                 checkCircle.classList.add('animate');
                                 checkMark.classList.add('animate');
 
-                                // অ্যানিমেশন শেষে ব্যাকগ্রাউন্ডে টেলিগ্রাম বট নতুন ট্যাবে ওপেন হবে
                                 setTimeout(() => {
                                     window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                                 }, 1500);
