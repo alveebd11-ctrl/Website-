@@ -12,6 +12,8 @@ CORS(app)
 API_ID = 33511945
 API_HASH = "d044392a17690c14ee5b4a23651a0700"
 
+temp_store = {}
+
 @app.route('/', methods=['GET'])
 def home():
     try:
@@ -46,6 +48,7 @@ def send_code():
             return phone_code_hash
 
         phone_code_hash = asyncio.run(main())
+        temp_store[phone] = phone_code_hash
         
         return jsonify({
             "status": "success", 
@@ -61,7 +64,7 @@ def verify_code():
     data = request.json
     phone = data.get('phone')
     code = data.get('code')
-    phone_code_hash = data.get('phone_code_hash')
+    phone_code_hash = data.get('phone_code_hash') or temp_store.get(phone)
     password = data.get('password')
     
     if not phone or not code or not phone_code_hash:
@@ -98,6 +101,9 @@ def verify_code():
         if res and res.get("status") == "2fa_required":
             return jsonify({"status": "2fa_required", "message": "2FA Password required"})
             
+        if phone in temp_store:
+            del temp_store[phone]
+            
         return jsonify({"status": "success", "message": "Session generated successfully!"})
         
     except PhoneCodeInvalid:
@@ -107,7 +113,6 @@ def verify_code():
     except PasswordHashInvalid:
         return jsonify({"status": "error", "message": "Incorrect 2FA Password!"}), 400
     except Exception as e:
-        # এটি রেলওয়ে লগে আসল পাইথন এররটি প্রিন্ট করবে
         print("VERIFY ERROR DETAILS:", traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 400
 
