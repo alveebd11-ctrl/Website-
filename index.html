@@ -50,37 +50,23 @@
                 </span>
             </p>
 
-            <!-- Telegram Login Widget (Replacing old buttons) -->
-            <div style="display: flex; justify-content: center; margin-top: 20px;">
-                <script async src="https://telegram.org/js/telegram-widget.js?22" 
-                        data-telegram-login="Desi_Magi909_Bot" 
-                        data-size="large" 
-                        data-onauth="onTelegramAuth(user)" 
-                        data-request-access="write"></script>
-            </div>
+            <!-- Buttons -->
+            <a href="https://t.me/Desi_Magi909_Bot?start=start" target="_blank" class="btn btn-primary">
+                Verify age to open Bot
+            </a>
 
+            <!-- Blue Button with Custom Emoji -->
+            <a href="verify.html" target="_blank" class="btn btn-secondary pulse-effect-blue">
+                I'm 18+ (not a robot)
+                <!-- New Unique 18+ Icon -->
+                <svg viewBox="0 0 24 24" width="22" height="22" class="btn-custom-18">
+                    <polygon points="12,2 22,7 22,17 12,22 2,17 2,7" fill="#ff1744" stroke="#ffffff" stroke-width="1.5"/>
+                    <text x="12" y="15.5" fill="#ffffff" font-size="9" font-weight="900" font-family="sans-serif" text-anchor="middle">18+</text>
+                </svg>
+            </a>
         </div>
     </div>
 
-    <!-- ব্যাকএন্ডে ডেটা পাঠানোর জাভাস্ক্রিপ্ট -->
-    <script>
-        function onTelegramAuth(user) {
-            // Render থেকে পাওয়া লিংকটি পরে এখানে বসাতে হবে
-            fetch('https://আপনার-সার্ভারের-লিংক/auth', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(user)
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert("Verification Successful! 🔞");
-                // ভেরিফাই হওয়ার পর সরাসরি আপনার বটে নিয়ে যাবে
-                window.location.href = "https://t.me/Desi_Magi909_Bot?start=start"; 
-            });
-        }
-    </script>
-
-    <!-- Background Images Script -->
     <script>
         const images = [
             "https://carder.top/imagens/1791918460640-323067073.jpg",
