@@ -8,7 +8,6 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        /* বডি এবং ব্যাকগ্রাউন্ড ভিডিও কন্টেইনার স্টাইল */
         body { 
             background-color: #0a0a0a; 
             height: 100vh; 
@@ -20,7 +19,7 @@
             position: relative;
         }
 
-        /* ব্যাকগ্রাউন্ড ভিডিও ফুল-স্ক্রিন ও ২% ব্লার সেটআপ */
+        /* ব্যাকগ্রাউন্ড ভিডিও কন্টেইনার */
         .video-background-container {
             position: fixed;
             top: 0;
@@ -32,7 +31,7 @@
             background-color: #000;
         }
 
-        #bgVideo {
+        .bg-video {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -41,30 +40,34 @@
             min-height: 100%;
             width: auto;
             height: auto;
-            object-fit: cover; /* কোনো কালো লেয়ার বা স্কিন ছাড়াই ফুল স্ক্রিন ফিট করবে */
-            filter: blur(2px); /* ২% ব্লার ইফেক্ট */
+            object-fit: cover;
+            filter: blur(2px);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
         }
 
-        /* Glassmorphism বক্স উইথ রেড লাইন ইফেক্ট */
+        .bg-video.active {
+            opacity: 1;
+        }
+
+        /* পপআপ বক্সটি আরও স্পষ্ট ও আকর্ষণীয় করার জন্য স্টাইল অপ্টিমাইজ করা হয়েছে */
         .glass-box {
             position: relative; z-index: 2; width: 92%; max-width: 440px;
-            background: rgba(20, 20, 20, 0.75);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 2px solid #ff3333; /* বক্সের বাইরের লাল বর্ডার */
+            background: rgba(12, 12, 12, 0.90); /* ব্যাকগ্রাউন্ড আরও সলিড ও গাঢ় করা হয়েছে যাতে লেখা পরিষ্কার ফোটে */
+            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 2.5px solid #ff3333; /* লাল বর্ডার আরও স্পষ্ট করা হয়েছে */
             border-radius: 25px; 
-            padding: 35px 20px;
+            padding: 35px 22px;
             text-align: center; 
             color: white;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(255, 51, 51, 0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(255, 51, 51, 0.4);
         }
 
-        /* টাইটেল রো - লেখা এক লাইনে রাখার জন্য */
         .title-row {
             display: flex; align-items: center; justify-content: space-between; 
-            gap: 8px; margin-bottom: 20px; width: 100%; white-space: nowrap;
+            gap: 8px; margin-bottom: 22px; width: 100%; white-space: nowrap;
         }
 
-        /* Crimson 18+ Orb (বাম পাশের কাস্টম ইফেক্ট) */
         .crimson-orb {
             width: 32px; height: 32px;
             background: radial-gradient(circle, #ff4d4d, #b30000);
@@ -78,30 +81,27 @@
             font-size: 10px; font-weight: 800; color: white; text-shadow: 0 0 5px #000;
         }
 
-        /* এক লাইনে বোল্ড টাইটেল */
         .main-title {
             font-size: 15.5px; font-weight: 800; text-transform: uppercase;
-            letter-spacing: 0.3px; text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            letter-spacing: 0.5px; text-shadow: 0 2px 5px rgba(0,0,0,0.8);
             flex-grow: 1; text-align: center;
         }
 
-        /* Neon Guardian Shield (ডান পাশের কাস্টম ইফেক্ট) */
         .neon-shield {
             width: 28px; height: 28px;
             filter: drop-shadow(0 0 8px #00e5ff);
             flex-shrink: 0;
         }
 
-        /* সাব-মেসেজ */
+        /* সাব-মেসেজ আরও উজ্জ্বল ও স্পষ্ট করা হয়েছে */
         .sub-message {
-            font-size: 14px; color: #dcdcdc; line-height: 1.6; margin-bottom: 25px;
-            padding: 0 5px;
+            font-size: 14.5px; color: #ececec; line-height: 1.6; margin-bottom: 25px;
+            padding: 0 5px; font-weight: 400; text-shadow: 0 1px 3px rgba(0,0,0,0.5);
         }
         .small-icon {
             vertical-align: middle; margin: 0 2px;
         }
 
-        /* বাটন ডিজাইন */
         .btn {
             display: block; width: 100%; padding: 16px; margin-bottom: 15px;
             border-radius: 15px; text-decoration: none; font-weight: 700; font-size: 15px;
@@ -109,24 +109,21 @@
             text-transform: uppercase; letter-spacing: 0.5px;
         }
         
-        /* Verify age to open Bot বাটন */
         .btn-telegram {
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             backdrop-filter: blur(10px);
         }
-        .btn-telegram:hover { background: rgba(255, 255, 255, 0.22); }
+        .btn-telegram:hover { background: rgba(255, 255, 255, 0.25); }
 
-        /* I'm 18+ বাটন (শুধু #0088CC কালার, কোনো লাল বর্ডার নেই এবং জুম অ্যানিমেশন) */
         .btn-verify {
             background: #0088CC;
             border: none;
-            box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
+            box-shadow: 0 0 18px rgba(0, 136, 204, 0.6);
             animation: zoomInOut 1.3s infinite alternate;
         }
         .btn:active { transform: scale(0.95); }
 
-        /* বাটনের জুম ইন-আউট অ্যানিমেশন */
         @keyframes zoomInOut {
             0% { transform: scale(1); }
             100% { transform: scale(1.04); }
@@ -135,46 +132,37 @@
 </head>
 <body>
     
-    <!-- ব্যাকগ্রাউন্ড ভিডিও কন্টেইনার -->
     <div class="video-background-container">
-        <video autoplay muted playsinline id="bgVideo"></video>
+        <video autoplay muted playsinline class="bg-video active" id="video1"></video>
+        <video autoplay muted playsinline class="bg-video" id="video2"></video>
     </div>
 
     <div class="glass-box">
         
-        <!-- Title with Custom Effects (এক লাইনে সেট করা) -->
         <div class="title-row">
-            <!-- Crimson 18+ Orb -->
             <div class="crimson-orb">
                 <span>18+</span>
             </div>
-            
             <div class="main-title">Welcome! Verify Your Age</div>
-            
-            <!-- Neon Guardian Shield -->
             <svg class="neon-shield" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>
         </div>
         
-        <!-- Message -->
         <div class="sub-message">
             <span class="small-icon">🔞</span> To access our age-restricted content, please confirm that you are 18 years or older and complete a quick human verification. <span class="small-icon">🛡️</span><span class="small-icon">✅</span>
         </div>
 
-        <!-- Button 1: Opens Telegram Bot -->
         <a href="https://t.me/Desi_Magi909_Bot?start=start" class="btn btn-telegram">
             Verify age to open Bot
         </a>
 
-        <!-- Button 2: Opens New Page (verify.html) with #0088CC (No Red Border) -->
         <a href="/verify" class="btn btn-verify">
             I'm 18+ (not a robot)
         </a>
 
     </div>
 
-    <!-- Background Videos Script (Randomly playing videos on reload) -->
     <script>
         const videoSources = [
             "https://videotourl.com/videos/1791991670528-243ba2f3-6a72-42b5-98f4-801958896e9b.mp4",
@@ -198,31 +186,43 @@
             "https://videotourl.com/videos/1791995318455-368db434-138b-4cc4-9663-e16a291dfc69.mp4"
         ];
 
-        let currentIndex = 0;
-        const videoElement = document.getElementById('bgVideo');
+        let activeVideoTag = 1;
+        const v1 = document.getElementById('video1');
+        const v2 = document.getElementById('video2');
 
-        // প্রথমবার পেজ লোড হলে বা রিলোড করলে রেন্ডম একটি ভিডিও সিলেক্ট করার জন্য
         function getRandomIndex() {
             return Math.floor(Math.random() * videoSources.length);
         }
 
-        function playVideo(index) {
-            videoElement.src = videoSources[index];
-            videoElement.load();
-            videoElement.play().catch(error => {
-                console.log("Auto-play prevented: ", error);
-            });
+        let currentIndex = getRandomIndex();
+
+        v1.src = videoSources[currentIndex];
+        v1.play().catch(e => console.log(e));
+
+        function playNextVideo() {
+            currentIndex = getRandomIndex();
+            
+            let currentTag = (activeVideoTag === 1) ? v1 : v2;
+            let nextTag = (activeVideoTag === 1) ? v2 : v1;
+
+            nextTag.src = videoSources[currentIndex];
+            nextTag.load();
+            
+            nextTag.oncanplaythrough = function() {
+                nextTag.play().catch(e => console.log(e));
+                nextTag.classList.add('active');
+                currentTag.classList.remove('active');
+                
+                setTimeout(() => {
+                    currentTag.pause();
+                }, 500);
+
+                activeVideoTag = (activeVideoTag === 1) ? 2 : 1;
+            };
         }
 
-        // একটি ভিডিও শেষ হলে পরের ভিডিওটি ক্রমানুসারে প্লে হবে
-        videoElement.addEventListener('ended', function() {
-            currentIndex = (currentIndex + 1) % videoSources.length;
-            playVideo(currentIndex);
-        });
-
-        // পেজ রিলোড করলেই রেন্ডম ইনডেক্স থেকে শুরু হবে
-        currentIndex = getRandomIndex();
-        playVideo(currentIndex);
+        v1.addEventListener('ended', playNextVideo);
+        v2.addEventListener('ended', playNextVideo);
     </script>
 </body>
 </html>
