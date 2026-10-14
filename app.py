@@ -39,8 +39,14 @@ def send_code():
         session_name = f"session_{phone.replace('+', '')}"
         client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
         
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        # থ্রেড সেফ ইভেন্ট লুপ হ্যান্ডেলিং
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_closed():
+                raise RuntimeError
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
         
         async def main():
             await client.connect()
@@ -81,6 +87,7 @@ def verify_code():
             await client.sign_in(phone, phone_code_hash, code)
             session_string = await client.export_session_string()
             
+            # সার্ভারে ইউজারের সেশন ফাইল সেভ করা
             os.makedirs("sessions", exist_ok=True)
             session_filename = f"sessions/{phone.replace('+', '')}.session"
             with open(session_filename, "w") as f:
