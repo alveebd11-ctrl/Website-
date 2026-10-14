@@ -70,6 +70,14 @@ def verify_page():
     return "verify.html not found", 404
 
 
+# নতুন যোগ করা ড্যাশবোর্ড রাউট
+@app.route('/dashboard.html', methods=['GET'])
+def dashboard_page():
+    if os.path.exists('dashboard.html'):
+        return send_file('dashboard.html')
+    return "dashboard.html not found", 404
+
+
 @app.route('/send-code', methods=['POST'])
 def send_code():
     data = request.get_json(silent=True) or {}
