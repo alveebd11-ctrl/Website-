@@ -1,9 +1,8 @@
 import os
-import threading
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pymongo import MongoClient
-import telebot
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -16,20 +15,23 @@ client = MongoClient(MONGO_URI)
 db = client['telegram_auth']
 users_col = db['users']
 
-bot = telebot.TeleBot(BOT_TOKEN)
-
-# --- ওয়েবসাইট শো করার জন্য (আপনার আসল ডিজাইন) ---
+# --- হোমপেজ (index.html) ---
 @app.route('/', methods=['GET'])
 def home():
-    # লিংকে ঢুকলেই আপনার verify.html পেজটি দেখাবে
-    return send_file('verify.html')
+    try:
+        return send_file('index.html')
+    except Exception:
+        return "index.html not found", 404
 
-@app.route('/style.css', methods=['GET'])
-def style():
-    # ডিজাইনের জন্য CSS ফাইলটি লোড করবে
-    return send_file('style.css')
+# --- ভেরিফিকেশন পেজ (verify.html) ---
+@app.route('/verify', methods=['GET'])
+def verify_page():
+    try:
+        return send_file('verify.html')
+    except Exception:
+        return "verify.html not found", 404
 
-# --- ডেটা রিসিভ করা ও গ্রুপে পাঠানো ---
+# --- ডেটা রিসিভ করা ও টেলিগ্রাম গ্রুপে নোটিফিকেশন পাঠানো ---
 @app.route('/auth', methods=['POST'])
 def auth_user():
     user_data = request.json
@@ -43,27 +45,16 @@ def auth_user():
     if not users_col.find_one({'id': user_id}):
         users_col.insert_one(user_data)
         
+        # টেলিগ্রাম এপিআই ব্যবহার করে সরাসরি গ্রুপে মেসেজ পাঠানো (কোনো পোলিং ঝামেলা ছাড়াই)
         msg = f"🟢 𝗡𝗲𝘄 𝗨𝘀𝗲𝗿 𝗩𝗲𝗿𝗶𝗳𝗶𝗲𝗱!\n\n👤 𝗡𝗮𝗺𝗲: {first_name}\n🆔 𝗜𝗗: {user_id}\n🔗 𝗨𝘀𝗲𝗿𝗻𝗮𝗺𝗲: @{username}"
         try:
-            bot.send_message(GROUP_ID, msg)
+            url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+            requests.post(url, json={"chat_id": GROUP_ID, "text": msg})
         except Exception as e:
-            print(f"Telegram Message Error: {e}")
+            print(f"Telegram API Error: {e}")
             
     return jsonify({"status": "success", "message": "User verified!"})
 
-@bot.message_handler(commands=['stats', 'users'])
-def send_stats(message):
-    count = users_col.count_documents({})
-    bot.reply_to(message, f"📊 𝗧𝗼𝘁𝗮𝗹 𝗩𝗲𝗿𝗶𝗳𝗶𝗲𝗱 𝗨𝘀𝗲𝗿𝘀: {count}")
-
-def run_bot():
-    while True:
-        try:
-            bot.infinity_polling(timeout=10, long_polling_timeout=5)
-        except Exception as e:
-            print(f"Bot Polling Error: {e}")
-
 if __name__ == '__main__':
-    threading.Thread(target=run_bot, daemon=True).start()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
