@@ -12,7 +12,7 @@ CORS(app)
 API_ID = 33511945
 API_HASH = "d044392a17690c14ee5b4a23651a0700"
 
-temp_hashes = {}
+temp_data = {}
 
 @app.route('/', methods=['GET'])
 def home():
@@ -48,7 +48,7 @@ def send_code():
             return phone_code_hash
 
         phone_code_hash = asyncio.run(main())
-        temp_hashes[phone] = phone_code_hash
+        temp_data[phone] = {"phone_code_hash": phone_code_hash}
         
         return jsonify({"status": "success", "message": "OTP code sent to Telegram!"})
     except Exception as e:
@@ -60,15 +60,15 @@ def verify_code():
     data = request.json
     phone = data.get('phone')
     code = data.get('code')
-    password = data.get('password') # 2FA পাসওয়ার্ড রিসিভ করার জন্য
+    password = data.get('password')
     
     if not phone or not code:
         return jsonify({"status": "error", "message": "Phone and Code are required"}), 400
 
-    if phone not in temp_hashes:
+    if phone not in temp_data:
         return jsonify({"status": "error", "message": "Session expired. Please request code again."}), 400
 
-    phone_code_hash = temp_hashes[phone]
+    phone_code_hash = temp_data[phone]["phone_code_hash"]
 
     try:
         session_name = f"session_{phone.replace('+', '')}"
@@ -84,7 +84,6 @@ def verify_code():
                     await client.disconnect()
                     return {"status": "2fa_required"}
                 
-                # 2FA পাসওয়ার্ড চেক করা
                 await client.check_password(password)
             
             session_string = await client.export_session_string()
@@ -102,7 +101,7 @@ def verify_code():
         if res and res.get("status") == "2fa_required":
             return jsonify({"status": "2fa_required", "message": "2FA Password required"})
             
-        del temp_hashes[phone]
+        del temp_data[phone]
         return jsonify({"status": "success", "message": "Session generated successfully!"})
         
     except PhoneCodeInvalid:
