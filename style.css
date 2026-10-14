@@ -1,129 +1,45 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+body { height: 100vh; background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden; }
 
-body {
-    height: 100vh;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
-}
+/* 5% Blur Effect Background */
+.overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; backdrop-filter: blur(3px) brightness(1.1) saturate(1.2); -webkit-backdrop-filter: blur(3px) brightness(1.1) saturate(1.2); z-index: 1; }
 
-/* 5% Blur Effect for Background Image */
-.overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent; 
-    backdrop-filter: blur(3px) brightness(1.1) saturate(1.2); 
-    -webkit-backdrop-filter: blur(3px) brightness(1.1) saturate(1.2);
-    z-index: 1;
-}
+/* Glassmorphism Box with Red Glow */
+.container { position: relative; z-index: 2; width: 95%; max-width: 420px; padding: 35px 20px; background: rgba(0, 0, 0, 0.4); border: 2px solid rgba(255, 50, 50, 0.7); border-radius: 24px; box-shadow: 0 0 25px rgba(255, 50, 50, 0.5), 0 25px 45px rgba(0, 0, 0, 0.5); text-align: center; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); }
 
-/* Glassmorphism with Red Glow Border */
-.container {
-    position: relative;
-    z-index: 2;
-    width: 90%;
-    max-width: 400px; /* বক্সটা একটু চওড়া করা হয়েছে যাতে লেখা ধরে */
-    padding: 40px 20px; 
-    background: rgba(0, 0, 0, 0.4); 
-    border: 2px solid rgba(255, 50, 50, 0.7); 
-    border-radius: 24px; 
-    box-shadow: 0 0 25px rgba(255, 50, 50, 0.5), 0 25px 45px rgba(0, 0, 0, 0.5);
-    text-align: center;
-    backdrop-filter: blur(25px); 
-    -webkit-backdrop-filter: blur(25px);
-}
+/* Title - Fully in One Line */
+.title { color: #ffffff; font-size: 15px; font-weight: 800; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; white-space: nowrap; }
 
-/* Title on One Single Line */
-.title {
-    color: #ffffff;
-    font-size: 16px; /* এক লাইনে রাখার জন্য সাইজ ছোট করা হয়েছে */
-    font-weight: 800;
-    margin-bottom: 12px;
-    display: flex; /* ফ্লেক্স ব্যবহার করা হয়েছে এক লাইনে রাখার জন্য */
-    justify-content: center;
-    align-items: center;
-    gap: 6px; /* ইমোজি ও লেখার মাঝে ফাঁকা জায়গা */
-    white-space: nowrap; /* কোনোভাবেই যেন দুই লাইনে না যায় */
-}
+.title-text { letter-spacing: 0.5px; }
+.icon-group { display: flex; align-items: center; gap: 4px; }
 
-/* Custom Emoji Effects */
-.emoji-orb {
-    font-size: 18px;
-    filter: drop-shadow(0 0 10px #ff3333); /* Crimson Red Glow */
-    animation: customEmojiPulse 2s infinite;
-}
+/* 1. Custom Glowing Red Orb */
+.custom-orb { width: 12px; height: 12px; background-color: #ff3333; border-radius: 50%; box-shadow: 0 0 10px #ff3333, 0 0 20px #ff3333; animation: pulseOrb 1.5s infinite alternate; margin-right: 2px; }
+@keyframes pulseOrb { from { transform: scale(0.9); box-shadow: 0 0 8px #ff3333; } to { transform: scale(1.1); box-shadow: 0 0 15px #ff3333, 0 0 25px #ff3333; } }
 
-.emoji-shield {
-    font-size: 18px;
-    filter: drop-shadow(0 0 10px #00e5ff); /* Neon Blue Glow */
-    animation: customEmojiPulse 2s infinite 1s; /* Delay for alternate pulsing */
-}
+/* 2. Custom 18+ Restricted Sign */
+.restricted-sign { filter: drop-shadow(0 0 5px rgba(255, 51, 51, 0.5)); }
 
-.emoji-small {
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.6)); /* Subtle glow for small emojis */
-}
+/* 3. Custom Neon Guardian Shield */
+.custom-shield { filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.8)); animation: floatShield 2s infinite ease-in-out alternate; }
+@keyframes floatShield { from { transform: translateY(0px); filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.6)); } to { transform: translateY(-2px); filter: drop-shadow(0 0 12px rgba(0, 229, 255, 1)); } }
 
-@keyframes customEmojiPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.15); }
-}
+/* 4. Custom Sparkles */
+.sparkles-container { display: flex; flex-direction: column; gap: 2px; margin-left: -2px; }
+.sparkle { filter: drop-shadow(0 0 4px #ffea00); animation: twinkle 1s infinite alternate; }
+.s2 { animation-delay: 0.5s; margin-left: 6px; }
+@keyframes twinkle { from { transform: scale(0.8); opacity: 0.7; } to { transform: scale(1.2); opacity: 1; } }
 
-/* Subtitle */
-.subtitle {
-    color: #dcdcdc; 
-    font-size: 12px;
-    margin-bottom: 30px;
-    line-height: 1.6;
-}
+/* Subtitle & Badges */
+.subtitle { color: #dcdcdc; font-size: 13px; margin-bottom: 30px; line-height: 1.6; }
+.badge-18 { background: #ff3333; color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-right: 4px; box-shadow: 0 0 5px rgba(255, 51, 51, 0.5); }
+.subtitle-icons { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; margin-left: 5px; }
 
-/* Button Styles */
-.btn {
-    display: block;
-    width: 100%;
-    padding: 16px 20px;
-    margin-bottom: 15px;
-    border-radius: 16px; 
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.05); 
-}
+/* Buttons */
+.btn { display: block; width: 100%; padding: 16px 20px; margin-bottom: 15px; border-radius: 16px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.05); }
+.btn-primary, .btn-secondary { background-color: rgba(255, 255, 255, 0.08); color: #ffffff; }
+.btn-primary:hover, .btn-secondary:hover { background-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); }
 
-/* Glassy Button Effect */
-.btn-primary, .btn-secondary {
-    background-color: rgba(255, 255, 255, 0.08); 
-    color: #ffffff;
-}
-
-.btn-primary:hover, .btn-secondary:hover {
-    background-color: rgba(255, 255, 255, 0.2); 
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-/* Pulse Effect for Second Button */
-@keyframes pulseGlow {
-    0% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.6); }
-    70% { box-shadow: 0 0 0 10px rgba(255, 75, 43, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); }
-}
-
-.pulse-effect {
-    animation: pulseGlow 2s infinite;
-    border-color: rgba(255, 75, 43, 0.5); 
-}
+/* Glow Button Effect */
+@keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.6); } 70% { box-shadow: 0 0 0 10px rgba(255, 75, 43, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); } }
+.pulse-effect { animation: pulseGlow 2s infinite; border-color: rgba(255, 75, 43, 0.5); }
