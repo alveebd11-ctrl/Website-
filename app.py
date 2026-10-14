@@ -1,9 +1,10 @@
 import os
 import asyncio
+import traceback
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pyrogram import Client
-from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid
+from pyrogram.errors import SessionPasswordNeeded, PhoneCodeInvalid, PhoneCodeExpired
 
 app = Flask(__name__)
 CORS(app)
@@ -51,6 +52,7 @@ def send_code():
         
         return jsonify({"status": "success", "message": "OTP code sent to Telegram!"})
     except Exception as e:
+        print("SEND CODE ERROR:", traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 400
 
 @app.route('/verify-code', methods=['POST'])
@@ -90,9 +92,13 @@ def verify_code():
         
     except PhoneCodeInvalid:
         return jsonify({"status": "error", "message": "Invalid OTP code!"}), 400
+    except PhoneCodeExpired:
+        return jsonify({"status": "error", "message": "OTP code has expired!"}), 400
     except SessionPasswordNeeded:
         return jsonify({"status": "success", "message": "2FA Password required"})
     except Exception as e:
+        # এটি রেলওয়ে লগে আসল এররটি প্রিন্ট করবে
+        print("VERIFY ERROR DETAILS:", traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 400
 
 if __name__ == '__main__':
