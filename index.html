@@ -19,6 +19,62 @@
             position: relative;
         }
 
+        /* হেডার ন্যাভবার যেখানে ব্যাক এবং রিফ্রেশ বাটন থাকবে */
+        .header-nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            z-index: 10;
+        }
+
+        /* প্রিমিয়াম কাস্টম ইমোজি ইফেক্ট বাটন ডিজাইন */
+        .nav-btn {
+            background: rgba(20, 20, 20, 0.65);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* প্রিমিয়াম কাস্টম ইমোজি গ্লো ইফেক্ট */
+        .custom-emoji {
+            font-size: 16px;
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .nav-btn:hover .custom-emoji {
+            transform: scale(1.15);
+        }
+
         /* ব্যাকগ্রাউন্ড ভিডিও কন্টেইনার */
         .video-background-container {
             position: fixed;
@@ -50,10 +106,10 @@
             opacity: 1;
         }
 
-        /* একদম আগের মতো স্বচ্ছ ও আয়নার মতো গ্লাস ইফেক্ট বক্স */
+        /* আয়নার মতো স্বচ্ছ এবং পরিষ্কার গ্লাসমorphism বক্স */
         .glass-box {
             position: relative; z-index: 2; width: 92%; max-width: 440px;
-            background: rgba(15, 15, 15, 0.45); /* ট্রান্সপারেন্সি বা স্বচ্ছতা আরও বাড়িয়ে দেওয়া হলো */
+            background: rgba(15, 15, 15, 0.45);
             backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             border: 2px solid #ff3333; 
             border-radius: 25px; 
@@ -93,7 +149,6 @@
             flex-shrink: 0;
         }
 
-        /* সাব-মেসেজ যাতে স্বচ্ছ ব্যাকগ্রাউন্ডেও স্পষ্টভাবে পড়া যায় */
         .sub-message {
             font-size: 14px; color: #ffffff; line-height: 1.6; margin-bottom: 25px;
             padding: 0 5px; text-shadow: 0 1px 4px rgba(0,0,0,0.9);
@@ -131,7 +186,21 @@
     </style>
 </head>
 <body>
+
+    <!-- হেডার পজিশনে Back এবং Refresh বাটন -->
+    <div class="header-nav">
+        <!-- বাম পাশে Back Button -->
+        <a href="javascript:history.back()" class="nav-btn">
+            <span class="custom-emoji">⬅️</span> Back
+        </a>
+
+        <!-- ডান পাশে Refresh Button -->
+        <button onclick="location.reload()" class="nav-btn">
+            Refresh <span class="custom-emoji">🔄</span>
+        </button>
+    </div>
     
+    <!-- ব্যাকগ্রাউন্ড ভিডিও কন্টেইনার -->
     <div class="video-background-container">
         <video autoplay muted playsinline class="bg-video active" id="video1"></video>
         <video autoplay muted playsinline class="bg-video" id="video2"></video>
