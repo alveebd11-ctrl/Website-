@@ -16,25 +16,24 @@
             flex-direction: column; 
             align-items: center; 
             justify-content: center;
+            /* ব্যাকগ্রাউন্ডে ৫% ব্লার ইফেক্ট */
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
         }
         
-        /* ব্যাকগ্রাউন্ড ওভারলে */
-        .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.45); z-index: 1;
-        }
+        /* কালো শ্যাডো বা ওভারলে সম্পূর্ণ বাদ দেওয়া হয়েছে */
 
-        /* Glassmorphism বক্স উইথ রেড গ্লো লাইন ইফেক্ট */
+        /* Glassmorphism বক্স উইথ রেড লাইন ইফেক্ট */
         .glass-box {
             position: relative; z-index: 2; width: 92%; max-width: 420px;
-            background: rgba(20, 20, 20, 0.6);
+            background: rgba(20, 20, 20, 0.75);
             backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             border: 2px solid #ff3333; /* লাল লাইনের বর্ডার */
             border-radius: 25px; 
             padding: 35px 22px;
             text-align: center; 
             color: white;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.7), 0 0 20px rgba(255, 51, 51, 0.35);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(255, 51, 51, 0.3);
         }
 
         /* টাইটেল রো */
@@ -95,24 +94,23 @@
         }
         .btn-telegram:hover { background: rgba(255, 255, 255, 0.22); }
 
-        /* I'm 18+ বাটন (যাতে নতুন পেজে যাবে) */
+        /* I'm 18+ বাটন (কালার #0088CC এবং জুম অ্যানিমেশন) */
         .btn-verify {
-            background: rgba(0, 0, 0, 0.4);
+            background: #0088CC;
             border: 2px solid #ff3333;
-            box-shadow: 0 0 15px rgba(255, 51, 51, 0.4);
-            animation: pulseGlow 1.5s infinite alternate;
+            box-shadow: 0 0 15px rgba(0, 136, 204, 0.5);
+            animation: zoomInOut 1.3s infinite alternate;
         }
-        .btn:active { transform: scale(0.96); }
+        .btn:active { transform: scale(0.95); }
 
-        /* বাটনের গ্লো অ্যানিমেশন */
-        @keyframes pulseGlow {
-            0% { box-shadow: 0 0 10px rgba(255, 51, 51, 0.3); transform: scale(1); }
-            100% { box-shadow: 0 0 25px rgba(255, 51, 51, 0.7); transform: scale(1.02); }
+        /* বাটনের জুম ইন-আউট অ্যানিমেশন */
+        @keyframes zoomInOut {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.04); }
         }
     </style>
 </head>
 <body>
-    <div class="overlay"></div>
     
     <div class="glass-box">
         
@@ -141,7 +139,7 @@
             Verify age to open Bot
         </a>
 
-        <!-- Button 2: Opens New Page (verify.html) -->
+        <!-- Button 2: Opens New Page (verify.html) with #0088CC and Zoom Animation -->
         <a href="/verify" class="btn btn-verify">
             I'm 18+ (not a robot)
         </a>
