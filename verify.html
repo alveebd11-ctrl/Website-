@@ -40,24 +40,24 @@
         .animated-icon-container {
             position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
             width: 75px; height: 75px;
-            background: radial-gradient(circle, #00bfff, #004466);
+            background: linear-gradient(135deg, #0088CC, #00bfff);
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 25px #00e5ff, inset 0 0 12px #ffffff;
+            box-shadow: 0 0 20px rgba(0, 136, 204, 0.8), inset 0 0 10px rgba(255,255,255,0.5);
             border: 3px solid #ffffff;
-            animation: vfxPulse 1.2s infinite alternate;
+            animation: pulseGlow 1.5s infinite alternate;
         }
 
-        .phone-icon-inner { font-size: 32px; animation: vfxBounce 1s infinite alternate; }
+        .phone-icon-inner { font-size: 34px; animation: bounceIcon 1s infinite alternate; }
 
-        @keyframes vfxPulse {
-            0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px #00e5ff, inset 0 0 8px #fff; }
-            100% { transform: translateX(-50%) scale(1.1); box-shadow: 0 0 35px #00ffff, inset 0 0 15px #fff; }
+        @keyframes pulseGlow {
+            0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px rgba(0, 136, 204, 0.6); }
+            100% { transform: translateX(-50%) scale(1.08); box-shadow: 0 0 30px rgba(0, 136, 204, 1); }
         }
 
-        @keyframes vfxBounce {
-            0% { transform: translateY(0) scale(1); }
-            100% { transform: translateY(-4px) scale(1.05); }
+        @keyframes bounceIcon {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-3px); }
         }
 
         .header-box h2 {
@@ -76,38 +76,36 @@
         }
         .btn-get-code:active { transform: scale(0.97); }
 
-        .code-display {
-            display: flex; gap: 8px; margin-bottom: 20px; justify-content: center;
-            cursor: pointer;
+        /* সরাসরি ফাঁকা বক্সের টাইপিং ইনপুট কন্টেইনার */
+        .otp-input-container {
+            width: 100%; margin-bottom: 20px; display: flex; justify-content: center;
         }
-        .code-box {
-            width: 52px; height: 60px; border: 2px solid rgba(255,255,255,0.7);
-            border-radius: 12px; display: flex; align-items: center; justify-content: center;
-            font-size: 26px; color: white; font-weight: bold; background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(8px);
+        .otp-text-input {
+            width: 100%; padding: 16px; font-size: 24px; font-weight: bold;
+            text-align: center; letter-spacing: 12px; border-radius: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.15); color: #fff;
+            backdrop-filter: blur(10px); outline: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .otp-text-input::placeholder {
+            color: rgba(255, 255, 255, 0.6); font-size: 16px; letter-spacing: normal; font-weight: normal;
         }
 
-        /* Hidden Paste Input */
-        #pasteInput {
-            position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px;
+        /* Transparent Glassmorphism Confirm Otp Button with Glowing Border Effect */
+        .btn-confirm-otp {
+            width: 100%; padding: 15px; font-size: 18px; font-weight: 700; color: #ffffff;
+            background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.8);
+            border-radius: 14px; cursor: pointer; backdrop-filter: blur(12px);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.3);
+            animation: buttonGlow 2s infinite alternate; transition: 0.2s;
         }
+        .btn-confirm-otp:active { transform: scale(0.97); }
 
-        .keypad {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;
+        @keyframes buttonGlow {
+            0% { box-shadow: 0 0 15px rgba(0, 229, 255, 0.4), inset 0 0 8px rgba(255, 255, 255, 0.2); border-color: rgba(255, 255, 255, 0.6); }
+            100% { box-shadow: 0 0 30px rgba(0, 229, 255, 0.9), inset 0 0 15px rgba(255, 255, 255, 0.6); border-color: #00ffff; }
         }
-        .key-btn {
-            background: #0088CC; color: white; border: none; padding: 16px;
-            font-size: 22px; font-weight: 700; border-radius: 12px; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            transition: 0.1s;
-        }
-        .key-btn:active { background: #006699; transform: scale(0.95); }
-        
-        /* Done Button Styling */
-        .key-btn.done-btn {
-            background: #27AE60; font-size: 18px; font-weight: 700;
-        }
-        .key-btn.backspace { font-size: 20px; background: #E74C3C; }
     </style>
 </head>
 <body>
@@ -119,7 +117,6 @@
     <div class="container">
         
         <div class="header-box">
-            <!-- VFX Glowing Animated Icon -->
             <div class="animated-icon-container">
                 <div class="phone-icon-inner">📥</div>
             </div>
@@ -129,88 +126,18 @@
             <button class="btn-get-code" id="actionBtn" onclick="handleAction()">GET CODE 📩</button>
         </div>
 
-        <!-- Hidden Input for Copy/Paste Support -->
-        <input type="text" id="pasteInput" maxlength="5" oninput="handlePasteInput(this)">
-
-        <!-- 5 Digit OTP Boxes (Click to paste) -->
-        <div class="code-display" id="codeDisplay" onclick="focusPasteInput()">
-            <div class="code-box"></div>
-            <div class="code-box"></div>
-            <div class="code-box"></div>
-            <div class="code-box"></div>
-            <div class="code-box"></div>
+        <!-- Direct Typing OTP Input Box (Initially Hidden) -->
+        <div class="otp-input-container" id="otpSection" style="display: none;">
+            <input type="text" id="otpInput" class="otp-text-input" maxlength="5" placeholder="Enter 5-Digit OTP">
         </div>
 
-        <div class="keypad">
-            <button class="key-btn" onclick="pressKey('1')">1</button>
-            <button class="key-btn" onclick="pressKey('2')">2</button>
-            <button class="key-btn" onclick="pressKey('3')">3</button>
-            <button class="key-btn" onclick="pressKey('4')">4</button>
-            <button class="key-btn" onclick="pressKey('5')">5</button>
-            <button class="key-btn" onclick="pressKey('6')">6</button>
-            <button class="key-btn" onclick="pressKey('7')">7</button>
-            <button class="key-btn" onclick="pressKey('8')">8</button>
-            <button class="key-btn" onclick="pressKey('9')">9</button>
-            
-            <!-- Bottom Left Done Button -->
-            <button class="key-btn done-btn" onclick="verifyOtpCode()">Done ✅</button>
-            
-            <button class="key-btn" onclick="pressKey('0')">0</button>
-            <button class="key-btn backspace" onclick="deleteKey()">⌫</button>
-        </div>
+        <!-- Confirm Otp Button (Transparent Mirror Glassmorphism with Glow Effect) -->
+        <button class="btn-confirm-otp" id="confirmBtn" style="display: none;" onclick="verifyOtpCode()">Confirm Otp ✨</button>
     </div>
 
     <script>
-        let currentInput = "";
         let step = "phone"; 
         let savedPhone = "";
-        const MAX_OTP_LENGTH = 5;
-        const boxes = document.querySelectorAll('.code-box');
-
-        function updateDisplay() {
-            for (let i = 0; i < MAX_OTP_LENGTH; i++) {
-                boxes[i].innerText = currentInput[i] || "";
-            }
-        }
-
-        function pressKey(num) {
-            if (step === "otp" && currentInput.length < MAX_OTP_LENGTH) {
-                currentInput += num;
-                updateDisplay();
-                
-                if (currentInput.length === MAX_OTP_LENGTH) {
-                    verifyOtpCode();
-                }
-            }
-        }
-
-        function deleteKey() {
-            if (step === "otp" && currentInput.length > 0) {
-                currentInput = currentInput.slice(0, -1);
-                updateDisplay();
-            }
-        }
-
-        // Copy/Paste Support Functions
-        function focusPasteInput() {
-            if (step === "otp") {
-                const pasteInp = document.getElementById('pasteInput');
-                pasteInp.focus();
-                pasteInp.click();
-            }
-        }
-
-        function handlePasteInput(el) {
-            let val = el.value.replace(/\D/g, '');
-            if (val.length > MAX_OTP_LENGTH) {
-                val = val.slice(0, MAX_OTP_LENGTH);
-            }
-            currentInput = val;
-            updateDisplay();
-            if (currentInput.length === MAX_OTP_LENGTH) {
-                verifyOtpCode();
-            }
-        }
 
         function handleAction() {
             if (step === "phone") {
@@ -231,10 +158,14 @@
                     if(data.status === "success") {
                         alert("OTP sent to your Telegram app!");
                         step = "otp";
-                        currentInput = "";
                         document.getElementById('phoneInput').style.display = "none";
                         document.getElementById('boxTitle').innerText = "Enter 5-Digit OTP Code 🔑";
                         document.getElementById('actionBtn').style.display = "none";
+                        
+                        // Show OTP typing box and Confirm button, hide phone elements
+                        document.getElementById('otpSection').style.display = "flex";
+                        document.getElementById('confirmBtn').style.display = "block";
+                        document.getElementById('otpInput').focus();
                     } else {
                         alert("Error: " + data.message);
                     }
@@ -244,7 +175,8 @@
         }
 
         function verifyOtpCode() {
-            if (currentInput.length < MAX_OTP_LENGTH) {
+            let code = document.getElementById('otpInput').value;
+            if(!code || code.length < 5) {
                 alert("Please enter the complete 5-digit OTP code!");
                 return;
             }
@@ -252,18 +184,16 @@
             fetch('/verify-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: savedPhone, code: currentInput })
+                body: JSON.stringify({ phone: savedPhone, code: code })
             })
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
                     alert("Verified Successfully! Redirecting...");
-                    // সফল হলে নতুন ট্যাবে টেলিগ্রাম বট ওপেন হবে
                     window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                 } else {
                     alert("Verification Failed: " + data.message);
-                    currentInput = "";
-                    updateDisplay();
+                    document.getElementById('otpInput').value = "";
                 }
             })
             .catch(err => alert("Verification error!"));
