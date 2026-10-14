@@ -4,42 +4,54 @@ body { height: 100vh; background-size: cover; background-position: center; backg
 /* 5% Blur Effect Background */
 .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; backdrop-filter: blur(3px) brightness(1.1) saturate(1.2); -webkit-backdrop-filter: blur(3px) brightness(1.1) saturate(1.2); z-index: 1; }
 
-/* Glassmorphism Box with Red Glow */
+/* Glassmorphism Box */
 .container { position: relative; z-index: 2; width: 95%; max-width: 420px; padding: 35px 20px; background: rgba(0, 0, 0, 0.4); border: 2px solid rgba(255, 50, 50, 0.7); border-radius: 24px; box-shadow: 0 0 25px rgba(255, 50, 50, 0.5), 0 25px 45px rgba(0, 0, 0, 0.5); text-align: center; backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); }
 
-/* Title - Fully in One Line */
+/* Title Box */
 .title { color: #ffffff; font-size: 15px; font-weight: 800; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; gap: 8px; white-space: nowrap; }
-
 .title-text { letter-spacing: 0.5px; }
 .icon-group { display: flex; align-items: center; gap: 4px; }
 
-/* 1. Custom Glowing Red Orb */
+/* Title Animations */
 .custom-orb { width: 12px; height: 12px; background-color: #ff3333; border-radius: 50%; box-shadow: 0 0 10px #ff3333, 0 0 20px #ff3333; animation: pulseOrb 1.5s infinite alternate; margin-right: 2px; }
 @keyframes pulseOrb { from { transform: scale(0.9); box-shadow: 0 0 8px #ff3333; } to { transform: scale(1.1); box-shadow: 0 0 15px #ff3333, 0 0 25px #ff3333; } }
-
-/* 2. Custom 18+ Restricted Sign */
 .restricted-sign { filter: drop-shadow(0 0 5px rgba(255, 51, 51, 0.5)); }
-
-/* 3. Custom Neon Guardian Shield */
 .custom-shield { filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.8)); animation: floatShield 2s infinite ease-in-out alternate; }
 @keyframes floatShield { from { transform: translateY(0px); filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.6)); } to { transform: translateY(-2px); filter: drop-shadow(0 0 12px rgba(0, 229, 255, 1)); } }
-
-/* 4. Custom Sparkles */
 .sparkles-container { display: flex; flex-direction: column; gap: 2px; margin-left: -2px; }
 .sparkle { filter: drop-shadow(0 0 4px #ffea00); animation: twinkle 1s infinite alternate; }
 .s2 { animation-delay: 0.5s; margin-left: 6px; }
 @keyframes twinkle { from { transform: scale(0.8); opacity: 0.7; } to { transform: scale(1.2); opacity: 1; } }
 
-/* Subtitle & Badges */
+/* Subtitle */
 .subtitle { color: #dcdcdc; font-size: 13px; margin-bottom: 30px; line-height: 1.6; }
 .badge-18 { background: #ff3333; color: white; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-right: 4px; box-shadow: 0 0 5px rgba(255, 51, 51, 0.5); }
 .subtitle-icons { display: inline-flex; align-items: center; gap: 5px; vertical-align: middle; margin-left: 5px; }
 
-/* Buttons */
-.btn { display: block; width: 100%; padding: 16px 20px; margin-bottom: 15px; border-radius: 16px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.3s ease; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.05); }
-.btn-primary, .btn-secondary { background-color: rgba(255, 255, 255, 0.08); color: #ffffff; }
-.btn-primary:hover, .btn-secondary:hover { background-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); }
+/* Global Button Styles */
+.btn { display: flex; justify-content: center; align-items: center; gap: 8px; width: 100%; padding: 16px 20px; margin-bottom: 15px; border-radius: 16px; font-size: 14px; font-weight: 600; text-decoration: none; transition: all 0.2s ease; cursor: pointer; }
 
-/* Glow Button Effect */
-@keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.6); } 70% { box-shadow: 0 0 0 10px rgba(255, 75, 43, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); } }
-.pulse-effect { animation: pulseGlow 2s infinite; border-color: rgba(255, 75, 43, 0.5); }
+/* First Button (Glassy) */
+.btn-primary { background-color: rgba(255, 255, 255, 0.08); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.05); }
+.btn-primary:hover { background-color: rgba(255, 255, 255, 0.2); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); }
+.btn-primary:active { transform: scale(0.95); } /* Click Zoom Out Effect */
+
+/* Second Button (#0088CC Blue) */
+.btn-secondary { background-color: #0088CC; color: #ffffff; border: none; }
+.btn-secondary:hover { background-color: #007bb8; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 136, 204, 0.5); }
+.btn-secondary:active { transform: scale(0.92); } /* Extra Zoom Out Effect when clicked */
+
+/* Pulse Glow Effect specific to Blue Button */
+@keyframes pulseBlue { 0% { box-shadow: 0 0 0 0 rgba(0, 136, 204, 0.6); } 70% { box-shadow: 0 0 0 12px rgba(0, 136, 204, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 136, 204, 0); } }
+.pulse-effect-blue { animation: pulseBlue 2s infinite; }
+
+/* Unique Wobble Animation for Button Emoji */
+.btn-custom-18 { filter: drop-shadow(0 0 4px rgba(255, 51, 51, 0.8)); animation: wobbleIcon 2.5s infinite ease-in-out; }
+@keyframes wobbleIcon {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    15% { transform: rotate(-15deg) scale(1.1); }
+    30% { transform: rotate(10deg) scale(1.1); }
+    45% { transform: rotate(-10deg) scale(1.1); }
+    60% { transform: rotate(5deg) scale(1.1); }
+    75% { transform: rotate(0deg) scale(1); }
+}
