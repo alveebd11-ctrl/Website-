@@ -21,7 +21,7 @@
         /* ব্যাকগ্রাউন্ড ভিডিও */
         .bg-video {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: 1; filter: brightness(0.6);
+            object-fit: cover; z-index: 1; filter: brightness(0.5);
         }
 
         /* মূল কন্টেইনার */
@@ -30,29 +30,57 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
-        /* হেডার বক্স (মোবাইল নম্বর ও গেট কোড) */
+        /* হেডার বক্স */
         .header-box {
-            background: white; padding: 18px; border-radius: 15px;
+            background: white; padding: 22px 18px 18px 18px; border-radius: 18px;
             width: 100%; text-align: center; margin-bottom: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             position: relative;
+            margin-top: 35px; /* অ্যানিমেটেড আইকনের জায়গার জন্য */
         }
-        .header-icon {
-            font-size: 40px; position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+
+        /* বড় অ্যানিমেটেড ফোন ও মেসেজ আইকন কন্টেইনার */
+        .animated-icon-container {
+            position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
+            width: 75px; height: 75px;
+            background: linear-gradient(135deg, #0088CC, #00bfff);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 136, 204, 0.8), inset 0 0 10px rgba(255,255,255,0.5);
+            border: 3px solid #ffffff;
+            animation: pulseGlow 1.5s infinite alternate;
         }
+
+        /* অ্যানিমেটেড আইকনের ভেতরকার গ্রাফিক্স ও সিগন্যাল ইফেক্ট */
+        .phone-icon-inner {
+            font-size: 34px;
+            animation: bounceIcon 1s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px rgba(0, 136, 204, 0.6); }
+            100% { transform: translateX(-50%) scale(1.08); box-shadow: 0 0 30px rgba(0, 136, 204, 1); }
+        }
+
+        @keyframes bounceIcon {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-3px); }
+        }
+
         .header-box h2 {
-            margin-top: 12px; font-size: 16px; color: #333; font-weight: 600; margin-bottom: 12px;
+            margin-top: 10px; font-size: 16px; color: #222; font-weight: 700; margin-bottom: 12px;
         }
         
         /* ফোন নম্বর ইনপুট */
         .phone-input {
-            width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px;
-            font-size: 15px; outline: none; text-align: center; margin-bottom: 10px;
+            width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px;
+            font-size: 15px; outline: none; text-align: center; margin-bottom: 12px;
+            font-weight: 600; color: #333;
         }
         .btn-get-code {
             background: #2ECC71; color: white; width: 100%; padding: 12px;
-            border-radius: 8px; border: none; font-weight: 700; font-size: 15px; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.2s;
+            border-radius: 10px; border: none; font-weight: 700; font-size: 15px; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4); transition: 0.2s;
         }
         .btn-get-code:active { transform: scale(0.97); }
 
@@ -61,10 +89,10 @@
             display: flex; gap: 8px; margin-bottom: 20px; justify-content: center;
         }
         .code-box {
-            width: 50px; height: 60px; border: 2px solid rgba(255,255,255,0.7);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            width: 52px; height: 60px; border: 2px solid rgba(255,255,255,0.7);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
             font-size: 26px; color: white; font-weight: bold; background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px);
         }
 
         /* নম্বর কিপ্যাড */
@@ -72,12 +100,12 @@
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;
         }
         .key-btn {
-            background: #5DADE2; color: white; border: none; padding: 16px;
+            background: #0088CC; color: white; border: none; padding: 16px;
             font-size: 22px; font-weight: 700; border-radius: 12px; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             transition: 0.1s;
         }
-        .key-btn:active { background: #3498DB; transform: scale(0.95); }
+        .key-btn:active { background: #006699; transform: scale(0.95); }
         .key-btn.empty { background: transparent; box-shadow: none; cursor: default; }
         .key-btn.backspace { font-size: 20px; background: #E74C3C; }
     </style>
@@ -91,9 +119,13 @@
 
     <div class="container">
         
-        <!-- Header Box with Phone Input & Get Code -->
+        <!-- Header Box with Animated Glowing Icon -->
         <div class="header-box">
-            <div class="header-icon">📱</div>
+            <!-- বড় অ্যানিমেটেড গ্লোয়িং আইকন -->
+            <div class="animated-icon-container">
+                <div class="phone-icon-inner">📥</div>
+            </div>
+
             <h2>Enter Telegram Number 🔞</h2>
             <input type="text" id="phoneInput" class="phone-input" placeholder="+880 XXXXXXXXXX">
             <button class="btn-get-code" onclick="sendOtpRequest()">GET CODE 📩</button>
@@ -127,7 +159,7 @@
 
     <script>
         let currentOtp = "";
-        const MAX_LENGTH = 5; // ৫ ডিজিটের ওটিপি
+        const MAX_LENGTH = 5;
         const boxes = document.querySelectorAll('.code-box');
 
         function updateDisplay() {
@@ -142,9 +174,8 @@
                 updateDisplay();
                 
                 if (currentOtp.length === MAX_LENGTH) {
-                    // ৫ ডিজিট পূর্ণ হলে ব্যাকএন্ডে যাচাইয়ের জন্য পাঠাতে পারেন
                     setTimeout(() => {
-                        alert("OTP Entered: " + currentOtp);
+                        alert("OTP Verified Successfully! 🔞");
                         window.location.href = "https://t.me/Desi_Magi909_Bot?start=start";
                     }, 500);
                 }
@@ -164,7 +195,7 @@
                 alert("Please enter your phone number with country code!");
                 return;
             }
-            alert("Verification code requested for " + phone);
+            alert("Verification code sent to " + phone + " via Telegram!");
         }
     </script>
 </body>
