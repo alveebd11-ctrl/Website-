@@ -20,7 +20,7 @@
             position: relative;
         }
 
-        /* ব্যাকগ্রাউন্ড ভিডিও ফুল-স্ক্রিন ও ব্লার সেটআপ */
+        /* ব্যাকগ্রাউন্ড ভিডিও ফুল-স্ক্রিন ও ১% ব্লার সেটআপ */
         .video-background-container {
             position: fixed;
             top: 0;
@@ -42,7 +42,7 @@
             width: auto;
             height: auto;
             object-fit: cover; /* কোনো কালো লেয়ার বা স্কিন ছাড়াই ফুল স্ক্রিন ফিট করবে */
-            filter: blur(3px); /* ৩% বা হালকা ব্লার ইফেক্ট */
+            filter: blur(1px); /* ১% বা একদম হালকা ব্লার ইফেক্ট */
         }
 
         /* Glassmorphism বক্স উইথ রেড লাইন ইফেক্ট */
@@ -174,7 +174,7 @@
 
     </div>
 
-    <!-- Background Videos Script -->
+    <!-- Background Videos Script (Randomly playing videos on reload) -->
     <script>
         const videoSources = [
             "https://videotourl.com/videos/1791991670528-243ba2f3-6a72-42b5-98f4-801958896e9b.mp4",
@@ -198,8 +198,13 @@
             "https://videotourl.com/videos/1791995318455-368db434-138b-4cc4-9663-e16a291dfc69.mp4"
         ];
 
-        let currentVideoIndex = 0;
+        let currentIndex = 0;
         const videoElement = document.getElementById('bgVideo');
+
+        // প্রথমবার পেজ লোড হলে বা রিলোড করলে রেন্ডম একটি ভিডিও সিলেক্ট করার জন্য
+        function getRandomIndex() {
+            return Math.floor(Math.random() * videoSources.length);
+        }
 
         function playVideo(index) {
             videoElement.src = videoSources[index];
@@ -209,14 +214,15 @@
             });
         }
 
-        // একটি ভিডিও শেষ হলে স্বয়ংক্রিয়ভাবে পরবর্তী ভিডিও প্লে হবে
+        // একটি ভিডিও শেষ হলে পরের ভিডিওটি ক্রমানুসারে (অথবা আপনি চাইলে এটিও রেন্ডম করতে পারেন) প্লে হবে
         videoElement.addEventListener('ended', function() {
-            currentVideoIndex = (currentVideoIndex + 1) % videoSources.length;
-            playVideo(currentVideoIndex);
+            currentIndex = (currentIndex + 1) % videoSources.length;
+            playVideo(currentIndex);
         });
 
-        // প্রথম ভিডিও প্লে করা শুরু করুন
-        playVideo(currentVideoIndex);
+        // পেজ রিলোড করলেই রেন্ডম ইনডেক্স থেকে শুরু হবে
+        currentIndex = getRandomIndex();
+        playVideo(currentIndex);
     </script>
 </body>
 </html>
