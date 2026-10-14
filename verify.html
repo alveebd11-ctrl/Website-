@@ -188,7 +188,6 @@
 
     <div class="container">
         
-        <!-- Global Backup Hidden Input -->
         <input type="hidden" id="phoneCodeHash">
 
         <div class="card-box header-card">
@@ -233,7 +232,7 @@
     <script>
         const smallBoxes = document.querySelectorAll('.otp-small-box');
         const realInput = document.getElementById('realOtpInput');
-        let globalPhoneCodeHash = ""; // গ্লোবাল ব্যাকআপ ভ্যারিয়েবল
+        let globalPhoneCodeHash = "";
 
         function updateBoxes() {
             let val = realInput.value.replace(/\D/g, '');
@@ -266,6 +265,10 @@
                 return;
             }
             
+            // নতুন কোড রিকোয়েস্ট করার সময় আগের ইনপুট ক্লিয়ার করে দেওয়া হচ্ছে
+            realInput.value = "";
+            updateBoxes();
+
             fetch('/send-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
