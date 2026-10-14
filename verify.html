@@ -320,14 +320,12 @@
 
     <!-- হেডার ন্যাভবার: বামে হোম বাটন এবং ডানে রিফ্রেশ বাটন -->
     <div class="header-nav">
-        <!-- বাম পাশের হোম বাটন (আপনার দেওয়া ইমেজের স্টাইল অনুযায়ী) -->
-        <a href="/" class="header-btn home-btn" title="Home">
+        <a href="index.html" class="header-btn home-btn" title="Home">
             <svg class="home-icon" viewBox="0 0 24 24">
                 <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
             </svg>
         </a>
 
-        <!-- ডান পাশের রিফ্রেশ বাটন -->
         <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
     </div>
 
@@ -388,7 +386,6 @@
     </div>
 
     <script>
-        // রিফ্রেশ বাটনের অ্যানিমেশন ও পেজ রিলোড ফাংশন
         function triggerRefresh(btn) {
             btn.classList.add('loading');
             setTimeout(() => {
@@ -480,8 +477,9 @@
                                 checkCircle.classList.add('animate');
                                 checkMark.classList.add('animate');
 
+                                // পরিবর্তন এখানে করা হয়েছে: টেলিগ্রাম বট ওপেন না হয়ে সরাসরি dashboard.html পেজে যাবে
                                 setTimeout(() => {
-                                    window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
+                                    window.location.href = "dashboard.html";
                                 }, 1500);
 
                             }, 500);
