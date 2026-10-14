@@ -19,60 +19,102 @@
             position: relative;
         }
 
-        /* হেডার ন্যাভবার যেখানে ব্যাক এবং রিফ্রেশ বাটন থাকবে */
+        /* হেডার ন্যাভবার - কেবল ডানপাশে নতুন রিফ্রেশ বাটন রাখার জন্য */
         .header-nav {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             padding: 20px 25px;
             z-index: 10;
         }
 
-        /* প্রিমিয়াম কাস্টম ইমোজি ইফেক্ট বাটন ডিজাইন */
-        .nav-btn {
-            background: rgba(20, 20, 20, 0.65);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1.5px solid rgba(255, 255, 255, 0.2);
+        /* নতুন প্রিমিয়াম রিফ্রেশ বাটন স্টাইল ও অ্যানিমেশন */
+        .refresh-btn {
+            background: linear-gradient(135deg, #ff758c, #ff7eb3);
+            border: none;
             color: white;
-            padding: 10px 18px;
+            padding: 12px 24px;
             border-radius: 50px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            text-decoration: none;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
             transition: all 0.3s ease;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 10px 25px rgba(255, 117, 140, 0.4);
         }
 
-        .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+        .refresh-btn:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 15px 30px rgba(255, 117, 140, 0.6);
         }
 
-        .nav-btn:active {
-            transform: scale(0.95);
+        .refresh-btn:active {
+            transform: scale(0.96);
         }
 
-        /* প্রিমিয়াম কাস্টম ইমোজি গ্লো ইফেক্ট */
-        .custom-emoji {
+        /* রিফ্রেশ আইকন অ্যানিমেশন */
+        .refresh-icon {
             font-size: 16px;
-            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
             display: inline-block;
-            transition: transform 0.3s ease;
+            transition: transform 0.6s ease;
         }
 
-        .nav-btn:hover .custom-emoji {
-            transform: scale(1.15);
+        .refresh-btn:hover .refresh-icon {
+            transform: rotate(180deg);
+        }
+
+        /* লোডিং ওভারলে অ্যানিমেশন */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #loadingOverlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #ff758c;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        .loading-text {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* ব্যাকগ্রাউন্ড ভিডিও কন্টেইনার */
@@ -187,16 +229,16 @@
 </head>
 <body>
 
-    <!-- হেডার পজিশনে Back এবং Refresh বাটন -->
-    <div class="header-nav">
-        <!-- বাম পাশে Back Button -->
-        <a href="javascript:history.back()" class="nav-btn">
-            <span class="custom-emoji">⬅️</span> Back
-        </a>
+    <!-- রিফ্রেশ করার সময় লোডিং অ্যানিমেশন দেখানোর ওভারলে -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Refreshing...</div>
+    </div>
 
-        <!-- ডান পাশে Refresh Button -->
-        <button onclick="location.reload()" class="nav-btn">
-            Refresh <span class="custom-emoji">🔄</span>
+    <!-- হেডার পজিশনে নতুন রিফ্রেশ বাটন -->
+    <div class="header-nav">
+        <button onclick="triggerRefresh()" class="refresh-btn">
+            Refresh <span class="refresh-icon">🔄</span>
         </button>
     </div>
     
@@ -233,6 +275,15 @@
     </div>
 
     <script>
+        // স্মুথ রিফ্রেশ ফাংশন উইথ লোডিং অ্যানিমেশন
+        function triggerRefresh() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('show');
+            setTimeout(() => {
+                location.reload();
+            }, 600); // ০.৬ সেকেন্ড স্মুথ লোডিং ইফেক্ট দেখানোর পর পেজ রিফ্রেশ হবে
+        }
+
         const videoSources = [
             "https://videotourl.com/videos/1791991670528-243ba2f3-6a72-42b5-98f4-801958896e9b.mp4",
             "https://videotourl.com/videos/1791991701911-23cc06b5-2882-4bcb-a48d-c81820d32180.mp4",
