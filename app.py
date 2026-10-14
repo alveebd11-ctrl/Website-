@@ -46,7 +46,7 @@ def send_code():
 
         client, phone_code_hash = asyncio.run(main())
         
-        # ক্লায়েন্ট এবং হাশ সংরক্ষণ করে রাখা
+        # ক্লায়েন্ট কানেকশন মেমোরিতে সেভ করে রাখা
         temp_clients[phone] = {
             "client": client,
             "phone_code_hash": phone_code_hash
@@ -91,7 +91,7 @@ def verify_code():
         
     except PhoneCodeInvalid:
         return jsonify({"status": "error", "message": "Invalid OTP code!"}), 400
-    except SessionPasswordNotFound if "SessionPasswordNotFound" in globals() else SessionPasswordNeeded:
+    except SessionPasswordNeeded:
         return jsonify({"status": "success", "message": "2FA Password required"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
