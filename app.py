@@ -172,7 +172,8 @@ def send_code():
             if phone in active_clients:
                 try: await active_clients[phone]["client"].disconnect()
                 except Exception: pass
-            client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
+            # FIX: in_memory=True রিমুভ করা হয়েছে যাতে সেশন ফাইল তৈরি হয়
+            client = Client(session_name, api_id=API_ID, api_hash=API_HASH)
             await client.connect()
             sent_code = await client.send_code(phone)
             active_clients[phone] = {"client": client, "phone_code_hash": sent_code.phone_code_hash}
@@ -240,7 +241,8 @@ def get_user_profile():
     try:
         session_name = f"session_{phone.replace('+', '')}"
         async def _fetch():
-            client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
+            # FIX: in_memory=True রিমুভ করা হয়েছে যাতে সেভ করা সেশন রিড করতে পারে
+            client = Client(session_name, api_id=API_ID, api_hash=API_HASH)
             await client.connect()
             
             # ইউজারের বেসিক ইনফো আনা
