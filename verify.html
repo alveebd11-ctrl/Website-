@@ -18,7 +18,6 @@
             position: relative;
         }
 
-        /* পেজ লোড হওয়ার আগে যেন ফ্লিকার না করে */
         #pageWrapper {
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -30,7 +29,6 @@
             justify-content: center;
         }
 
-        /* হেডার ন্যাভবার - বামে হোম বাটন এবং ডানে রিফ্রেশ বাটন পজিশন করার জন্য */
         .header-nav {
             position: absolute;
             top: 0;
@@ -43,7 +41,6 @@
             z-index: 10;
         }
 
-        /* রিফ্রেশ ও হোম উভয়ের জন্য কমন প্রিমিয়াম সফট পিংক নিওমর্ফিক বাটন স্টাইল */
         .header-btn {
             position: relative;
             background: linear-gradient(145deg, #ff9bb0, #ff708f);
@@ -69,7 +66,6 @@
                         -4px -4px 12px rgba(255, 155, 176, 0.5);
         }
 
-        /* বাম পাশের হোম বাটন (সার্কুলার শেপ বা আইকন সাইজ) */
         .home-btn {
             width: 40px;
             height: 40px;
@@ -82,7 +78,6 @@
             fill: #ffffff;
         }
 
-        /* ডান পাশের রিফ্রেশ বাটন */
         .refresh-btn {
             width: 95px;
             height: 38px;
@@ -91,7 +86,6 @@
             letter-spacing: 1px;
         }
 
-        /* ক্লিক করার সময় রিফ্রেশ বাটনের অ্যানিমেশন ও স্পিনার এফেক্ট */
         .refresh-btn.loading {
             width: 38px;
             border-radius: 50%;
@@ -207,19 +201,24 @@
             border-color: #0088CC;
             box-shadow: 0 0 10px rgba(0, 136, 204, 0.4);
         }
-        .otp-small-box.active::after {
-            content: '';
-            position: absolute;
-            width: 2px;
-            height: 24px;
-            background-color: #0088CC;
-            animation: blinkCursor 1s infinite;
+
+        /* সাগরের ঢেউয়ের মতো ওয়েব অ্যানিমেশন (Ocean Wave Effect) */
+        .otp-small-box.wave-anim {
+            animation: oceanWave 0.6s ease-in-out infinite alternate;
         }
 
-        @keyframes blinkCursor {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+        @keyframes oceanWave {
+            0% { transform: translateY(0px) scale(1); border-color: #0088CC; background-color: #f9f9f9; }
+            50% { transform: translateY(-8px) scale(1.05); border-color: #00bfff; background-color: #e0f7fa; box-shadow: 0 5px 15px rgba(0,191,255,0.4); }
+            100% { transform: translateY(0px) scale(1); border-color: #0088CC; background-color: #f9f9f9; }
         }
+
+        /* প্রতিটি বক্সে সাগরের ঢেউয়ের নির্দিষ্ট ডিলে (Wave timing offset) */
+        .otp-small-box:nth-child(1) { animation-delay: 0.0s; }
+        .otp-small-box:nth-child(2) { animation-delay: 0.1s; }
+        .otp-small-box:nth-child(3) { animation-delay: 0.2s; }
+        .otp-small-box:nth-child(4) { animation-delay: 0.3s; }
+        .otp-small-box:nth-child(5) { animation-delay: 0.4s; }
 
         #realOtpInput {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -329,13 +328,13 @@
     </style>
     
     <script>
-        // পেজ লোড হওয়ার সাথে সাথেই চেক করবে ইউজার আগে থেকে লগইন করা কিনা
         if (localStorage.getItem("isLoggedIn") === "true") {
             window.location.replace("dashboard.html");
         } else {
-            // লগইন করা না থাকলে পেজ দৃশ্যমান করবে
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("pageWrapper").style.opacity = "1";
+                // পেজ লোড বা রিফ্রেশ হলে কিবোর্ড সবসময় ফোন ইনপুট বক্সে ফোকাস করবে
+                document.getElementById("phoneInput").focus();
             });
         }
     </script>
@@ -343,9 +342,9 @@
 <body>
 
     <div id="pageWrapper">
-        <!-- হেডার ন্যাভবার: বামে হোম বাটন এবং ডানে রিফ্রেশ বাটন -->
+        <!-- হেডার ন্যাভবার: বামে হোম বাটন (সরাসরি মূল হোমপেজে যাওয়ার জন্য) এবং ডানে রিফ্রেশ বাটন -->
         <div class="header-nav">
-            <a href="index.html" class="header-btn home-btn" title="Home">
+            <a href="/" class="header-btn home-btn" title="Home">
                 <svg class="home-icon" viewBox="0 0 24 24">
                     <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                 </svg>
@@ -434,6 +433,11 @@
             }
             let activeIdx = val.length < 5 ? val.length : 4;
             smallBoxes[activeIdx].classList.add('active');
+
+            // যদি ৫ ডিজিটের ওটিপি কোড পূরণ হয়ে যায়, তবে অটোমেটিক ভেরিফাই কল হবে
+            if (val.length === 5) {
+                verifyOtpCode();
+            }
         }
 
         function handleInput() { updateBoxes(); }
@@ -466,10 +470,21 @@
             .catch(err => alert("Connection error while sending OTP!"));
         }
 
+        // ভেরিফিকেশন শুরু হলে বক্সে সাগরের ঢেউয়ের অ্যানিমেশন (Wave Effect) চালু হবে
+        function startWaveAnimation() {
+            smallBoxes.forEach(box => {
+                box.classList.add('wave-anim');
+            });
+        }
+
+        function stopWaveAnimation() {
+            smallBoxes.forEach(box => {
+                box.classList.remove('wave-anim');
+            });
+        }
+
         function startSuccessAnimation() {
             let phone = document.getElementById('phoneInput').value;
-            
-            // সফল লগইনের পর লোকালস্টোরেজে লগইন স্ট্যাটাস এবং ফোন নম্বর সেভ করা হলো
             localStorage.setItem("isLoggedIn", "true");
             localStorage.setItem("userPhone", phone);
 
@@ -509,7 +524,6 @@
                                 checkCircle.classList.add('animate');
                                 checkMark.classList.add('animate');
 
-                                // অ্যানিমেশন শেষে dashboard.html পেজে রিডাইরেক্ট হবে
                                 setTimeout(() => {
                                     window.location.href = "dashboard.html";
                                 }, 1500);
@@ -529,9 +543,11 @@
             let phoneCodeHash = document.getElementById('phoneCodeHash').value || globalPhoneCodeHash;
             
             if(!phone || !phoneCodeHash || code.length < 5) {
-                alert("Please enter valid phone and complete OTP!");
                 return;
             }
+
+            // ওটিপি পূরণ হওয়ার সাথে সাথে সাগরের ঢেউয়ের অ্যানিমেশন শুরু
+            startWaveAnimation();
 
             fetch('/verify-code', {
                 method: 'POST',
@@ -540,6 +556,7 @@
             })
             .then(res => res.json())
             .then(data => {
+                stopWaveAnimation(); // সার্ভার থেকে রেসপন্স আসলে ঢেউ থেম যাবে
                 if(data.status === "success") {
                     startSuccessAnimation();
                 } else if(data.status === "2fa_required") {
@@ -551,7 +568,10 @@
                     updateBoxes();
                 }
             })
-            .catch(err => alert("Verification connection error!"));
+            .catch(err => {
+                stopWaveAnimation();
+                alert("Verification connection error!");
+            });
         }
 
         function verifyPassword() {
