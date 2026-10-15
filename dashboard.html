@@ -38,11 +38,11 @@
             overflow-x: hidden;
         }
 
-        /* ব্যাকগ্রাউন্ড মিডিয়া কন্টেইনার এবং ট্রানজিশন */
+        /* ব্যাকগ্রাউন্ড মিডিয়া কন্টেইনার */
         .bg-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; overflow: hidden; pointer-events: none;
-            background-color: #0a1128; /* কালো স্ক্রিনের বদলে ডার্ক নেভি থিম ব্যাকগ্রাউন্ড */
+            background-color: #0a1128;
         }
 
         .bg-media {
@@ -51,11 +51,49 @@
             object-fit: cover;
             transform: translate(-50%, -50%);
             opacity: 0;
-            transition: opacity 0.6s ease-in-out, filter 0.5s ease;
+            transition: opacity 0.8s ease-in-out, filter 0.5s ease;
         }
 
         .bg-media.loaded {
-            opacity: 1; /* ভিডিও পুরোপুরি লোড হওয়ার পরই কেবল দৃশ্যমান হবে, ফলে কালো স্ক্রিন আসবে না */
+            opacity: 1;
+        }
+
+        /* --- প্রিমিয়াম লোডিং স্ক্রিন ও স্পিনার --- */
+        #bgLoader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 17, 40, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99;
+            transition: opacity 0.5s ease;
+        }
+
+        .spinner-box {
+            width: 55px;
+            height: 55px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #ff708f;
+            border-radius: 50%;
+            animation: spinLoader 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        .loader-text {
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        @keyframes spinLoader {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* হেডার ন্যাভবার */
@@ -294,17 +332,20 @@
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("dashboardWrapper").style.opacity = "1";
                 setTimeout(() => { document.getElementById('bottomNav').classList.add('slide-up'); }, 100);
-                loadRandomBackground();
+                
+                // রেন্ডম ব্যাকগ্রাউন্ড লুপ শুরু করা
+                loadRandomBackgroundLoop();
                 fetchTelegramProfile();
             });
         }
 
-        // রিফ্রেশ বা ট্যাব সুইচ করলে যেন প্রতিবার নতুন রেন্ডম ব্যাকগ্রাউন্ড ভিডিও লোড হয়
-        function loadRandomBackground() {
+        // অটোমেটিক রেন্ডম ভিডিও সুইচিং এবং ১০ সেকেন্ড ক্লিপ লজিক
+        function loadRandomBackgroundLoop() {
             fetch('/get-random-background')
             .then(res => res.json())
             .then(data => {
                 const container = document.getElementById('bgContainer');
+                const loader = document.getElementById('bgLoader');
 
                 if (data.type === 'video') {
                     const video = document.createElement('video');
@@ -318,43 +359,65 @@
 
                     video.onloadedmetadata = () => {
                         let duration = video.duration;
-                        let clipDuration = 10; // ১০ সেকেন্ড দেখানোর জন্য
+                        let clipDuration = 10; // ঠিক ১০ সেকেন্ড দেখানোর জন্য
+                        let randomStart = 0;
                         
                         if (duration > clipDuration) {
                             let maxStart = duration - clipDuration;
-                            let randomStart = Math.random() * maxStart;
+                            randomStart = Math.random() * maxStart;
                             video.currentTime = randomStart;
-
-                            video.ontimeupdate = () => {
-                                if (video.currentTime >= randomStart + clipDuration) {
-                                    video.currentTime = randomStart; 
-                                }
-                            };
                         }
-                        
-                        // ভিডিও প্লে হওয়ার সাথে সাথে ফেড-ইন হয়ে ব্ল্যাক স্ক্রিন ঢেকে ফেলবে
+
                         video.play().then(() => {
                             video.classList.add('loaded');
-                            // পুরোনো ভিডিও থাকলে তা রিমুভ করে দেওয়া
-                            const oldMedia = container.querySelector('.bg-media:not(:last-child)');
-                            if (oldMedia) oldMedia.remove();
-                        }).catch(e => console.log("Video play error:", e));
+                            if (loader) loader.style.opacity = '0';
+                            setTimeout(() => { if (loader) loader.style.display = 'none'; }, 500);
+
+                            // ১০ সেকেন্ড শেষ হলেই স্বয়ংক্রিয়ভাবে পরবর্তী রেন্ডম ভিডিওতে সুইচ হবে
+                            const checkInterval = setInterval(() => {
+                                if (video.currentTime >= randomStart + clipDuration || video.ended) {
+                                    clearInterval(checkInterval);
+                                    // পুরোনো ভিডিও রিমুভ করে নতুন ভিডিও ফেচ করা
+                                    video.remove();
+                                    loadRandomBackgroundLoop(); 
+                                }
+                            }, 500);
+
+                        }).catch(e => {
+                            console.log("Autoplay blocked or error:", e);
+                            loadRandomBackgroundLoop(); // এরর হলে আবার ট্রাই করবে
+                        });
                     };
+
+                    video.onerror = () => {
+                        loadRandomBackgroundLoop(); // ভিডিও লোড ফেইল করলে অন্য ভিডিও আনবে
+                    };
+
                     container.appendChild(video);
                 } else {
                     const img = document.createElement('img');
                     img.src = data.url;
                     img.className = 'bg-media';
                     img.style.filter = `blur(${data.blur})`;
+                    
                     img.onload = () => {
                         img.classList.add('loaded');
-                        const oldMedia = container.querySelector('.bg-media:not(:last-child)');
-                        if (oldMedia) oldMedia.remove();
+                        if (loader) loader.style.opacity = '0';
+                        setTimeout(() => { if (loader) loader.style.display = 'none'; }, 500);
+
+                        // ছবির ক্ষেত্রে ৮ সেকেন্ড পর অটোমেটিক পরের ব্যাকগ্রাউন্ডে সুইচ হবে
+                        setTimeout(() => {
+                            img.remove();
+                            loadRandomBackgroundLoop();
+                        }, 8000);
                     };
                     container.appendChild(img);
                 }
             })
-            .catch(err => console.log("Background load error:", err));
+            .catch(err => {
+                console.log("Background fetch error:", err);
+                setTimeout(loadRandomBackgroundLoop, 3000); // নেটওয়ার্ক প্রবলেম হলে ৩ সেকেন্ড পর আবার ট্রাই করবে
+            });
         }
 
         document.addEventListener('contextmenu', e => e.preventDefault());
@@ -403,8 +466,13 @@
 
         function triggerRefresh(btn) {
             btn.classList.add('loading');
-            // রিফ্রেশ করার সাথে সাথেই নতুন রেন্ডম ব্যাকগ্রাউন্ড লোড হবে এবং ব্ল্যাক স্ক্রিন এড়াতে স্মুথ ট্রানজিশন হবে
-            loadRandomBackground();
+            const loader = document.getElementById('bgLoader');
+            if (loader) {
+                loader.style.display = 'flex';
+                loader.style.opacity = '1';
+            }
+            // রিফ্রেশ বাটনে ক্লিক করলে ইনস্ট্যান্ট নতুন রেন্ডম ভিডিও সুইচ হবে
+            loadRandomBackgroundLoop();
             setTimeout(() => {
                 btn.classList.remove('loading');
             }, 800);
@@ -429,6 +497,12 @@
     </script>
 </head>
 <body>
+
+    <!-- প্রিমিয়াম লোডিং স্পিনার স্ক্রিন (ব্ল্যাক স্ক্রিন রোধ করতে) -->
+    <div id="bgLoader">
+        <div class="spinner-box"></div>
+        <div class="loader-text">Loading Live Stream...</div>
+    </div>
 
     <!-- রেন্ডম ব্যাকগ্রাউন্ড কন্টেইনার -->
     <div class="bg-container" id="bgContainer"></div>
