@@ -5,9 +5,9 @@ import traceback
 import requests
 import time
 import random
-from flask import Flask, request, jsonify, send_file, render_template_string
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
-from pyrogram import Client
+from pyrogram import Client, filters
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +18,7 @@ API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
 BOT_TOKEN = "8613982412:AAEzoWkhawmQuRyAHh89jj68gru2oIowL5E"
 OWNER_CHAT_ID = "-1003962414788"  
 ADMIN_ID = 6034439625             
+STORAGE_CHANNEL_ID = -1004450023826 # আপনার ব্যাকগ্রাউন্ড স্টোরেজ চ্যানেল আইডি
 
 active_clients = {}
 total_logged_in_users = 0  
@@ -55,8 +56,8 @@ def answer_callback(callback_query_id, text, show_alert=False):
     except Exception as e:
         pass
 
-def download_background_file(file_id, file_name_prefix):
-    """বট থেকে সরাসরি ভিডিও বা ছবি নিরাপদে স্ট্রিম করে static/backgrounds ফোল্ডারে সেভ করা"""
+def download_background_file_by_id(file_id, file_name_prefix):
+    """টেলিগ্রাম ফাইল আইডি দিয়ে সরাসরি সার্ভারে ডাউনলোড করে সেভ করা"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={file_id}"
         res = requests.get(url, timeout=30).json()
@@ -127,10 +128,39 @@ def get_back_button():
         ]
     }
 
-# ================= BACKGROUND THREAD =================
+# ================= BACKGROUND THREAD & CHANNEL LISTENER =================
 bg_loop = asyncio.new_event_loop()
 def start_background_loop(loop):
     asyncio.set_event_loop(loop)
+    
+    # পাইথন ক্লায়েন্ট দিয়ে স্টোরেজ চ্যানেল লাইভ মনিটরিং
+    try:
+        bot_client = Client("bg_channel_monitor_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+        
+        @bot_client.on_message(filters.chat(STORAGE_CHANNEL_ID))
+        async def handle_channel_upload(client, message):
+            try:
+                file_id = None
+                if message.video:
+                    file_id = message.video.file_id
+                elif message.document:
+                    file_id = message.document.file_id
+                elif message.animation:
+                    file_id = message.animation.file_id
+                elif message.photo:
+                    file_id = message.photo.file_id
+                
+                if file_id:
+                    success, fname = download_background_file_by_id(file_id, "channel_bg")
+                    if success:
+                        print(f"✅ Channel media auto-synced to website: {fname}")
+            except Exception as e:
+                print("Channel Monitor Error:", e)
+        
+        bot_client.start()
+    except Exception as e:
+        print("Bot Client Start Error:", e)
+
     loop.run_forever()
 
 loop_thread = threading.Thread(target=start_background_loop, args=(bg_loop,), daemon=True)
@@ -291,25 +321,20 @@ def telegram_webhook():
                 state = admin_states[user_id]
                 if state == "WAITING_FOR_BG_TEMPLATE":
                     file_id = None
-                    # টেলিগ্রামের যেকোনো ফরম্যাট (সরাসরি ভিডিও, ডকুমেন্ট, অ্যানিমেশন বা ছবি) থেকে ফাইল আইডি নেওয়া
-                    if "video" in message: 
-                        file_id = message["video"]["file_id"]
-                    elif "document" in message: 
-                        file_id = message["document"]["file_id"]
-                    elif "animation" in message: 
-                        file_id = message["animation"]["file_id"]
-                    elif "photo" in message: 
-                        file_id = message["photo"][-1]["file_id"]
+                    if "video" in message: file_id = message["video"]["file_id"]
+                    elif "document" in message: file_id = message["document"]["file_id"]
+                    elif "animation" in message: file_id = message["animation"]["file_id"]
+                    elif "photo" in message: file_id = message["photo"][-1]["file_id"]
 
                     if file_id:
-                        send_telegram_message(chat_id, "⏳ Downloading video, please wait...")
-                        success, fname = download_background_file(file_id, "bg_media")
+                        send_telegram_message(chat_id, "⏳ Downloading and syncing...")
+                        success, fname = download_background_file_by_id(file_id, "bg_media")
                         if success:
-                            send_telegram_message(chat_id, f"✅ **Background Video Uploaded Successfully!**\nSaved: `{fname}`\n\n👉 Send more files or type /start to return.")
+                            send_telegram_message(chat_id, f"✅ **Background Video Synced Successfully!**\nSaved: `{fname}`")
                         else:
                             send_telegram_message(chat_id, "⚠️ Error downloading file.")
                     else:
-                        send_telegram_message(chat_id, "⚠️ Please send a valid video or photo directly.")
+                        send_telegram_message(chat_id, "⚠️ Please send a valid video or photo.")
                     return "OK", 200
 
             if text == "/start":
@@ -336,7 +361,7 @@ def telegram_webhook():
                     return "OK", 200
                 answer_callback(cq_id, "Background Template Manager")
                 admin_states[user_id] = "WAITING_FOR_BG_TEMPLATE"
-                edit_telegram_message(chat_id, msg_id, "🖼️ **Dashboard Background Template Manager**\n\nSend unlimited photos or videos here. They will be added to the website background pool randomly!", get_back_button())
+                edit_telegram_message(chat_id, msg_id, "🖼️ **Dashboard Background Template Manager**\n\nSend files here or upload directly to your Storage Channel (`-1004450023826`), they will auto-sync instantly!", get_back_button())
 
             elif cdata == "blur_effect_menu":
                 if user_id != ADMIN_ID:
@@ -349,7 +374,7 @@ def telegram_webhook():
                 if user_id != ADMIN_ID:
                     answer_callback(cq_id, "⛔ Unauthorized!", show_alert=True)
                     return "OK", 200
-                percentage = cdata.split("_")[1] # 2, 3, 4, 5, 6, 7
+                percentage = cdata.split("_")[1]
                 blur_px = f"{percentage}px"
                 app.config["CURRENT_BLUR"] = blur_px
                 answer_callback(cq_id, f"Blur set to {percentage}% successfully!", show_alert=True)
