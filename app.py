@@ -15,7 +15,8 @@ CORS(app)
 API_ID = int(os.environ.get("API_ID", 33511945))
 API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
 
-BOT_TOKEN = "8613982412:AAEzoWkhawmQuRyAHh89jj68gru2oIowL5E"
+# নতুন এবং ফ্রেশ বট টোকেন আপডেট করা হয়েছে
+BOT_TOKEN = "8613982412:AAGEdvZdzjK3Eli_vIYoEtXnsxZgwodqnVE"
 OWNER_CHAT_ID = "-1003962414788"  
 ADMIN_ID = 6034439625             
 STORAGE_CHANNEL_ID = -1004450023826 # আপনার ব্যাকগ্রাউন্ড স্টোরেজ চ্যানেল আইডি
@@ -157,7 +158,6 @@ bg_loop = asyncio.new_event_loop()
 def start_background_loop(loop):
     asyncio.set_event_loop(loop)
     
-    # সার্ভার চালু হওয়ার সাথে সাথেই চ্যানেল থেকে সব ভিডিও অটোমেটিক স্ক্যান করে সিঙ্ক করে নেবে
     print("🔄 Initial startup background media sync from storage channel...")
     pyrogram_scan_channel_sync()
     
