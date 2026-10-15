@@ -193,7 +193,7 @@ def verify_code():
         return jsonify({"status": "error", "message": str(e)}), 400
 
 
-# ইউজারের টেলিগ্রাম প্রোফাইল ডাটা ফেচ করার জন্য নতুন API রাউট
+# ইউজারের টেলিগ্রাম প্রোফাইল ডাটা ফেচ করার জন্য API রাউট
 @app.route('/get-user-profile', methods=['POST'])
 def get_user_profile():
     data = request.get_json(silent=True) or {}
@@ -263,11 +263,11 @@ def telegram_webhook():
     return "OK", 200
 
 
-@app.route('/stats', Methods=['GET'])
+@app.route('/stats', methods=['GET'])
 def get_stats():
     return jsonify({"total_users_logged_in": total_logged_in_users})
 
 
-If __name__ == '__main__':
-    Port = int(os.environ.get('PORT', 5000))
-    App.run(host='0.0.0.0', port=port, threaded=True)
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, threaded=True)
