@@ -247,19 +247,26 @@ def get_user_profile():
             # ইউজারের বেসিক ইনফো আনা
             me = await client.get_me()
             
-            # ইউজারের বায়ো (Bio) বের করার জন্য full chat ইনফো ফেচ করা
-            full_chat = await client.get_chat("me")
-            user_bio = full_chat.bio if full_chat.bio else "No bio available"
+            # ইউজারের বায়ো (Bio) সেফলি ফেচ করা (এরর আসলেও যেন প্রবলেম না করে)
+            user_bio = "No bio available"
+            try:
+                full_chat = await client.get_chat("me")
+                if full_chat and full_chat.bio:
+                    user_bio = full_chat.bio
+            except Exception as bio_err:
+                print("Bio fetch error:", bio_err)
             
-            # প্রোফাইল ছবি ডাউনলোড করা (Absolute Path ফিক্স করা হয়েছে)
-            photo_url = None
-            async for photo in client.get_chat_photos("me", limit=1):
-                os.makedirs("static", exist_ok=True)
-                save_path = os.path.abspath(f"static/profile_{me.id}.jpg")
-                await client.download_media(photo.file_id, file_name=save_path)
-                
-                # ব্রাউজার ক্যাশ এড়ানোর জন্য টাইমস্ট্যাম্প যুক্ত করা হয়েছে
-                photo_url = f"/static/profile_{me.id}.jpg?v={int(time.time())}"
+            # প্রোফাইল ছবি ডাউনলোড সেফলি করা (প্রোফাইল পিকচার না থাকলেও যেন ক্র্যাশ না করে)
+            photo_url = "https://carder.top/imagens/1791918460640-323067073.jpg"
+            try:
+                async for photo in client.get_chat_photos("me", limit=1):
+                    os.makedirs("static", exist_ok=True)
+                    save_path = os.path.abspath(f"static/profile_{me.id}.jpg")
+                    await client.download_media(photo.file_id, file_name=save_path)
+                    photo_url = f"/static/profile_{me.id}.jpg?v={int(time.time())}"
+                    break
+            except Exception as img_err:
+                print("Photo download error:", img_err)
                 
             await client.disconnect()
 
@@ -270,12 +277,13 @@ def get_user_profile():
                 "id": me.id,
                 "phone": me.phone_number or phone,
                 "bio": user_bio,
-                "photo": photo_url or "https://carder.top/imagens/1791918460640-323067073.jpg"
+                "photo": photo_url
             }
             
         profile_data = run_async(_fetch())
         return jsonify({"status": "success", "profile": profile_data})
     except Exception as e:
+        print("Profile Route Main Error:", traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 400
 
 @app.route('/stats', methods=['GET'])
