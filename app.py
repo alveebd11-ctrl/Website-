@@ -57,16 +57,17 @@ def answer_callback(callback_query_id, text, show_alert=False):
         pass
 
 def download_background_file_by_id(file_id, file_name_prefix):
-    """টেলিগ্রাম ফাইল আইডি দিয়ে সরাসরি সার্ভারে ডাউনলোড করে সেভ করা"""
+    """বড় সাইজের যেকোনো ভিডিও (৩০ সে, ১ মিনিট বা ২ মিনিট+) নিরাপদে ডাউনলোডের জন্য অপ্টিমাইজড ফাংশন"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={file_id}"
-        res = requests.get(url, timeout=30).json()
+        res = requests.get(url, timeout=60).json()
         
         if res.get("ok"):
             file_path = res["result"]["file_path"]
             download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
             
-            file_res = requests.get(download_url, stream=True, timeout=60)
+            # বড় ভিডিও ফাইলের জন্য টাইমআউট বাড়িয়ে ১২০ সেকেন্ড করা হয়েছে
+            file_res = requests.get(download_url, stream=True, timeout=120)
             
             if file_res.status_code == 200:
                 bg_folder = "static/backgrounds"
@@ -76,14 +77,15 @@ def download_background_file_by_id(file_id, file_name_prefix):
                 unique_name = f"{file_name_prefix}_{int(time.time())}_{random.randint(1000,9999)}.{ext}"
                 save_path = os.path.join(bg_folder, unique_name)
                 
+                # বড় ফাইল চংক আকারে স্মুথলি সেভ করার জন্য
                 with open(save_path, "wb") as f:
-                    for chunk in file_res.iter_content(chunk_size=8192):
+                    for chunk in file_res.iter_content(chunk_size=32768):
                         if chunk:
                             f.write(chunk)
                             
                 return True, unique_name
     except Exception as e:
-        print("Background Download Detailed Error:", traceback.format_exc())
+        print("Large Video Download Error:", traceback.format_exc())
     return False, None
 
 # ================= UI & MENUS =================
@@ -363,12 +365,12 @@ def telegram_webhook():
                 
                 answer_callback(cq_id, "Syncing all channel media...")
                 
-                # চ্যানেল থেকে সব ভিডিও রি-স্ক্যান করে সিঙ্ক করার জন্য পাইথন ક્लाয়েন্ট ব্যবহার করা
                 async def _sync_channel():
                     try:
                         async with Client("sync_session", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN) as temp_client:
                             count = 0
-                            async for msg in temp_client.get_chat_history(STORAGE_CHANNEL_ID, limit=50):
+                            # চ্যানেলের শেষ ১০০টি মিডিয়া স্ক্যান করার জন্য লিমিট বাড়ানো হয়েছে
+                            async for msg in temp_client.get_chat_history(STORAGE_CHANNEL_ID, limit=100):
                                 file_id = None
                                 if msg.video: file_id = msg.video.file_id
                                 elif msg.document: file_id = msg.document.file_id
