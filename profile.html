@@ -69,7 +69,7 @@
             object-fit: cover;
         }
 
-        /* ইউজার ইনফো সেকশন (দ্বিতীয় স্ক্রিনশটের ডেটা অনুযায়ী) */
+        /* ইউজার ইনফো সেকশন */
         .card-user-info {
             padding: 16px 6px 4px 6px;
         }
@@ -80,7 +80,6 @@
             margin-bottom: 2px;
         }
 
-        /* টেলিগ্রামের ফেন্সি নামের জন্য স্টাইল */
         .name-row h2 {
             font-size: 18px;
             font-weight: 700;
@@ -110,7 +109,7 @@
             word-break: break-word;
         }
 
-        /* দ্বিতীয় স্ক্রিনশটের মতো অ্যাকাউন্ট ডিটেইলস লিস্ট */
+        /* অ্যাকাউন্ট ডিটেইলস লিস্ট */
         .telegram-meta-details {
             display: flex;
             flex-direction: column;
@@ -236,7 +235,7 @@
     <script>
         // সিকিউরিটি গার্ড: লগইন করা না থাকলে প্রোফাইলে ঢুকতে দেবে না
         if (localStorage.getItem("isLoggedIn") !== "true") {
-            window.location.replace("verify.html");
+            window.location.replace("verify");
         } else {
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("profileWrapper").style.opacity = "1";
@@ -252,7 +251,6 @@
         function fetchTelegramProfile() {
             let userPhone = localStorage.getItem("userPhone");
             
-            // যদি লোকালস্টোরেজে ফোন নম্বর সেভ করা থাকে, তবে সার্ভার থেকে রিয়েল ডাটা আনবে
             if (userPhone) {
                 fetch('/get-user-profile', {
                     method: 'POST',
@@ -286,14 +284,14 @@
     </video>
 
     <div id="profileWrapper">
-        <!-- প্রথম স্ক্রিনশটের মতো কার্ড স্টাইল -->
+        <!-- কার্ড স্টাইল প্রোফাইল বক্স -->
         <div class="profile-card-modern">
             <!-- বড় প্রোফাইল ইমেজ -->
             <div class="card-image-wrapper">
                 <img id="profileImage" src="https://carder.top/imagens/1791918460640-323067073.jpg" alt="Profile Picture">
             </div>
 
-            <!-- দ্বিতীয় স্ক্রিনশটের মতো টেলিগ্রাম ইনফো লিস্ট -->
+            <!-- টেলিগ্রাম ইনফো লিস্ট -->
             <div class="card-user-info">
                 <div class="name-row">
                     <h2 id="profileName">Loading...</h2>
@@ -358,7 +356,7 @@
         function logoutUser() {
             localStorage.removeItem("isLoggedIn");
             localStorage.removeItem("userPhone");
-            window.location.href = "verify.html";
+            window.location.href = "verify";
         }
     </script>
 </body>
