@@ -38,7 +38,7 @@
             object-fit: cover; z-index: -1; filter: brightness(0.4);
         }
 
-        /* ছবির মতো ডান পাশের স্টাইলের মূল কার্ড বক্স */
+        /* মূল কার্ড বক্স */
         .profile-card-modern {
             width: 100%;
             background: rgba(26, 31, 46, 0.85);
@@ -53,7 +53,7 @@
             position: relative;
         }
 
-        /* ওপরের বড় কভার ইমেজ বা প্রোফাইল ছবি কার্ড */
+        /* ওপরের বড় প্রোফাইল ইমেজ কার্ড */
         .card-image-wrapper {
             width: 100%;
             height: 320px;
@@ -69,16 +69,15 @@
             object-fit: cover;
         }
 
-        /* নাম এবং ভেরিফাইড টিকমার্ক */
+        /* ইউজার ডিটেইলস */
         .card-user-info {
-            padding: 18px 6px 12px 6px;
+            padding: 18px 6px 6px 6px;
         }
 
         .name-row {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .name-row h2 {
@@ -88,78 +87,50 @@
             letter-spacing: 0.3px;
         }
 
-        /* টেলিগ্রাম বা ছবির মতো ভেরিফাইড টিক আইকন */
-        .verified-badge {
-            width: 18px;
-            height: 18px;
-            fill: #ffffff;
-            background: #222;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .verified-badge svg {
-            width: 12px;
-            height: 12px;
-            fill: #ffffff;
-        }
-
-        /* ইউজার আইডি বা বায়ো */
-        .card-bio {
+        .username-text {
             font-size: 13px;
-            color: #94a3b8;
-            line-height: 1.5;
-            margin-bottom: 20px;
-            font-weight: 400;
-        }
-
-        /* কার্ডের নিচের স্ট্যাটস এবং ফলো বাটন রো */
-        .card-footer-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .stats-group {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 13px;
-            color: #cbd5e1;
+            color: #00bfff;
+            margin-bottom: 12px;
             font-weight: 500;
         }
 
-        .stat-item svg {
-            width: 16px;
-            height: 16px;
-            fill: #94a3b8;
-        }
-
-        /* ডান পাশের প্রিমিয়াম হোয়াইট ফলো বাটন (ছবির ডান দিকের কার্ডের মতো) */
-        .follow-btn {
-            background: #ffffff;
-            color: #0a1128;
-            border: none;
-            padding: 10px 22px;
-            border-radius: 30px;
-            font-weight: 700;
+        .card-bio {
             font-size: 13px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-            transition: transform 0.2s;
+            color: #cbd5e1;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            font-weight: 400;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .follow-btn:active {
-            transform: scale(0.95);
+        /* টেলিগ্রাম মেটা ইনফো (আইডি ও ফোন নম্বর) */
+        .telegram-meta-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 12px;
+            margin-top: 5px;
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .meta-label {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .meta-value {
+            color: #ffffff;
+            font-weight: 600;
         }
 
         /* লগআউট বাটন */
@@ -276,7 +247,7 @@
     </video>
 
     <div id="profileWrapper">
-        <!-- ছবির ডান দিকের কার্ড স্টাইলের প্রোফাইল বক্স -->
+        <!-- কার্ড স্টাইলের প্রোফাইল বক্স -->
         <div class="profile-card-modern">
             <!-- বড় প্রোফাইল ইমেজ -->
             <div class="card-image-wrapper">
@@ -287,30 +258,19 @@
             <div class="card-user-info">
                 <div class="name-row">
                     <h2>Royal_Ninja</h2>
-                    <!-- ভেরিফাইড টিক মার্ক ব্যাজ -->
-                    <div class="verified-badge" title="Verified">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                        </svg>
-                    </div>
                 </div>
-                <p class="card-bio">
-                    Telegram Verified Member & Community Leader focused on seamless digital experiences.
-                </p>
+                <div class="username-text">@Royal_Ninja_909</div>
 
-                <!-- স্ট্যাটস এবং ফলো বাটন -->
-                <div class="card-footer-row">
-                    <div class="stats-group">
-                        <div class="stat-item" title="Followers">
-                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                            <span>312</span>
-                        </div>
-                        <div class="stat-item" title="Level / Badge">
-                            <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99z"/></svg>
-                            <span>48</span>
-                        </div>
+                <div class="card-bio">
+                    Telegram Verified Member & Community Leader focused on seamless digital experiences.
+                </div>
+
+                <!-- টেলিগ্রাম মেটা ডিটেইলস -->
+                <div class="telegram-meta-details">
+                    <div class="meta-row">
+                        <span class="meta-label">Account Status:</span>
+                        <span class="meta-value" style="color: #2ecc71;">Active & Secure</span>
                     </div>
-                    <button class="follow-btn" onclick="alert('You are already connected!')">Follow +</button>
                 </div>
             </div>
         </div>
