@@ -61,12 +61,15 @@
             overflow: hidden;
             position: relative;
             box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            background: rgba(255, 255, 255, 0.05); /* লোডিংয়ের সময় সুন্দর ব্যাকগ্রাউন্ড দেখাবে */
         }
 
         .card-image-wrapper img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         /* ইউজার ইনফো সেকশন */
@@ -266,8 +269,13 @@
                         document.getElementById('profileId').innerText = p.id;
                         document.getElementById('profilePhone').innerText = p.phone;
                         document.getElementById('profileBio').innerText = p.bio;
+                        
                         if (p.photo) {
-                            document.getElementById('profileImage').src = p.photo;
+                            let imgElement = document.getElementById('profileImage');
+                            imgElement.src = p.photo;
+                            imgElement.onload = () => {
+                                imgElement.style.opacity = "1"; // ছবি লোড হওয়ার পর স্মুথলি ভেসে উঠবে
+                            };
                         }
                     }
                 })
@@ -285,10 +293,10 @@
 
     <div id="profileWrapper">
         <!-- কার্ড স্টাইল প্রোফাইল বক্স -->
-        <div class="profile-card-modern">
+        .  <div class="profile-card-modern">
             <!-- বড় প্রোফাইল ইমেজ -->
             <div class="card-image-wrapper">
-                <img id="profileImage" src="https://carder.top/imagens/1791918460640-323067073.jpg" alt="Profile Picture">
+                <img id="profileImage" src="" alt="Profile Picture">
             </div>
 
             <!-- টেলিগ্রাম ইনফো লিস্ট -->
