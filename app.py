@@ -56,26 +56,33 @@ def answer_callback(callback_query_id, text, show_alert=False):
         pass
 
 def download_background_file(file_id, file_name_prefix):
-    """আনলিমিটেড ব্যাকগ্রাউন্ড ফাইল static/backgrounds ফোল্ডারে সেভ করা"""
+    """বট থেকে সরাসরি ভিডিও বা ছবি নিরাপদে স্ট্রিম করে static/backgrounds ফোল্ডারে সেভ করা"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={file_id}"
-        res = requests.get(url).json()
+        res = requests.get(url, timeout=30).json()
+        
         if res.get("ok"):
             file_path = res["result"]["file_path"]
             download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
-            file_data = requests.get(download_url).content
             
-            bg_folder = "static/backgrounds"
-            os.makedirs(bg_folder, exist_ok=True)
-            ext = file_path.split('.')[-1]
-            unique_name = f"{file_name_prefix}_{int(time.time())}_{random.randint(1000,9999)}.{ext}"
-            save_path = os.path.join(bg_folder, unique_name)
+            file_res = requests.get(download_url, stream=True, timeout=60)
             
-            with open(save_path, "wb") as f:
-                f.write(file_data)
-            return True, unique_name
+            if file_res.status_code == 200:
+                bg_folder = "static/backgrounds"
+                os.makedirs(bg_folder, exist_ok=True)
+                
+                ext = file_path.split('.')[-1] if '.' in file_path else 'mp4'
+                unique_name = f"{file_name_prefix}_{int(time.time())}_{random.randint(1000,9999)}.{ext}"
+                save_path = os.path.join(bg_folder, unique_name)
+                
+                with open(save_path, "wb") as f:
+                    for chunk in file_res.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                            
+                return True, unique_name
     except Exception as e:
-        print("Background Download Error:", e)
+        print("Background Download Detailed Error:", traceback.format_exc())
     return False, None
 
 # ================= UI & MENUS =================
@@ -151,7 +158,6 @@ def dashboard_page():
 
 @app.route('/get-random-background', methods=['GET'])
 def get_random_background():
-    """static/backgrounds ফোল্ডার থেকে রেন্ডমলি একটি মিডিয়া (ভিডিও বা ছবি) ও বর্তমান ব্লার সেটিংস রিটার্ন করবে"""
     bg_folder = "static/backgrounds"
     if not os.path.exists(bg_folder):
         os.makedirs(bg_folder, exist_ok=True)
@@ -164,7 +170,6 @@ def get_random_background():
     file_url = f"/static/backgrounds/{chosen_file}?v={int(time.time())}"
     file_type = "video" if chosen_file.lower().endswith(('.mp4', '.mov', '.webm', '.mkv')) else "image"
     
-    # বর্তমান ব্লার ভ্যালু রিড করা (ডিফল্ট 0px)
     blur_val = app.config.get("CURRENT_BLUR", "0px")
     
     return jsonify({"status": "success", "url": file_url, "type": file_type, "blur": blur_val})
@@ -286,18 +291,25 @@ def telegram_webhook():
                 state = admin_states[user_id]
                 if state == "WAITING_FOR_BG_TEMPLATE":
                     file_id = None
-                    if "photo" in message: file_id = message["photo"][-1]["file_id"]
-                    elif "video" in message: file_id = message["video"]["file_id"]
-                    elif "document" in message: file_id = message["document"]["file_id"]
+                    # টেলিগ্রামের যেকোনো ফরম্যাট (সরাসরি ভিডিও, ডকুমেন্ট, অ্যানিমেশন বা ছবি) থেকে ফাইল আইডি নেওয়া
+                    if "video" in message: 
+                        file_id = message["video"]["file_id"]
+                    elif "document" in message: 
+                        file_id = message["document"]["file_id"]
+                    elif "animation" in message: 
+                        file_id = message["animation"]["file_id"]
+                    elif "photo" in message: 
+                        file_id = message["photo"][-1]["file_id"]
 
                     if file_id:
+                        send_telegram_message(chat_id, "⏳ Downloading video, please wait...")
                         success, fname = download_background_file(file_id, "bg_media")
                         if success:
-                            send_telegram_message(chat_id, f"✅ **Background Template Uploaded Successfully!**\nSaved: `{fname}`\n\n👉 Send more files or type /start to return.")
+                            send_telegram_message(chat_id, f"✅ **Background Video Uploaded Successfully!**\nSaved: `{fname}`\n\n👉 Send more files or type /start to return.")
                         else:
                             send_telegram_message(chat_id, "⚠️ Error downloading file.")
                     else:
-                        send_telegram_message(chat_id, "⚠️ Please send a valid photo or video file.")
+                        send_telegram_message(chat_id, "⚠️ Please send a valid video or photo directly.")
                     return "OK", 200
 
             if text == "/start":
@@ -338,7 +350,6 @@ def telegram_webhook():
                     answer_callback(cq_id, "⛔ Unauthorized!", show_alert=True)
                     return "OK", 200
                 percentage = cdata.split("_")[1] # 2, 3, 4, 5, 6, 7
-                # পিক্সেল কনভার্ট করা (যেমন 2% = 2px বা 3px ইত্যাদি)
                 blur_px = f"{percentage}px"
                 app.config["CURRENT_BLUR"] = blur_px
                 answer_callback(cq_id, f"Blur set to {percentage}% successfully!", show_alert=True)
