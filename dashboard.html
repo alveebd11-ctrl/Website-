@@ -160,14 +160,14 @@
         }
 
         .user-details h3 {
-            font-size: 15px;
+            font-size: 14px;
             color: #ffffff;
             font-weight: 700;
             letter-spacing: 0.3px;
         }
 
         .user-details p {
-            font-size: 12px;
+            font-size: 11px;
             color: #94a3b8;
             font-weight: 500;
         }
@@ -244,7 +244,7 @@
             100% { left: 150%; }
         }
 
-        /* --- বটম ন্যাভবার (নিচ থেকে ওপরে ওঠার অ্যানিমেশন সহ) --- */
+        /* --- বটম ন্যাভবার --- */
         .bottom-glass-nav {
             position: fixed;
             bottom: 25px;
@@ -353,19 +353,19 @@
 
     <div id="dashboardWrapper">
         <!-- হেডার ন্যাভবার -->
-        <div class="header-nav">
+        .  <div class="header-nav">
             <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
         </div>
 
         <!-- প্রোফাইল কার্ড লিস্ট -->
         <div class="profile-container">
             
-            <div class="profile-card active-glow" onclick="openProfile('Royal_Ninja', 'Level 292')">
+            <div class="profile-card active-glow" onclick="openProfile('⛔Naughty NonStop🚫', 'Open Media')">
                 <div class="user-info-wrapper">
-                    <img src="https://carder.top/imagens/1791918460640-323067073.jpg" alt="Avatar" class="avatar">
+                    <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Avatar" class="avatar">
                     <div class="user-details">
-                        <h3>Royal_Ninja</h3>
-                        <p>Level 292</p>
+                        <h3>⛔Naughty NonStop🚫</h3>
+                        <p>Open Media</p>
                     </div>
                 </div>
                 <div class="live-badge-container">
@@ -374,12 +374,12 @@
                 </div>
             </div>
 
-            <div class="profile-card" onclick="openProfile('Killer_007', 'Level 124')">
+            <div class="profile-card" onclick="openProfile('𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒', 'Lock Media')">
                 <div class="user-info-wrapper">
-                    <img src="https://carder.top/imagens/1791918463157-201532531.jpg" alt="Avatar" class="avatar">
+                    <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="Avatar" class="avatar">
                     <div class="user-details">
-                        <h3>Killer_007</h3>
-                        <p>Level 124</p>
+                        <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
+                        <p>Lock Media</p>
                     </div>
                 </div>
                 <div class="live-badge-container">
@@ -388,12 +388,12 @@
                 </div>
             </div>
 
-            <div class="profile-card" onclick="openProfile('Ghost_Buster', 'Level 90')">
+            <div class="profile-card" onclick="openProfile('Desi Magi Premium', 'Lock Media')">
                 <div class="user-info-wrapper">
-                    <img src="https://carder.top/imagens/1791918465627-141146469.jpg" alt="Avatar" class="avatar">
+                    <img src="https://carder.top/imagens/1792065179592-849568981.jpg" alt="Avatar" class="avatar">
                     <div class="user-details">
-                        <h3>Ghost_Buster</h3>
-                        <p>Level 90</p>
+                        <h3>Desi Magi Premium</h3>
+                        <p>Lock Media</p>
                     </div>
                 </div>
                 <div class="live-badge-container">
@@ -402,12 +402,12 @@
                 </div>
             </div>
 
-            <div class="profile-card" onclick="openProfile('Grand_Master', 'Level 35')">
+            <div class="profile-card" onclick="openProfile('BD Sensual', 'Lock Media')">
                 <div class="user-info-wrapper">
-                    <img src="https://carder.top/imagens/1791918468080-915885205.jpg" alt="Avatar" class="avatar">
+                    <img src="https://carder.top/imagens/1792065182673-804452797.jpg" alt="Avatar" class="avatar">
                     <div class="user-details">
-                        <h3>Grand_Master</h3>
-                        <p>Level 35</p>
+                        <h3>BD Sensual</h3>
+                        <p>Lock Media</p>
                     </div>
                 </div>
                 <div class="live-badge-container">
@@ -416,12 +416,12 @@
                 </div>
             </div>
 
-            <div class="profile-card" onclick="openProfile('Warrior909', 'Level 24')">
+            <div class="profile-card" onclick="openProfile('Bangladeshi Non Stop 🫦', 'Lock Media')">
                 <div class="user-info-wrapper">
-                    <img src="https://carder.top/imagens/1791918470834-230739368.jpg" alt="Avatar" class="avatar">
+                    <img src="https://carder.top/imagens/1792065176794-158050465.jpg" alt="Avatar" class="avatar">
                     <div class="user-details">
-                        <h3>Warrior909</h3>
-                        <p>Level 24</p>
+                        <h3>Bangladeshi Non Stop 🫦</h3>
+                        <p>Lock Media</p>
                     </div>
                 </div>
                 <div class="live-badge-container">
@@ -480,9 +480,9 @@
             }
         }
 
-        function openProfile(name, level) {
+        function openProfile(name, subtitle) {
             document.getElementById('modalName').innerText = name;
-            document.getElementById('modalInfo').innerText = `Status: LIVE\nLevel: ${level}\nBroadcasting Active`;
+            document.getElementById('modalInfo').innerText = `Status: LIVE\nCategory: ${subtitle}\nBroadcasting Active`;
             document.getElementById('profileModal').style.display = 'flex';
         }
 
