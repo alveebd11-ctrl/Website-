@@ -8,13 +8,40 @@
     <style>
         * { 
             box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; 
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
+            -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
             -webkit-touch-callout: none;
         }
         
+        body { 
+            background-color: #0a1128; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ব্যাকগ্রাউন্ড ফিক্সড কন্টেইনার */
+        .bg-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1; overflow: hidden; pointer-events: none;
+            background-color: #0a1128;
+            transform: translateZ(0);
+        }
+
+        .bg-media {
+            position: absolute; top: 50%; left: 50%;
+            width: 100vw; height: 100vh;
+            object-fit: cover;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            will-change: opacity;
+        }
+
+        .bg-media.loaded { opacity: 1; }
+
         #dashboardWrapper {
             opacity: 0;
             transition: opacity 0.4s ease;
@@ -28,54 +55,19 @@
             z-index: 2;
         }
 
-        body { 
-            background-color: #0a1128; 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        /* ব্যাকগ্রাউন্ড মিডিয়া কন্টেইনার */
-        .bg-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; overflow: hidden; pointer-events: none;
-            background-color: #0a1128;
-        }
-
-        .bg-media {
-            position: absolute; top: 50%; left: 50%;
-            width: 100%; height: 100%;
-            object-fit: cover;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            transition: opacity 0.8s ease-in-out, filter 0.5s ease;
-        }
-
-        .bg-media.loaded {
-            opacity: 1;
-        }
-
-        /* প্রিমিয়াম লোডিং স্ক্রিন ও স্পিনার */
+        /* প্রিমিয়াম লোডিং স্পিনার */
         #bgLoader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(10, 17, 40, 0.85);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 99;
-            transition: opacity 0.5s ease;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 99; transition: opacity 0.5s ease;
         }
 
         .spinner-box {
-            width: 55px;
-            height: 55px;
+            width: 55px; height: 55px;
             border: 3px solid rgba(255, 255, 255, 0.1);
             border-top: 3px solid #ff708f;
             border-radius: 50%;
@@ -84,11 +76,8 @@
         }
 
         .loader-text {
-            color: #ffffff;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
+            color: #ffffff; font-size: 13px; font-weight: 600;
+            letter-spacing: 1.5px; text-transform: uppercase;
         }
 
         @keyframes spinLoader {
@@ -98,231 +87,140 @@
 
         /* হেডার ন্যাভবার */
         .header-nav {
-            width: 100%;
-            max-width: 440px;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            margin-bottom: 20px;
-            z-index: 10;
+            width: 100%; max-width: 440px;
+            display: flex; justify-content: flex-end; align-items: center;
+            margin-bottom: 20px; z-index: 10;
         }
 
         .header-btn {
             position: relative;
             background: linear-gradient(145deg, #ff9bb0, #ff708f);
-            border: none;
-            border-radius: 50px;
-            color: #ffffff;
-            cursor: pointer;
-            box-shadow: 6px 6px 15px rgba(0, 0, 0, 0.3), 
-                        -3px -3px 10px rgba(255, 155, 176, 0.4),
-                        inset 2px 2px 4px rgba(255, 255, 255, 0.4),
-                        inset -2px -2px 4px rgba(180, 50, 80, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-decoration: none;
+            border: none; border-radius: 50px; color: #ffffff; cursor: pointer;
+            box-shadow: 6px 6px 15px rgba(0, 0, 0, 0.3);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease; text-decoration: none;
         }
 
-        .header-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .refresh-btn {
-            width: 95px;
-            height: 38px;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
+        .refresh-btn { width: 95px; height: 38px; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
 
         .refresh-btn.loading {
-            width: 38px;
-            border-radius: 50%;
-            color: transparent;
-            pointer-events: none;
-            animation: pulseShrink 0.4s ease forwards;
+            width: 38px; border-radius: 50%; color: transparent; pointer-events: none;
         }
 
         .refresh-btn.loading::after {
-            content: "";
-            position: absolute;
-            width: 18px;
-            height: 18px;
-            border: 2.5px solid rgba(255, 255, 255, 0.4);
-            border-top-color: #ffffff;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
+            content: ""; position: absolute; width: 18px; height: 18px;
+            border: 2.5px solid rgba(255, 255, 255, 0.4); border-top-color: #ffffff;
+            border-radius: 50%; animation: spin 0.6s linear infinite;
         }
 
-        @keyframes pulseShrink {
-            0% { transform: scale(1); }
-            50% { transform: scale(0.9); }
-            100% { transform: scale(1); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* ভিউ সেকশন কন্ট্রোল */
         .view-section {
-            width: 100%;
-            max-width: 440px;
-            display: none;
-            flex-direction: column;
-            gap: 15px;
+            width: 100%; max-width: 440px; display: none; flex-direction: column; gap: 15px;
         }
+        .view-section.active-view { display: flex; }
 
-        .view-section.active-view {
-            display: flex;
-        }
-
-        /* লিডারবোর্ড কার্ড স্টাইল */
+        /* কার্ড স্টাইল এবং প্রথম কার্ডের ব্লিং (Blink) অ্যানিমেশন */
         .profile-card {
             background: rgba(20, 25, 45, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50px;
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 50px; padding: 12px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); cursor: pointer;
             transition: all 0.3s ease;
-            cursor: pointer;
         }
 
-        .profile-card.active-glow {
-            background: linear-gradient(135deg, rgba(0, 136, 204, 0.4), rgba(20, 25, 45, 0.85));
-            border: 1.5px solid #00bfff;
-            box-shadow: 0 0 25px rgba(0, 191, 255, 0.4), inset 0 0 10px rgba(0, 191, 255, 0.3);
+        /* প্রথম কার্ডের হালকা ব্লিং ইফেক্ট */
+        .profile-card.blink-glow {
+            background: linear-gradient(135deg, rgba(255, 112, 143, 0.3), rgba(20, 25, 45, 0.85));
+            border: 1.5px solid #ff708f;
+            animation: cardBlink 2s infinite ease-in-out;
         }
 
-        .profile-card:hover {
-            transform: translateY(-3px);
-            border-color: rgba(255, 255, 255, 0.3);
+        @keyframes cardBlink {
+            0% { box-shadow: 0 0 10px rgba(255, 112, 143, 0.4); border-color: rgba(255, 112, 143, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(255, 112, 143, 0.9); border-color: #ff708f; }
+            100% { box-shadow: 0 0 10px rgba(255, 112, 143, 0.4); border-color: rgba(255, 112, 143, 0.5); }
         }
 
-        .user-info-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+        .profile-card:hover { transform: translateY(-3px); border-color: rgba(255, 255, 255, 0.3); }
 
-        .avatar-container {
-            position: relative;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-        .avatar {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            pointer-events: none;
-        }
-
-        .image-shield {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5; background: transparent;
-        }
-
-        .user-details h3 {
-            font-size: 14px; color: #ffffff; font-weight: 700;
-        }
-
-        .user-details p {
-            font-size: 11px; color: #94a3b8; font-weight: 500;
-        }
+        .user-info-wrapper { display: flex; align-items: center; gap: 15px; }
+        .avatar-container { position: relative; width: 50px; height: 50px; border-radius: 50%; overflow: hidden; border: 2px solid rgba(255,255,255,0.2); }
+        .avatar { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        .image-shield { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; background: transparent; }
+        .user-details h3 { font-size: 14px; color: #ffffff; font-weight: 700; }
+        .user-details p { font-size: 11px; color: #94a3b8; font-weight: 500; }
 
         /* প্রোফাইল পেজ স্টাইল */
         .profile-card-modern {
-            width: 100%;
-            background: rgba(26, 31, 46, 0.85);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 28px;
-            padding: 16px 16px 24px 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            color: #ffffff;
+            width: 100%; background: rgba(26, 31, 46, 0.85);
+            backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 28px; padding: 16px 16px 24px 16px; color: #ffffff;
         }
-
-        .card-image-wrapper {
-            width: 100%; height: 280px;
-            border-radius: 20px; overflow: hidden;
-            position: relative; background: rgba(255, 255, 255, 0.05);
-        }
-
-        .card-image-wrapper img {
-            width: 100%; height: 100%; object-fit: cover;
-            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
-        }
-
+        .card-image-wrapper { width: 100%; height: 280px; border-radius: 20px; overflow: hidden; position: relative; background: rgba(255,255,255,0.05); }
+        .card-image-wrapper img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s ease; }
         .card-user-info { padding: 16px 6px 4px 6px; }
         .name-row h2 { font-size: 18px; font-weight: 700; color: #ffffff; }
-        .username-text { font-size: 13px; color: #00bfff; margin-bottom: 12px; font-weight: 500; }
-        .card-bio {
-            font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-bottom: 15px;
-            background: rgba(255, 255, 255, 0.04); padding: 10px 12px; border-radius: 12px;
-        }
-        .telegram-meta-details { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px; }
+        .username-text { font-size: 13px; color: #00bfff; margin-bottom: 12px; }
+        .card-bio { font-size: 13px; color: #cbd5e1; padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 12px; margin-bottom: 15px; }
+        .telegram-meta-details { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; }
         .meta-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
         .meta-value { font-size: 13px; color: #ffffff; font-weight: 600; word-break: break-all; }
-        .logout-box { width: 100%; margin-top: 15px; }
-        .logout-action-btn {
-            width: 100%; background: rgba(255, 77, 77, 0.15); color: #ff4d4d;
-            border: 1px solid rgba(255, 77, 77, 0.3); padding: 12px; border-radius: 16px; font-weight: 700; cursor: pointer;
-        }
+        .logout-action-btn { width: 100%; background: rgba(255, 77, 77, 0.15); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.3); padding: 12px; border-radius: 16px; font-weight: 700; cursor: pointer; margin-top: 15px;}
 
-        /* লাইভ ব্যাজ স্টাইল */
-        .live-badge-container {
-            display: inline-flex; align-items: center; background: #000000;
-            border: 1px solid rgba(255, 255, 255, 0.1); padding: 6px 14px; border-radius: 20px;
-        }
-        .live-dot {
-            width: 9px; height: 9px; background-color: #ff1a1a; border-radius: 50%;
-            position: relative; box-shadow: 0 0 8px #ff1a1a; animation: livePulse 1.8s infinite; margin-right: 8px;
-        }
-        @keyframes livePulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 26, 26, 0.7); }
-            70% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(255, 26, 26, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 26, 26, 0); }
-        }
-        .live-text { color: #ffffff; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
+        /* লাইভ ব্যাজ */
+        .live-badge-container { display: inline-flex; align-items: center; background: #000; border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 20px; }
+        .live-dot { width: 9px; height: 9px; background: #ff1a1a; border-radius: 50%; box-shadow: 0 0 8px #ff1a1a; animation: livePulse 1.8s infinite; margin-right: 8px; }
+        @keyframes livePulse { 0% { transform: scale(1); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+        .live-text { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; }
 
         /* বটম ন্যাভবার */
         .bottom-glass-nav {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%) translateY(100px);
             width: 90%; max-width: 380px; height: 70px; background: rgba(20, 25, 45, 0.65);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50px;
-            display: flex; align-items: center; justify-content: space-around; padding: 0 15px;
-            z-index: 100; opacity: 0; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.6s ease;
+            backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50px;
+            display: flex; align-items: center; justify-content: space-around; padding: 0 15px; z-index: 100; opacity: 0; transition: all 0.6s ease;
         }
         .bottom-glass-nav.slide-up { transform: translateX(-50%) translateY(0); opacity: 1; }
         .nav-item { background: transparent; border: none; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .nav-item svg { width: 22px; height: 22px; fill: #94a3b8; transition: fill 0.3s ease; }
         .nav-item.active { background: linear-gradient(135deg, rgba(0, 136, 204, 0.6), rgba(0, 191, 255, 0.8)); width: 58px; height: 58px; }
-        .nav-item.active svg { fill: #ffffff; width: 26px; height: 26px; }
+        .nav-item.active svg { fill: #ffffff; }
 
-        /* মোডাল */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 999; }
-        .modal-box { background: #141c3a; border: 1px solid rgba(255,255,255,0.15); width: 90%; max-width: 340px; padding: 25px; border-radius: 20px; text-align: center; color: white; }
-        .modal-box h3 { margin-bottom: 10px; color: #00bfff; }
-        .modal-box p { font-size: 14px; color: #cbd5e1; margin-bottom: 20px; }
-        .close-btn { background: #ff708f; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+        /* মোডাল ও কিসিং অ্যানিমেশন পপআপ স্টাইল */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 999; }
+        .modal-box { background: #141c3a; border: 1.5px solid rgba(255,112,143,0.4); width: 90%; max-width: 340px; padding: 25px; border-radius: 24px; text-align: center; color: white; box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
+        .modal-box h3 { margin-bottom: 15px; color: #ff708f; font-size: 20px; }
+        
+        /* কিসিং অ্যানিমেশন ইমোজি ও হার্ট ইফেক্ট */
+        .kiss-animation-container {
+            font-size: 50px;
+            margin: 15px 0;
+            position: relative;
+            animation: kissPulse 1.2s infinite alternate ease-in-out;
+        }
+
+        @keyframes kissPulse {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(-5deg); }
+            100% { transform: scale(1.3) rotate(5deg); }
+        }
+
+        .floating-heart {
+            position: absolute;
+            color: #ff4d4d;
+            font-size: 20px;
+            animation: floatUp 1.5s infinite linear;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.4); opacity: 0; }
+        }
+
+        .close-btn { background: linear-gradient(135deg, #ff9bb0, #ff708f); color: white; border: none; padding: 10px 25px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 15px rgba(255,112,143,0.4); }
     </style>
 
     <script>
@@ -332,99 +230,69 @@
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("dashboardWrapper").style.opacity = "1";
                 setTimeout(() => { document.getElementById('bottomNav').classList.add('slide-up'); }, 100);
-                
-                loadRandomSegmentVideoLoop();
+                initSeamlessBackgroundLoop();
                 fetchTelegramProfile();
             });
         }
 
-        // ভিডিওকে সমান সেগমেন্টে ভাগ করে রেন্ডম অংশ (৫ বা ৬ সেকেন্ড) লুপ করার ফাংশন
-        function loadRandomSegmentVideoLoop() {
-            fetch('/get-random-background')
-            .then(res => res.json())
-            .then(data => {
-                const container = document.getElementById('bgContainer');
-                const loader = document.getElementById('bgLoader');
+        // ব্যাকগ্রাউন্ড ভিডিও লুপ এবং ক্রসফেড লজিক
+        function initSeamlessBackgroundLoop() {
+            const container = document.getElementById('bgContainer');
+            const loader = document.getElementById('bgLoader');
 
-                if (data.type === 'video') {
-                    const video = document.createElement('video');
-                    video.src = data.url;
-                    video.autoplay = true;
-                    video.muted = true;
-                    video.loop = false;
-                    video.playsInline = true;
-                    video.className = 'bg-media';
-                    video.style.filter = `blur(${data.blur})`;
+            function fetchAndPlayNext(currentVideo = null) {
+                fetch('/get-random-background')
+                .then(res => res.json())
+                .then(data => {
+                    const nextVideo = document.createElement('video');
+                    nextVideo.src = data.url;
+                    nextVideo.autoplay = true;
+                    nextVideo.muted = true;
+                    nextVideo.loop = false;
+                    nextVideo.playsInline = true;
+                    nextVideo.className = 'bg-media';
+                    nextVideo.style.filter = `blur(${data.blur})`;
 
-                    video.onloadedmetadata = () => {
-                        let duration = video.duration;
-                        let clipDuration = 5; // প্রতি ক্লিপ ৫ থেকে ৬ সেকেন্ড দেখানোর জন্য
-                        
+                    nextVideo.onloadedmetadata = () => {
+                        let duration = nextVideo.duration;
+                        let clipDuration = 6;
                         if (duration < clipDuration) clipDuration = duration;
 
-                        // ভিডিওটিকে সমান ভাগে ভাগ করে রেন্ডমলি যেকোনো একটি সেগমেন্ট বেছে নেওয়া
                         let totalSegments = Math.floor(duration / clipDuration);
                         if (totalSegments < 1) totalSegments = 1;
-                        
-                        let randomSegmentIndex = Math.floor(Math.random() * totalSegments);
-                        let randomStart = randomSegmentIndex * clipDuration;
+                        let randomStart = Math.floor(Math.random() * totalSegments) * clipDuration;
                         let segmentEnd = randomStart + clipDuration;
-
                         if (segmentEnd > duration) segmentEnd = duration;
 
-                        video.currentTime = randomStart;
+                        nextVideo.currentTime = randomStart;
 
-                        video.play().then(() => {
-                            video.classList.add('loaded');
-                            if (loader) loader.style.opacity = '0';
-                            setTimeout(() => { if (loader) loader.style.display = 'none'; }, 500);
+                        nextVideo.play().then(() => {
+                            if (loader && loader.style.display !== 'none') {
+                                loader.style.opacity = '0';
+                                setTimeout(() => loader.style.display = 'none', 400);
+                            }
+                            nextVideo.classList.add('loaded');
+                            if (currentVideo) {
+                                setTimeout(() => { currentVideo.remove(); }, 900);
+                            }
 
-                            // নির্ধারিত সেগমেন্ট শেষ হলেই পরবর্তী রেন্ডম ভিডিও বা অন্য সেগমেন্টে সুইচ হবে
                             const checkInterval = setInterval(() => {
-                                if (video.currentTime >= segmentEnd || video.ended) {
+                                if (nextVideo.currentTime >= segmentEnd || nextVideo.ended) {
                                     clearInterval(checkInterval);
-                                    video.remove();
-                                    loadRandomSegmentVideoLoop(); // পরবর্তী রেন্ডম ভিডিও ও সেগমেন্ট আনবে
+                                    fetchAndPlayNext(nextVideo);
                                 }
                             }, 300);
-
-                        }).catch(e => {
-                            console.log("Autoplay error:", e);
-                            loadRandomSegmentVideoLoop();
-                        });
+                        }).catch(e => { fetchAndPlayNext(currentVideo); });
                     };
-
-                    video.onerror = () => {
-                        loadRandomSegmentVideoLoop();
-                    };
-
-                    container.appendChild(video);
-                } else {
-                    // ছবি হলে ৮ সেকেন্ড দেখিয়ে পরেরটায় সুইচ করবে
-                    const img = document.createElement('img');
-                    img.src = data.url;
-                    img.className = 'bg-media';
-                    img.style.filter = `blur(${data.blur})`;
-                    
-                    img.onload = () => {
-                        img.classList.add('loaded');
-                        if (loader) loader.style.opacity = '0';
-                        setTimeout(() => { if (loader) loader.style.display = 'none'; }, 500);
-
-                        setTimeout(() => {
-                            img.remove();
-                            loadRandomSegmentVideoLoop();
-                        }, 8000);
-                    };
-                    container.appendChild(img);
-                }
-            })
-            .catch(err => {
-                console.log("Background fetch error:", err);
-                setTimeout(loadRandomSegmentVideoLoop, 3000);
-            });
+                    nextVideo.onerror = () => fetchAndPlayNext(currentVideo);
+                    container.appendChild(nextVideo);
+                })
+                .catch(err => { setTimeout(() => fetchAndPlayNext(currentVideo), 3000); });
+            }
+            fetchAndPlayNext();
         }
 
+        // প্রোটেকশন
         document.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('dragstart', e => e.preventDefault());
         document.addEventListener('keydown', e => {
@@ -464,31 +332,38 @@
                             imgElement.onload = () => { imgElement.style.opacity = "1"; };
                         }
                     }
-                })
-                .catch(err => console.log("Profile fetch error"));
+                }).catch(err => {});
             }
         }
 
         function triggerRefresh(btn) {
             btn.classList.add('loading');
             const loader = document.getElementById('bgLoader');
-            if (loader) {
-                loader.style.display = 'flex';
-                loader.style.opacity = '1';
-            }
-            loadRandomSegmentVideoLoop();
-            setTimeout(() => {
-                btn.classList.remove('loading');
-            }, 800);
+            if (loader) { loader.style.display = 'flex'; loader.style.opacity = '1'; }
+            setTimeout(() => btn.classList.remove('loading'), 1000);
         }
 
-        function handleNavAction(type) {
-            if (type === 'group') alert("Telegram Group section coming soon!");
+        function handleNavAction(type) { if (type === 'group') alert("Telegram Group section coming soon!"); }
+
+        // প্রথম বক্স বা বাটনে ক্লিক করলে কিসিং অ্যানিমেশন পপআপ ওপেন হবে
+        function openKissingModal(name, subtitle) {
+            document.getElementById('modalName').innerText = name;
+            document.getElementById('modalInfo').innerHTML = `
+                <div class="kiss-animation-container">
+                    😘💋💖
+                    <span class="floating-heart" style="left: 20%; animation-delay: 0s;">❤️</span>
+                    <span class="floating-heart" style="left: 60%; animation-delay: 0.5s;">💖</span>
+                    <span class="floating-heart" style="left: 40%; animation-delay: 1s;">💕</span>
+                </div>
+                <p style="font-size: 13px; color: #cbd5e1; margin-top: 10px;">Status: LIVE VIP Access Granted 💋</p>
+            `;
+            document.getElementById('profileModal').style.display = 'flex';
         }
 
+        // সাধারণ প্রোফাইল বা লক মিডিয়ার জন্য পপআপ
         function openProfile(name, subtitle) {
             document.getElementById('modalName').innerText = name;
-            document.getElementById('modalInfo').innerText = `Status: LIVE\nCategory: ${subtitle}\nBroadcasting Active`;
+            document.getElementById('modalInfo').innerHTML = `<p>Status: LIVE\nCategory: ${subtitle}\nBroadcasting Active</p>`;
             document.getElementById('profileModal').style.display = 'flex';
         }
 
@@ -502,13 +377,11 @@
 </head>
 <body>
 
-    <!-- প্রিমিয়াম লোডিং স্পিনার স্ক্রিন -->
     <div id="bgLoader">
         <div class="spinner-box"></div>
         <div class="loader-text">Loading Live Stream...</div>
     </div>
 
-    <!-- রেন্ডম ব্যাকগ্রাউন্ড কন্টেইনার -->
     <div class="bg-container" id="bgContainer"></div>
 
     <div id="dashboardWrapper">
@@ -516,9 +389,9 @@
             <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
         </div>
 
-        <!-- ১. হোম ভিউ -->
+        <!-- ১. হোম ভিউ (প্রথম বক্সটিতে ব্লিং অ্যানিমেশন এবং কিসিং পপআপ যুক্ত করা হয়েছে) -->
         <div id="homeView" class="view-section active-view">
-            <div class="profile-card active-glow" onclick="openProfile('⛔Naughty NonStop🚫', 'Open Media')">
+            <div class="profile-card blink-glow" onclick="openKissingModal('⛔Naughty NonStop🚫', 'Open Media')">
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
                         <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Avatar" class="avatar">
@@ -526,77 +399,66 @@
                     </div>
                     <div class="user-details">
                         <h3>⛔Naughty NonStop🚫</h3>
-                        <p>Open Media</p>
+                        <p>Open Media 💋</p>
                     </div>
                 </div>
-                <div class="live-badge-container">
-                    <span class="live-dot"></span>
-                    <span class="live-text">LIVE</span>
-                </div>
+                <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
             </div>
 
             <div class="profile-card" onclick="openProfile('𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒', 'Lock Media')">
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
                         <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="Avatar" class="avatar">
-                        <div class="user-details">
-                            <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
-                            <p>Lock Media</p>
-                        </div>
+                        <div class="image-shield"></div>
+                    </div>
+                    <div class="user-details">
+                        <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
+                        <p>Lock Media</p>
                     </div>
                 </div>
-                <div class="live-badge-container">
-                    <span class="live-dot"></span>
-                    <span class="live-text">LIVE</span>
-                </div>
+                <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
             </div>
 
             <div class="profile-card" onclick="openProfile('Desi Magi Premium', 'Lock Media')">
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
                         <img src="https://carder.top/imagens/1792065179592-849568981.jpg" alt="Avatar" class="avatar">
-                        <div class="user-details">
-                            <h3>Desi Magi Premium</h3>
-                            <p>Lock Media</p>
-                        </div>
+                        <div class="image-shield"></div>
+                    </div>
+                    <div class="user-details">
+                        <h3>Desi Magi Premium</h3>
+                        <p>Lock Media</p>
                     </div>
                 </div>
-                <div class="live-badge-container">
-                    <span class="live-dot"></span>
-                    <span class="live-text">LIVE</span>
-                </div>
+                <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
             </div>
 
             <div class="profile-card" onclick="openProfile('BD Sensual', 'Lock Media')">
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
                         <img src="https://carder.top/imagens/1792065182673-804452797.jpg" alt="Avatar" class="avatar">
-                        <div class="user-details">
-                            <h3>BD Sensual</h3>
-                            <p>Lock Media</p>
-                        </div>
+                        <div class="image-shield"></div>
+                    </div>
+                    <div class="user-details">
+                        <h3>BD Sensual</h3>
+                        <p>Lock Media</p>
                     </div>
                 </div>
-                <div class="live-badge-container">
-                    <span class="live-dot"></span>
-                    <span class="live-text">LIVE</span>
-                </div>
+                <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
             </div>
 
             <div class="profile-card" onclick="openProfile('Bangladeshi Non Stop 🫦', 'Lock Media')">
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
                         <img src="https://carder.top/imagens/1792065176794-158050465.jpg" alt="Avatar" class="avatar">
-                        <div class="user-details">
-                            <h3>Bangladeshi Non Stop 🫦</h3>
-                            <p>Lock Media</p>
-                        </div>
+                        <div class="image-shield"></div>
+                    </div>
+                    <div class="user-details">
+                        <h3>Bangladeshi Non Stop 🫦</h3>
+                        <p>Lock Media</p>
                     </div>
                 </div>
-                <div class="live-badge-container">
-                    <span class="live-dot"></span>
-                    <span class="live-text">LIVE</span>
-                </div>
+                <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
             </div>
         </div>
 
@@ -607,27 +469,16 @@
                     <img id="profileImage" src="" alt="Profile Picture">
                     <div class="image-shield"></div>
                 </div>
-
                 <div class="card-user-info">
-                    <div class="name-row">
-                        <h2 id="profileName">Loading...</h2>
-                    </div>
+                    <div class="name-row"><h2 id="profileName">Loading...</h2></div>
                     <div id="profileUsername" class="username-text">@username</div>
                     <div id="profileBio" class="card-bio">Loading bio...</div>
-
                     <div class="telegram-meta-details">
-                        <div class="meta-row">
-                            <span class="meta-label">Phone Number</span>
-                            <span id="profilePhone" class="meta-value">+880 XXXXXXXXXX</span>
-                        </div>
-                        <div class="meta-row">
-                            <span class="meta-label">Telegram ID</span>
-                            <span id="profileId" class="meta-value">000000000</span>
-                        </div>
+                        <div class="meta-row"><span class="meta-label">Phone Number</span><span id="profilePhone" class="meta-value">+880 XXXXXXXXXX</span></div>
+                        <div class="meta-row"><span class="meta-label">Telegram ID</span><span id="profileId" class="meta-value">000000000</span></div>
                     </div>
                 </div>
             </div>
-
             <div class="logout-box">
                 <button onclick="logoutUser()" class="logout-action-btn">Log Out Account 🚪</button>
             </div>
@@ -635,22 +486,16 @@
 
         <!-- বটম ন্যাভবার -->
         <div class="bottom-glass-nav" id="bottomNav">
-            <button onclick="handleNavAction('group')" class="nav-item" title="Group">
-                <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-            </button>
-            <button onclick="switchView('home', this)" class="nav-item active" title="Home">
-                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-            </button>
-            <button onclick="switchView('profile', this)" class="nav-item" title="Profile">
-                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            </button>
+            <button onclick="handleNavAction('group')" class="nav-item"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></button>
+            <button onclick="switchView('home', this)" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
+            <button onclick="switchView('profile', this)" class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></button>
         </div>
 
         <!-- মোডাল পপআপ -->
         <div class="modal-overlay" id="profileModal">
             <div class="modal-box">
                 <h3 id="modalName">User Profile</h3>
-                <p id="modalInfo">Details about user...</p>
+                <div id="modalInfo">Details...</div>
                 <button class="close-btn" onclick="closeModal()">Close</button>
             </div>
         </div>
