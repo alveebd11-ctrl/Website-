@@ -8,12 +8,11 @@
     <style>
         * { 
             box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; 
-            /* পুরো ওয়েবসাইটের লেখা বা ছবি সিলেক্ট করা বন্ধ */
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
-            -webkit-touch-callout: none; /* মোবাইলে লং-প্রেস সেভ মেনু বন্ধ */
+            -webkit-touch-callout: none;
         }
         
         #dashboardWrapper {
@@ -26,6 +25,7 @@
             align-items: center;
             padding: 30px 15px 100px 15px;
             position: relative;
+            z-index: 2;
         }
 
         body { 
@@ -38,11 +38,18 @@
             overflow-x: hidden;
         }
 
-        /* ব্যাকগ্রাউন্ড ভিডিও প্রোটেকশন */
-        .bg-video {
+        /* রেন্ডম ব্যাকগ্রাউন্ড ভিডিও / ইমেজ কন্টেইনার এবং ব্লার ইফেক্ট */
+        .bg-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: -1; filter: brightness(0.4);
-            pointer-events: none; /* ভিডিওর ওপর ক্লিক বা ডাউনলোড মেনু আসা রোধ করবে */
+            z-index: -1; overflow: hidden; pointer-events: none;
+        }
+
+        .bg-media {
+            position: absolute; top: 50%; left: 50%;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform: translate(-50%, -50%);
+            transition: filter 0.5s ease;
         }
 
         /* হেডার ন্যাভবার */
@@ -123,7 +130,6 @@
             display: none;
             flex-direction: column;
             gap: 15px;
-            z-index: 2;
         }
 
         .view-section.active-view {
@@ -163,7 +169,6 @@
             gap: 15px;
         }
 
-        /* --- ইমেজ প্রোটেকশন কন্টেইনার --- */
         .avatar-container {
             position: relative;
             width: 50px;
@@ -175,8 +180,7 @@
         }
 
         .avatar {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             object-fit: cover;
             pointer-events: none;
         }
@@ -184,24 +188,18 @@
         .image-shield {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 5;
-            background: transparent;
+            z-index: 5; background: transparent;
         }
 
         .user-details h3 {
-            font-size: 14px;
-            color: #ffffff;
-            font-weight: 700;
-            letter-spacing: 0.3px;
+            font-size: 14px; color: #ffffff; font-weight: 700;
         }
 
         .user-details p {
-            font-size: 11px;
-            color: #94a3b8;
-            font-weight: 500;
+            font-size: 11px; color: #94a3b8; font-weight: 500;
         }
 
-        /* --- প্রোফাইল পেজের স্টাইল --- */
+        /* প্রোফাইল পেজ স্টাইল */
         .profile-card-modern {
             width: 100%;
             background: rgba(26, 31, 46, 0.85);
@@ -218,240 +216,69 @@
         }
 
         .card-image-wrapper {
-            width: 100%;
-            height: 280px;
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-            background: rgba(255, 255, 255, 0.05);
+            width: 100%; height: 280px;
+            border-radius: 20px; overflow: hidden;
+            position: relative; background: rgba(255, 255, 255, 0.05);
         }
 
         .card-image-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
+            width: 100%; height: 100%; object-fit: cover;
+            opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
         }
 
-        .card-user-info {
-            padding: 16px 6px 4px 6px;
-        }
-
-        .name-row h2 {
-            font-size: 18px;
-            font-weight: 700;
-            color: #ffffff;
-            word-break: break-word;
-        }
-
-        .username-text {
-            font-size: 13px;
-            color: #00bfff;
-            margin-bottom: 12px;
-            font-weight: 500;
-        }
-
+        .card-user-info { padding: 16px 6px 4px 6px; }
+        .name-row h2 { font-size: 18px; font-weight: 700; color: #ffffff; }
+        .username-text { font-size: 13px; color: #00bfff; margin-bottom: 12px; font-weight: 500; }
         .card-bio {
-            font-size: 13px;
-            color: #cbd5e1;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 10px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            word-break: break-word;
+            font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.04); padding: 10px 12px; border-radius: 12px;
         }
-
-        .telegram-meta-details {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            padding-top: 12px;
-            margin-top: 5px;
-        }
-
-        .meta-row {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .meta-label {
-            font-size: 11px;
-            color: #94a3b8;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .meta-value {
-            font-size: 13px;
-            color: #ffffff;
-            font-weight: 600;
-            word-break: break-all;
-        }
-
-        .logout-box {
-            width: 100%;
-            margin-top: 15px;
-        }
-
+        .telegram-meta-details { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px; }
+        .meta-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+        .meta-value { font-size: 13px; color: #ffffff; font-weight: 600; word-break: break-all; }
+        .logout-box { width: 100%; margin-top: 15px; }
         .logout-action-btn {
-            width: 100%;
-            background: rgba(255, 77, 77, 0.15);
-            color: #ff4d4d;
-            border: 1px solid rgba(255, 77, 77, 0.3);
-            padding: 12px;
-            border-radius: 16px;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
+            width: 100%; background: rgba(255, 77, 77, 0.15); color: #ff4d4d;
+            border: 1px solid rgba(255, 77, 77, 0.3); padding: 12px; border-radius: 16px; font-weight: 700; cursor: pointer;
         }
 
-        /* --- প্রিমিয়াম লাইভ ব্যাজ স্টাইল --- */
+        /* লাইভ ব্যাজ স্টাইল */
         .live-badge-container {
-            display: inline-flex;
-            align-items: center;
-            background: #000000;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 6px 14px;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            display: inline-flex; align-items: center; background: #000000;
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 6px 14px; border-radius: 20px;
         }
-
         .live-dot {
-            width: 9px;
-            height: 9px;
-            background-color: #ff1a1a;
-            border-radius: 50%;
-            display: inline-block;
-            position: relative;
-            box-shadow: 0 0 8px #ff1a1a, 0 0 15px #ff1a1a;
-            animation: livePulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            margin-right: 8px;
+            width: 9px; height: 9px; background-color: #ff1a1a; border-radius: 50%;
+            position: relative; box-shadow: 0 0 8px #ff1a1a; animation: livePulse 1.8s infinite; margin-right: 8px;
         }
-
         @keyframes livePulse {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 26, 26, 0.7); }
             70% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(255, 26, 26, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 26, 26, 0); }
         }
+        .live-text { color: #ffffff; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; }
 
-        .live-text {
-            color: #ffffff;
-            font-family: 'Poppins', sans-serif;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .live-text::after {
-            content: '';
-            position: absolute;
-            top: -50%; left: -150%; width: 50%; height: 200%;
-            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
-            transform: rotate(30deg);
-            animation: shimmerSweep 3s ease-in-out infinite;
-        }
-
-        @keyframes shimmerSweep {
-            0% { left: -150%; }
-            30% { left: 150%; }
-            100% { left: 150%; }
-        }
-
-        /* --- বটম ন্যাভবার --- */
+        /* বটম ন্যাভবার */
         .bottom-glass-nav {
-            position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            width: 90%;
-            max-width: 380px;
-            height: 70px;
-            background: rgba(20, 25, 45, 0.65);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            padding: 0 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.05);
-            z-index: 100;
-            opacity: 0;
-            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.6s ease;
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%) translateY(100px);
+            width: 90%; max-width: 380px; height: 70px; background: rgba(20, 25, 45, 0.65);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50px;
+            display: flex; align-items: center; justify-content: space-around; padding: 0 15px;
+            z-index: 100; opacity: 0; transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.6s ease;
         }
+        .bottom-glass-nav.slide-up { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .nav-item { background: transparent; border: none; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .nav-item svg { width: 22px; height: 22px; fill: #94a3b8; transition: fill 0.3s ease; }
+        .nav-item.active { background: linear-gradient(135deg, rgba(0, 136, 204, 0.6), rgba(0, 191, 255, 0.8)); width: 58px; height: 58px; }
+        .nav-item.active svg { fill: #ffffff; width: 26px; height: 26px; }
 
-        .bottom-glass-nav.slide-up {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
-
-        .nav-item {
-            background: transparent;
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .nav-item svg {
-            width: 22px;
-            height: 22px;
-            fill: #94a3b8;
-            transition: fill 0.3s ease;
-        }
-
-        .nav-item.active {
-            background: linear-gradient(135deg, rgba(0, 136, 204, 0.6), rgba(0, 191, 255, 0.8));
-            box-shadow: 0 0 20px rgba(0, 191, 255, 0.6), inset 0 0 8px rgba(255, 255, 255, 0.4);
-            width: 58px;
-            height: 58px;
-        }
-
-        .nav-item.active svg {
-            fill: #ffffff;
-            width: 26px;
-            height: 26px;
-        }
-
-        .nav-item:hover svg {
-            fill: #ffffff;
-        }
-
-        /* মোডাল পপআপ */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px);
-            display: none; align-items: center; justify-content: center; z-index: 999;
-        }
-        .modal-box {
-            background: #141c3a; border: 1px solid rgba(255,255,255,0.15); width: 90%; max-width: 340px; padding: 25px;
-            border-radius: 20px; text-align: center; color: white;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-        }
+        /* মোডাল */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 999; }
+        .modal-box { background: #141c3a; border: 1px solid rgba(255,255,255,0.15); width: 90%; max-width: 340px; padding: 25px; border-radius: 20px; text-align: center; color: white; }
         .modal-box h3 { margin-bottom: 10px; color: #00bfff; }
         .modal-box p { font-size: 14px; color: #cbd5e1; margin-bottom: 20px; }
-        .close-btn {
-            background: #ff708f; color: white; border: none; padding: 10px 20px;
-            border-radius: 10px; font-weight: 700; cursor: pointer;
-        }
+        .close-btn { background: #ff708f; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; }
     </style>
 
     <script>
@@ -460,39 +287,73 @@
         } else {
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("dashboardWrapper").style.opacity = "1";
-                setTimeout(() => {
-                    document.getElementById('bottomNav').classList.add('slide-up');
-                }, 100);
-
+                setTimeout(() => { document.getElementById('bottomNav').classList.add('slide-up'); }, 100);
+                loadRandomBackground();
                 fetchTelegramProfile();
             });
         }
 
-        // --- উন্নত সিকিউরিটি ও প্রটেকশন স্ক্রিপ্ট ---
-        document.addEventListener('contextmenu', e => e.preventDefault()); // রাইট-ক্লিক ব্লক
-        document.addEventListener('dragstart', e => e.preventDefault());   // ড্র্যাগ ব্লক
-        
-        // কিবোর্ড শর্টকাট যেমন Ctrl+S, Ctrl+U, F12 ব্লক করা
+        // রেন্ডম ব্যাকগ্রাউন্ড লোড এবং ১০ সেকেন্ডের রেন্ডম ক্লিপ ট্রিম লজিক
+        function loadRandomBackground() {
+            fetch('/get-random-background')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('bgContainer');
+                container.innerHTML = ''; // আগের মিডিয়া ক্লিয়ার করা
+
+                if (data.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = data.url;
+                    video.autoplay = true;
+                    video.muted = true;
+                    video.loop = false;
+                    video.playsInline = true;
+                    video.className = 'bg-media';
+                    video.style.filter = `blur(${data.blur})`;
+
+                    video.onloadedmetadata = () => {
+                        let duration = video.duration;
+                        let clipDuration = 10; // ১০ সেকেন্ড দেখানোর জন্য
+                        
+                        if (duration > clipDuration) {
+                            // রেন্ডম স্টার্ট টাইম বের করা
+                            let maxStart = duration - clipDuration;
+                            let randomStart = Math.random() * maxStart;
+                            video.currentTime = randomStart;
+
+                            video.ontimeupdate = () => {
+                                if (video.currentTime >= randomStart + clipDuration) {
+                                    video.currentTime = randomStart; // লুপ ব্যাক করে আবার সেই ১০ সেকেন্ড দেখাবে
+                                }
+                            };
+                        }
+                        video.play().catch(e => console.log("Video play error:", e));
+                    };
+                    container.appendChild(video);
+                } else {
+                    const img = document.createElement('img');
+                    img.src = data.url;
+                    img.className = 'bg-media';
+                    img.style.filter = `blur(${data.blur})`;
+                    container.appendChild(img);
+                }
+            })
+            .catch(err => console.log("Background load error:", err));
+        }
+
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('dragstart', e => e.preventDefault());
         document.addEventListener('keydown', e => {
-            if (
-                e.key === 'F12' || 
-                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
-                (e.ctrlKey && (e.key === 'u' || e.key === 's' || e.key === 'p'))
-            ) {
-                e.preventDefault();
-                return false;
+            if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) || (e.ctrlKey && ['u','s','p'].includes(e.key))) {
+                e.preventDefault(); return false;
             }
         });
 
         function switchView(viewName, element) {
             document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active-view'));
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-
-            if (viewName === 'home') {
-                document.getElementById('homeView').classList.add('active-view');
-            } else if (viewName === 'profile') {
-                document.getElementById('profileView').classList.add('active-view');
-            }
+            if (viewName === 'home') document.getElementById('homeView').classList.add('active-view');
+            else if (viewName === 'profile') document.getElementById('profileView').classList.add('active-view');
             element.classList.add('active');
         }
 
@@ -513,13 +374,10 @@
                         document.getElementById('profileId').innerText = p.id;
                         document.getElementById('profilePhone').innerText = p.phone;
                         document.getElementById('profileBio').innerText = p.bio;
-                        
                         if (p.photo) {
                             let imgElement = document.getElementById('profileImage');
                             imgElement.src = p.photo;
-                            imgElement.onload = () => {
-                                imgElement.style.opacity = "1";
-                            };
+                            imgElement.onload = () => { imgElement.style.opacity = "1"; };
                         }
                     }
                 })
@@ -529,15 +387,11 @@
 
         function triggerRefresh(btn) {
             btn.classList.add('loading');
-            setTimeout(() => {
-                location.reload();
-            }, 700);
+            setTimeout(() => { location.reload(); }, 700);
         }
 
         function handleNavAction(type) {
-            if (type === 'group') {
-                alert("Telegram Group section coming soon!");
-            }
+            if (type === 'group') alert("Telegram Group section coming soon!");
         }
 
         function openProfile(name, subtitle) {
@@ -546,10 +400,7 @@
             document.getElementById('profileModal').style.display = 'flex';
         }
 
-        function closeModal() {
-            document.getElementById('profileModal').style.display = 'none';
-        }
-
+        function closeModal() { document.getElementById('profileModal').style.display = 'none'; }
         function logoutUser() {
             localStorage.removeItem("isLoggedIn");
             localStorage.removeItem("userPhone");
@@ -559,18 +410,15 @@
 </head>
 <body>
 
-    <!-- ব্যাকগ্রাউন্ড ভিডিও প্রটেক্টেড -->
-    <video autoplay muted loop playsinline class="bg-video">
-        <source src="https://videotourl.com/videos/1791952459901-05439f7d-513c-4994-b03b-ca0ca313b9cc.mp4" type="video/mp4">
-    </video>
+    <!-- রেন্ডম ব্যাকগ্রাউন্ড কন্টেইনার -->
+    <div class="bg-container" id="bgContainer"></div>
 
     <div id="dashboardWrapper">
-        <!-- হেডার ন্যাভবার -->
         <div class="header-nav">
             <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
         </div>
 
-        <!-- ১. হোম / লিডারবোর্ড ভিউ -->
+        <!-- ১. হোম ভিউ -->
         <div id="homeView" class="view-section active-view">
             <div class="profile-card active-glow" onclick="openProfile('⛔Naughty NonStop🚫', 'Open Media')">
                 <div class="user-info-wrapper">
@@ -671,10 +519,7 @@
                         <h2 id="profileName">Loading...</h2>
                     </div>
                     <div id="profileUsername" class="username-text">@username</div>
-
-                    <div id="profileBio" class="card-bio">
-                        Loading bio...
-                    </div>
+                    <div id="profileBio" class="card-bio">Loading bio...</div>
 
                     <div class="telegram-meta-details">
                         <div class="meta-row">
@@ -694,24 +539,16 @@
             </div>
         </div>
 
-        <!-- নিচে গ্লাস-মরফিজম বটম ন্যাভবার -->
+        <!-- বটম ন্যাভবার -->
         <div class="bottom-glass-nav" id="bottomNav">
             <button onclick="handleNavAction('group')" class="nav-item" title="Group">
-                <svg viewBox="0 0 24 24">
-                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-                </svg>
+                <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
             </button>
-
             <button onclick="switchView('home', this)" class="nav-item active" title="Home">
-                <svg viewBox="0 0 24 24">
-                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                </svg>
+                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             </button>
-
             <button onclick="switchView('profile', this)" class="nav-item" title="Profile">
-                <svg viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             </button>
         </div>
 
