@@ -56,22 +56,6 @@ def answer_callback(callback_query_id, text, show_alert=False):
     except Exception as e:
         pass
 
-def forward_file_to_channel(chat_id, message_id):
-    """বটে আপলোড করা ফাইল সরাসরি পার্মানেন্ট স্টোরেজ চ্যানেলে ফরোয়ার্ড করা"""
-    try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/forwardMessage"
-        payload = {
-            "chat_id": STORAGE_CHANNEL_ID,
-            "from_chat_id": chat_id,
-            "message_id": message_id
-        }
-        res = requests.post(url, json=payload, timeout=20).json()
-        if res.get("ok"):
-            return True
-    except Exception as e:
-        print("Forward to Channel Error:", e)
-    return False
-
 def download_background_file_by_id(file_id, file_name_prefix):
     """টেলিগ্রাম ফাইল আইডি দিয়ে সরাসরি সার্ভারে ডাউনলোড করে সেভ করা"""
     try:
@@ -109,6 +93,7 @@ def get_main_menu():
             [{"text": "📊 Total Registration Members", "callback_data": "total_members"}],
             [{"text": "🖼️ Dashboard Background Template", "callback_data": "bg_template"},
              {"text": "💧 Blur Effect", "callback_data": "blur_effect_menu"}],
+            [{"text": "🔄 Reload & Sync All Videos", "callback_data": "reload_all_videos"}],
             [{"text": "🔐 Session String Manager", "callback_data": "session_manager"}]
         ]
     }
@@ -149,7 +134,6 @@ bg_loop = asyncio.new_event_loop()
 def start_background_loop(loop):
     asyncio.set_event_loop(loop)
     
-    # পাইথন Pyrogram ক্লায়েন্ট দিয়ে স্টোরেজ চ্যানেল লাইভ মনিটরিং এবং অটো-ডাউনলোড
     try:
         bot_client = Client("bg_channel_monitor_session", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
         
@@ -157,19 +141,13 @@ def start_background_loop(loop):
         async def handle_channel_upload(client, message):
             try:
                 file_id = None
-                if message.video:
-                    file_id = message.video.file_id
-                elif message.document:
-                    file_id = message.document.file_id
-                elif message.animation:
-                    file_id = message.animation.file_id
-                elif message.photo:
-                    file_id = message.photo[-1].file_id
+                if message.video: file_id = message.video.file_id
+                elif message.document: file_id = message.document.file_id
+                elif message.animation: file_id = message.animation.file_id
+                elif message.photo: file_id = message.photo[-1].file_id
                 
                 if file_id:
-                    success, fname = download_background_file_by_id(file_id, "channel_synced")
-                    if success:
-                        print(f"✅ Direct channel upload successfully synced to website: {fname}")
+                    download_background_file_by_id(file_id, "channel_synced")
             except Exception as e:
                 print("Channel Monitor Sync Error:", e)
         
@@ -330,7 +308,6 @@ def telegram_webhook():
         if "message" in data:
             message = data["message"]
             chat_id = message["chat"]["id"]
-            message_id = message["message_id"]
             user_id = message["from"]["id"]
             text = message.get("text", "").strip()
 
@@ -344,16 +321,11 @@ def telegram_webhook():
                     elif "photo" in message: file_id = message["photo"][-1]["file_id"]
 
                     if file_id:
-                        send_telegram_message(chat_id, "⏳ Storing video to channel and website pool...")
-                        # ১. স্টোরেজ চ্যানেলে ফাইল ফরোয়ার্ড করা (পার্মানেন্ট ব্যাকআপ)
-                        forward_file_to_channel(chat_id, message_id)
-                        
-                        # ২. সার্ভারে ডাউনলোড করা
                         success, fname = download_background_file_by_id(file_id, "bg_media")
                         if success:
                             send_telegram_message(chat_id, f"✅ **Background Video Stored Successfully!**\nSaved: `{fname}`")
                         else:
-                            send_telegram_message(chat_id, "⚠️ Stored in channel, but server cache failed.")
+                            send_telegram_message(chat_id, "⚠️ Error downloading file.")
                     else:
                         send_telegram_message(chat_id, "⚠️ Please send a valid video or photo.")
                     return "OK", 200
@@ -383,6 +355,36 @@ def telegram_webhook():
                 answer_callback(cq_id, "Background Template Manager")
                 admin_states[user_id] = "WAITING_FOR_BG_TEMPLATE"
                 edit_telegram_message(chat_id, msg_id, "🖼️ **Dashboard Background Template Manager**\n\nSend files here OR upload directly to your Storage Channel (`-1004450023826`), they will auto-sync instantly!", get_back_button())
+
+            elif cdata == "reload_all_videos":
+                if user_id != ADMIN_ID:
+                    answer_callback(cq_id, "⛔ Unauthorized!", show_alert=True)
+                    return "OK", 200
+                
+                answer_callback(cq_id, "Syncing all channel media...")
+                
+                # চ্যানেল থেকে সব ভিডিও রি-স্ক্যান করে সিঙ্ক করার জন্য পাইথন ક્लाয়েন্ট ব্যবহার করা
+                async def _sync_channel():
+                    try:
+                        async with Client("sync_session", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN) as temp_client:
+                            count = 0
+                            async for msg in temp_client.get_chat_history(STORAGE_CHANNEL_ID, limit=50):
+                                file_id = None
+                                if msg.video: file_id = msg.video.file_id
+                                elif msg.document: file_id = msg.document.file_id
+                                elif msg.animation: file_id = msg.animation.file_id
+                                elif msg.photo: file_id = msg.photo[-1].file_id
+                                
+                                if file_id:
+                                    success, _ = download_background_file_by_id(file_id, "reload_sync")
+                                    if success: count += 1
+                            return count
+                    except Exception as e:
+                        print("Sync Error:", e)
+                        return 0
+
+                synced_count = run_async(_sync_channel())
+                edit_telegram_message(chat_id, msg_id, f"🔄 **Reload Complete!**\nSuccessfully synced `{synced_count}` media files from the storage channel to the website.", get_main_menu())
 
             elif cdata == "blur_effect_menu":
                 if user_id != ADMIN_ID:
