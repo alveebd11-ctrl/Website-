@@ -3,6 +3,7 @@ import asyncio
 import threading
 import traceback
 import requests
+import time
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pyrogram import Client
@@ -172,7 +173,6 @@ def send_code():
             if phone in active_clients:
                 try: await active_clients[phone]["client"].disconnect()
                 except Exception: pass
-            # FIX: in_memory=True রিমুভ করা হয়েছে যাতে সেশন ফাইল তৈরি হয়
             client = Client(session_name, api_id=API_ID, api_hash=API_HASH)
             await client.connect()
             sent_code = await client.send_code(phone)
@@ -241,7 +241,6 @@ def get_user_profile():
     try:
         session_name = f"session_{phone.replace('+', '')}"
         async def _fetch():
-            # FIX: in_memory=True রিমুভ করা হয়েছে যাতে সেভ করা সেশন রিড করতে পারে
             client = Client(session_name, api_id=API_ID, api_hash=API_HASH)
             await client.connect()
             
@@ -252,12 +251,15 @@ def get_user_profile():
             full_chat = await client.get_chat("me")
             user_bio = full_chat.bio if full_chat.bio else "No bio available"
             
-            # প্রোফাইল ছবি ডাউনলোড করা
+            # প্রোফাইল ছবি ডাউনলোড করা (Absolute Path ফিক্স করা হয়েছে)
             photo_url = None
             async for photo in client.get_chat_photos("me", limit=1):
                 os.makedirs("static", exist_ok=True)
-                file_path = await client.download_media(photo.file_id, file_name=f"static/profile_{me.id}.jpg")
-                photo_url = "/" + file_path
+                save_path = os.path.abspath(f"static/profile_{me.id}.jpg")
+                await client.download_media(photo.file_id, file_name=save_path)
+                
+                # ব্রাউজার ক্যাশ এড়ানোর জন্য টাইমস্ট্যাম্প যুক্ত করা হয়েছে
+                photo_url = f"/static/profile_{me.id}.jpg?v={int(time.time())}"
                 
             await client.disconnect()
 
@@ -348,7 +350,6 @@ def telegram_webhook():
                     f"👥 Total Registered Members: `{total_logged_in_users:,}`\n\n"
                     f"✅ Statistics updated successfully from the live server!"
                 )
-                # নতুন মেসেজ না পাঠিয়ে আগের মেসেজ এডিট করবে এবং ব্যাক বাটন বসাবে
                 edit_telegram_message(chat_id, message_id, stats_text, get_back_button())
 
             elif callback_data == "bg_manager":
@@ -372,7 +373,6 @@ def telegram_webhook():
                 edit_telegram_message(chat_id, message_id, session_text, get_back_button())
 
             elif callback_data == "back_to_main":
-                # ব্যাক বাটনে ক্লিক করলে এডমিন স্টেট ক্লিয়ার হবে এবং মেইন মেনু ফিরে আসবে
                 if user_id in admin_states:
                     del admin_states[user_id]
                 answer_callback(callback_query_id, "Back to Main Menu")
