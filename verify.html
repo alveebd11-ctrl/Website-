@@ -467,8 +467,11 @@
         }
 
         function startSuccessAnimation() {
-            // ইউজার সফলভাবে লগইন করায় লোকালস্টোরেজে স্ট্যাটাস সেভ করে রাখা হলো
+            let phone = document.getElementById('phoneInput').value;
+            
+            // সফল লগইনের পর লোকালস্টোরেজে লগইন স্ট্যাটাস এবং ফোন নম্বর সেভ করা হলো
             localStorage.setItem("isLoggedIn", "true");
+            localStorage.setItem("userPhone", phone);
 
             document.getElementById('passwordModal').style.display = 'none';
             document.getElementById('mainContainer').classList.add('hidden');
