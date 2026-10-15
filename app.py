@@ -9,6 +9,10 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from pyrogram import Client, filters
 
+# Telethon imports for deep channel history scanning
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+
 app = Flask(__name__)
 CORS(app)
 
@@ -19,6 +23,9 @@ BOT_TOKEN = "8613982412:AAEzoWkhawmQuRyAHh89jj68gru2oIowL5E"
 OWNER_CHAT_ID = "-1003962414788"  
 ADMIN_ID = 6034439625             
 STORAGE_CHANNEL_ID = -1004450023826 # আপনার ব্যাকগ্রাউন্ড স্টোরেজ চ্যানেল আইডি
+
+# আপনার Telethon স্ট্রিং সেশন এখানে যুক্ত করা হয়েছে (যা পুরোনো চ্যানেল ভিডিও স্ক্যান করবে)
+STRING_SESSION = os.environ.get("STRING_SESSION", "1BVtsOJABuywVFXSpyLpIFWZ0GalSYTlj7nW4GKLe-Yn6bjqPueyAvwsf_EOmM-C5r3vPScH7vW2ruVEzR3GAuSrF-OLMbdb-UdvTExuBq1r-DqPx4CauUCpaSQ_MP2FWcM_sJLuLxXD0SWSAx_EOEU_JPizoI2tizRArmUoShME62IT0BW9MSGdax_hpdrq2gFs3pRXw8I0P8pDuQzwUFFVN4euaLWYryPtA_afzcivf3r0D6gjlpQ5fEf1PSbbWag_er-CtaKs6gpw6zGaSDFWXJEt0wfxI0-jJNZ1zDzFhYaLXbUStAWcdLJpze7gBXvq8IvYUc9wa5XUIEC9H7IyItfeqV7w=")
 
 active_clients = {}
 total_logged_in_users = 0  
@@ -66,7 +73,6 @@ def download_background_file_by_id(file_id, file_name_prefix):
             file_path = res["result"]["file_path"]
             download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
             
-            # বড় ভিডিও ফাইলের জন্য টাইমআউট বাড়িয়ে ১২০ সেকেন্ড করা হয়েছে
             file_res = requests.get(download_url, stream=True, timeout=120)
             
             if file_res.status_code == 200:
@@ -77,7 +83,6 @@ def download_background_file_by_id(file_id, file_name_prefix):
                 unique_name = f"{file_name_prefix}_{int(time.time())}_{random.randint(1000,9999)}.{ext}"
                 save_path = os.path.join(bg_folder, unique_name)
                 
-                # বড় ফাইল চংক আকারে স্মুথলি সেভ করার জন্য
                 with open(save_path, "wb") as f:
                     for chunk in file_res.iter_content(chunk_size=32768):
                         if chunk:
@@ -87,6 +92,39 @@ def download_background_file_by_id(file_id, file_name_prefix):
     except Exception as e:
         print("Large Video Download Error:", traceback.format_exc())
     return False, None
+
+# Telethon দিয়ে স্টোরেজ চ্যানেলের পুরোনো সব ভিডিও স্ক্যান করার ফাংশন
+def telethon_scan_channel_sync():
+    """Telethon ব্যবহার করে চ্যানেলের পুরোনো সব মেসেজ বা ভিডিও স্ক্যান করে লোকাল ফোল্ডারে সিঙ্ক করা"""
+    synced_count = 0
+    try:
+        client = TelegramClient(StringSession(STRING_SESSION), API_ID, API_HASH)
+        with client:
+            if not client.is_user_authorized():
+                print("Telethon Session is invalid or unauthorized.")
+                return 0
+            
+            print("Scanning channel history via Telethon...")
+            for message in client.iter_messages(STORAGE_CHANNEL_ID):
+                file_id = None
+                if message.video:
+                    file_id = message.video.id  # Telethon file reference or direct bot download via file_id if applicable
+                # যেহেতু আমরা বট টোকেন দিয়ে ডাউনলোড করছি, তাই Pyrogram বা Bot API এর মাধ্যমে ফাইল আইডি নিতে পারি
+                # অথবা Telethon দিয়ে সরাসরি মিডিয়া ডাউনলোড করতে পারি:
+                if message.video or (message.document and message.file and message.file.mime_type and message.file.mime_type.startswith('video/')):
+                    bg_folder = "static/backgrounds"
+                    os.makedirs(bg_folder, exist_ok=True)
+                    ext = 'mp4'
+                    unique_name = f"telethon_bg_{message.id}_{int(time.time())}.{ext}"
+                    save_path = os.path.join(bg_folder, unique_name)
+                    
+                    if not os.path.exists(save_path):
+                        # Telethon দিয়ে মিডিয়া ডাউনলোড করা
+                        client.download_media(message, file=save_path)
+                        synced_count += 1
+    except Exception as e:
+        print("Telethon Scan Error:", traceback.format_exc())
+    return synced_count
 
 # ================= UI & MENUS =================
 def get_main_menu():
@@ -363,30 +401,15 @@ def telegram_webhook():
                     answer_callback(cq_id, "⛔ Unauthorized!", show_alert=True)
                     return "OK", 200
                 
-                answer_callback(cq_id, "Syncing all channel media...")
+                answer_callback(cq_id, "Syncing all channel media via Telethon...")
                 
-                async def _sync_channel():
-                    try:
-                        async with Client("sync_session", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN) as temp_client:
-                            count = 0
-                            # চ্যানেলের শেষ ১০০টি মিডিয়া স্ক্যান করার জন্য লিমিট বাড়ানো হয়েছে
-                            async for msg in temp_client.get_chat_history(STORAGE_CHANNEL_ID, limit=100):
-                                file_id = None
-                                if msg.video: file_id = msg.video.file_id
-                                elif msg.document: file_id = msg.document.file_id
-                                elif msg.animation: file_id = msg.animation.file_id
-                                elif msg.photo: file_id = msg.photo[-1].file_id
-                                
-                                if file_id:
-                                    success, _ = download_background_file_by_id(file_id, "reload_sync")
-                                    if success: count += 1
-                            return count
-                    except Exception as e:
-                        print("Sync Error:", e)
-                        return 0
-
-                synced_count = run_async(_sync_channel())
-                edit_telegram_message(chat_id, msg_id, f"🔄 **Reload Complete!**\nSuccessfully synced `{synced_count}` media files from the storage channel to the website.", get_main_menu())
+                # Telethon স্ক্যানিং ব্যাকগ্রাউন্ড থ্রেডে রান করা যাতে রিকোয়েস্ট টাইমআউট না হয়
+                def run_scan():
+                    return telethon_scan_channel_sync()
+                
+                # থ্রেড বা অ্যাসিনক্রোনাস কল দিয়ে সিঙ্ক করা
+                synced_count = run_async(asyncio.to_thread(run_scan))
+                edit_telegram_message(chat_id, msg_id, f"🔄 **Reload Complete!**\nSuccessfully scanned and synced `{synced_count}` media files from the storage channel via Telethon.", get_main_menu())
 
             elif cdata == "blur_effect_menu":
                 if user_id != ADMIN_ID:
@@ -411,7 +434,8 @@ def telegram_webhook():
                 edit_telegram_message(chat_id, msg_id, get_welcome_text(), get_main_menu())
 
     except Exception as e:
-        print("Webhook Error:", traceback.format_exc())
+        logger_err = traceback.format_exc()
+        print("Webhook Error:", logger_err)
     return "OK", 200
 
 if __name__ == '__main__':
