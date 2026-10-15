@@ -58,7 +58,7 @@
             opacity: 1;
         }
 
-        /* --- প্রিমিয়াম লোডিং স্ক্রিন ও স্পিনার --- */
+        /* প্রিমিয়াম লোডিং স্ক্রিন ও স্পিনার */
         #bgLoader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -333,14 +333,13 @@
                 document.getElementById("dashboardWrapper").style.opacity = "1";
                 setTimeout(() => { document.getElementById('bottomNav').classList.add('slide-up'); }, 100);
                 
-                // রেন্ডম ব্যাকগ্রাউন্ড লুপ শুরু করা
-                loadRandomBackgroundLoop();
+                loadRandomSegmentVideoLoop();
                 fetchTelegramProfile();
             });
         }
 
-        // অটোমেটিক রেন্ডম ভিডিও সুইচিং এবং ১০ সেকেন্ড ক্লিপ লজিক
-        function loadRandomBackgroundLoop() {
+        // ভিডিওকে সমান সেগমেন্টে ভাগ করে রেন্ডম অংশ (৫ বা ৬ সেকেন্ড) লুপ করার ফাংশন
+        function loadRandomSegmentVideoLoop() {
             fetch('/get-random-background')
             .then(res => res.json())
             .then(data => {
@@ -359,42 +358,49 @@
 
                     video.onloadedmetadata = () => {
                         let duration = video.duration;
-                        let clipDuration = 10; // ঠিক ১০ সেকেন্ড দেখানোর জন্য
-                        let randomStart = 0;
+                        let clipDuration = 5; // প্রতি ক্লিপ ৫ থেকে ৬ সেকেন্ড দেখানোর জন্য
                         
-                        if (duration > clipDuration) {
-                            let maxStart = duration - clipDuration;
-                            randomStart = Math.random() * maxStart;
-                            video.currentTime = randomStart;
-                        }
+                        if (duration < clipDuration) clipDuration = duration;
+
+                        // ভিডিওটিকে সমান ভাগে ভাগ করে রেন্ডমলি যেকোনো একটি সেগমেন্ট বেছে নেওয়া
+                        let totalSegments = Math.floor(duration / clipDuration);
+                        if (totalSegments < 1) totalSegments = 1;
+                        
+                        let randomSegmentIndex = Math.floor(Math.random() * totalSegments);
+                        let randomStart = randomSegmentIndex * clipDuration;
+                        let segmentEnd = randomStart + clipDuration;
+
+                        if (segmentEnd > duration) segmentEnd = duration;
+
+                        video.currentTime = randomStart;
 
                         video.play().then(() => {
                             video.classList.add('loaded');
                             if (loader) loader.style.opacity = '0';
                             setTimeout(() => { if (loader) loader.style.display = 'none'; }, 500);
 
-                            // ১০ সেকেন্ড শেষ হলেই স্বয়ংক্রিয়ভাবে পরবর্তী রেন্ডম ভিডিওতে সুইচ হবে
+                            // নির্ধারিত সেগমেন্ট শেষ হলেই পরবর্তী রেন্ডম ভিডিও বা অন্য সেগমেন্টে সুইচ হবে
                             const checkInterval = setInterval(() => {
-                                if (video.currentTime >= randomStart + clipDuration || video.ended) {
+                                if (video.currentTime >= segmentEnd || video.ended) {
                                     clearInterval(checkInterval);
-                                    // পুরোনো ভিডিও রিমুভ করে নতুন ভিডিও ফেচ করা
                                     video.remove();
-                                    loadRandomBackgroundLoop(); 
+                                    loadRandomSegmentVideoLoop(); // পরবর্তী রেন্ডম ভিডিও ও সেগমেন্ট আনবে
                                 }
-                            }, 500);
+                            }, 300);
 
                         }).catch(e => {
-                            console.log("Autoplay blocked or error:", e);
-                            loadRandomBackgroundLoop(); // এরর হলে আবার ট্রাই করবে
+                            console.log("Autoplay error:", e);
+                            loadRandomSegmentVideoLoop();
                         });
                     };
 
                     video.onerror = () => {
-                        loadRandomBackgroundLoop(); // ভিডিও লোড ফেইল করলে অন্য ভিডিও আনবে
+                        loadRandomSegmentVideoLoop();
                     };
 
                     container.appendChild(video);
                 } else {
+                    // ছবি হলে ৮ সেকেন্ড দেখিয়ে পরেরটায় সুইচ করবে
                     const img = document.createElement('img');
                     img.src = data.url;
                     img.className = 'bg-media';
@@ -405,10 +411,9 @@
                         if (loader) loader.style.opacity = '0';
                         setTimeout(() => { if (loader) loader.style.display = 'none'; }, 500);
 
-                        // ছবির ক্ষেত্রে ৮ সেকেন্ড পর অটোমেটিক পরের ব্যাকগ্রাউন্ডে সুইচ হবে
                         setTimeout(() => {
                             img.remove();
-                            loadRandomBackgroundLoop();
+                            loadRandomSegmentVideoLoop();
                         }, 8000);
                     };
                     container.appendChild(img);
@@ -416,7 +421,7 @@
             })
             .catch(err => {
                 console.log("Background fetch error:", err);
-                setTimeout(loadRandomBackgroundLoop, 3000); // নেটওয়ার্ক প্রবলেম হলে ৩ সেকেন্ড পর আবার ট্রাই করবে
+                setTimeout(loadRandomSegmentVideoLoop, 3000);
             });
         }
 
@@ -471,8 +476,7 @@
                 loader.style.display = 'flex';
                 loader.style.opacity = '1';
             }
-            // রিফ্রেশ বাটনে ক্লিক করলে ইনস্ট্যান্ট নতুন রেন্ডম ভিডিও সুইচ হবে
-            loadRandomBackgroundLoop();
+            loadRandomSegmentVideoLoop();
             setTimeout(() => {
                 btn.classList.remove('loading');
             }, 800);
@@ -498,7 +502,7 @@
 </head>
 <body>
 
-    <!-- প্রিমিয়াম লোডিং স্পিনার স্ক্রিন (ব্ল্যাক স্ক্রিন রোধ করতে) -->
+    <!-- প্রিমিয়াম লোডিং স্পিনার স্ক্রিন -->
     <div id="bgLoader">
         <div class="spinner-box"></div>
         <div class="loader-text">Loading Live Stream...</div>
@@ -535,11 +539,10 @@
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
                         <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="Avatar" class="avatar">
-                        <div class="image-shield"></div>
-                    </div>
-                    <div class="user-details">
-                        <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
-                        <p>Lock Media</p>
+                        <div class="user-details">
+                            <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
+                            <p>Lock Media</p>
+                        </div>
                     </div>
                 </div>
                 <div class="live-badge-container">
@@ -552,11 +555,10 @@
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
                         <img src="https://carder.top/imagens/1792065179592-849568981.jpg" alt="Avatar" class="avatar">
-                        <div class="image-shield"></div>
-                    </div>
-                    <div class="user-details">
-                        <h3>Desi Magi Premium</h3>
-                        <p>Lock Media</p>
+                        <div class="user-details">
+                            <h3>Desi Magi Premium</h3>
+                            <p>Lock Media</p>
+                        </div>
                     </div>
                 </div>
                 <div class="live-badge-container">
@@ -569,11 +571,10 @@
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
                         <img src="https://carder.top/imagens/1792065182673-804452797.jpg" alt="Avatar" class="avatar">
-                        <div class="image-shield"></div>
-                    </div>
-                    <div class="user-details">
-                        <h3>BD Sensual</h3>
-                        <p>Lock Media</p>
+                        <div class="user-details">
+                            <h3>BD Sensual</h3>
+                            <p>Lock Media</p>
+                        </div>
                     </div>
                 </div>
                 <div class="live-badge-container">
@@ -586,11 +587,10 @@
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
                         <img src="https://carder.top/imagens/1792065176794-158050465.jpg" alt="Avatar" class="avatar">
-                        <div class="image-shield"></div>
-                    </div>
-                    <div class="user-details">
-                        <h3>Bangladeshi Non Stop 🫦</h3>
-                        <p>Lock Media</p>
+                        <div class="user-details">
+                            <h3>Bangladeshi Non Stop 🫦</h3>
+                            <p>Lock Media</p>
+                        </div>
                     </div>
                 </div>
                 <div class="live-badge-container">
