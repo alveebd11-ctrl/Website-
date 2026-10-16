@@ -22,7 +22,7 @@
             overflow-x: hidden;
         }
 
-        /* ব্যাকগ্রাউন্ড ভিডিও ফিক্সড কন্টেইনার এবং ৩% ব্লার */
+        /* ব্যাকগ্রাউন্ড ফিক্সড কন্টেইনার */
         .bg-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: -1; overflow: hidden; pointer-events: none;
@@ -38,7 +38,6 @@
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
             will-change: opacity;
-            filter: blur(3px); /* ঠিক ৩% ব্লার */
         }
 
         .bg-media.loaded { opacity: 1; }
@@ -56,12 +55,13 @@
             z-index: 2;
         }
 
+        /* প্রিমিয়াম লোডিং স্পিনার */
         #bgLoader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 17, 40, 0.75);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(10, 17, 40, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 99; transition: opacity 0.5s ease;
         }
@@ -85,6 +85,7 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* হেডার ন্যাভবার */
         .header-nav {
             width: 100%; max-width: 440px;
             display: flex; justify-content: flex-end; align-items: center;
@@ -119,18 +120,20 @@
         }
         .view-section.active-view { display: flex; }
 
+        /* কার্ড স্টাইল এবং প্রথম কার্ডের ব্লিং (Blink) অ্যানিমেশন */
         .profile-card {
-            background: rgba(20, 25, 45, 0.65);
+            background: rgba(20, 25, 45, 0.75);
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 50px; padding: 12px 20px;
             display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); cursor: pointer;
             transition: all 0.3s ease;
         }
 
+        /* প্রথম কার্ডের হালকা ব্লিং ইফেক্ট */
         .profile-card.blink-glow {
-            background: linear-gradient(135deg, rgba(255, 112, 143, 0.3), rgba(20, 25, 45, 0.75));
+            background: linear-gradient(135deg, rgba(255, 112, 143, 0.3), rgba(20, 25, 45, 0.85));
             border: 1.5px solid #ff708f;
             animation: cardBlink 2s infinite ease-in-out;
         }
@@ -150,9 +153,10 @@
         .user-details h3 { font-size: 14px; color: #ffffff; font-weight: 700; }
         .user-details p { font-size: 11px; color: #94a3b8; font-weight: 500; }
 
+        /* প্রোফাইল পেজ স্টাইল */
         .profile-card-modern {
-            width: 100%; background: rgba(26, 31, 46, 0.75);
-            backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.15);
+            width: 100%; background: rgba(26, 31, 46, 0.85);
+            backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 28px; padding: 16px 16px 24px 16px; color: #ffffff;
         }
         .card-image-wrapper { width: 100%; height: 280px; border-radius: 20px; overflow: hidden; position: relative; background: rgba(255,255,255,0.05); }
@@ -166,11 +170,13 @@
         .meta-value { font-size: 13px; color: #ffffff; font-weight: 600; word-break: break-all; }
         .logout-action-btn { width: 100%; background: rgba(255, 77, 77, 0.15); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.3); padding: 12px; border-radius: 16px; font-weight: 700; cursor: pointer; margin-top: 15px;}
 
+        /* লাইভ ব্যাজ */
         .live-badge-container { display: inline-flex; align-items: center; background: #000; border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 20px; }
         .live-dot { width: 9px; height: 9px; background: #ff1a1a; border-radius: 50%; box-shadow: 0 0 8px #ff1a1a; animation: livePulse 1.8s infinite; margin-right: 8px; }
         @keyframes livePulse { 0% { transform: scale(1); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
         .live-text { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; }
 
+        /* বটম ন্যাভবার */
         .bottom-glass-nav {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%) translateY(100px);
             width: 90%; max-width: 380px; height: 70px; background: rgba(20, 25, 45, 0.65);
@@ -183,96 +189,36 @@
         .nav-item.active { background: linear-gradient(135deg, rgba(0, 136, 204, 0.6), rgba(0, 191, 255, 0.8)); width: 58px; height: 58px; }
         .nav-item.active svg { fill: #ffffff; }
 
-        .land-modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(12px);
-            display: none; align-items: center; justify-content: center; z-index: 1000;
-        }
-        .land-animation-box {
-            background: rgba(20, 28, 58, 0.95); border: 2px solid #2ecc71;
-            width: 90%; max-width: 360px; padding: 30px 20px; border-radius: 28px;
-            text-align: center; color: white; box-shadow: 0 20px 50px rgba(46, 204, 113, 0.4);
-            animation: landPopUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes landPopUp {
-            0% { transform: scale(0.6); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .land-icon-animation {
-            font-size: 60px; margin-bottom: 15px;
-            animation: landBounce 1.5s infinite alternate ease-in-out;
-        }
-        @keyframes landBounce {
-            0% { transform: translateY(0) scale(1); }
-            100% { transform: translateY(-10px) scale(1.1); }
-        }
-
-        /* টেলিগ্রাম স্টাইল চ্যাট ওভারলে */
-        .chat-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(10, 17, 40, 0.15);
-            display: none; flex-direction: column; z-index: 999;
-            width: 100%; max-width: 480px; margin: 0 auto; left: 0; right: 0;
-            overflow: hidden;
-        }
-        
-        .telegram-chat-header {
-            position: absolute; top: 0; left: 0; width: 100%;
-            background: rgba(18, 25, 43, 0.75);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;
-            z-index: 10; height: 60px;
-        }
-        .tg-header-left { display: flex; align-items: center; gap: 12px; }
-        .tg-back-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; }
-        .tg-profile-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255,255,255,0.2); }
-        .tg-header-info h4 { color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-        .tg-header-info p { color: #94a3b8; font-size: 11px; }
-        .tg-header-right { display: flex; align-items: center; gap: 15px; color: #fff; font-size: 18px; cursor: pointer; }
-
-        .chat-body {
-            position: absolute; top: 60px; bottom: 70px; left: 0; right: 0;
-            padding: 15px; overflow-y: auto; 
-            display: flex; flex-direction: column; gap: 12px;
-            background: transparent; z-index: 2;
-        }
-        .chat-message {
-            max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 13px; color: #fff; line-height: 1.4; word-break: break-word;
-            background: rgba(26, 37, 60, 0.75); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.15);
-        }
-        .chat-message.incoming { align-self: flex-start; border-bottom-left-radius: 4px; }
-        .chat-message.outgoing { background: rgba(0, 136, 204, 0.85); align-self: flex-end; border-bottom-right-radius: 4px; }
-        .chat-message img, .chat-message video { width: 100%; border-radius: 10px; margin-top: 5px; max-height: 200px; object-fit: cover; }
-
-        .telegram-chat-footer {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            background: rgba(18, 25, 43, 0.8);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 10px 15px; display: flex; align-items: center; gap: 10px;
-            z-index: 10; height: 70px;
-        }
-        .tg-footer-icon { background: none; border: none; font-size: 22px; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; }
-        
-        .chat-input {
-            flex: 1; background: rgba(255, 255, 255, 0.08); 
-            border: 1.5px solid rgba(255, 112, 143, 0.5);
-            padding: 10px 15px; border-radius: 25px; color: #fff; font-size: 13px; outline: none;
-            backdrop-filter: blur(5px);
-            animation: chatBoxBlink 2s infinite ease-in-out;
-        }
-        .chat-input::placeholder { color: #94a3b8; }
-
-        @keyframes chatBoxBlink {
-            0% { border-color: rgba(255, 112, 143, 0.4); box-shadow: 0 0 5px rgba(255, 112, 143, 0.2); }
-            50% { border-color: rgba(255, 112, 143, 1); box-shadow: 0 0 18px rgba(255, 112, 143, 0.8); }
-            100% { border-color: rgba(255, 112, 143, 0.4); box-shadow: 0 0 5px rgba(255, 112, 143, 0.2); }
-        }
-
+        /* মোডাল ও কিসিং অ্যানিমেশন পপআপ স্টাইল */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 999; }
         .modal-box { background: #141c3a; border: 1.5px solid rgba(255,112,143,0.4); width: 90%; max-width: 340px; padding: 25px; border-radius: 24px; text-align: center; color: white; box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
         .modal-box h3 { margin-bottom: 15px; color: #ff708f; font-size: 20px; }
+        
+        .kiss-animation-container {
+            font-size: 50px;
+            margin: 15px 0;
+            position: relative;
+            animation: kissPulse 1.2s infinite alternate ease-in-out;
+        }
+
+        @keyframes kissPulse {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(-5deg); }
+            100% { transform: scale(1.3) rotate(5deg); }
+        }
+
+        .floating-heart {
+            position: absolute;
+            color: #ff4d4d;
+            font-size: 20px;
+            animation: floatUp 1.5s infinite linear;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.4); opacity: 0; }
+        }
+
         .close-btn { background: linear-gradient(135deg, #ff9bb0, #ff708f); color: white; border: none; padding: 10px 25px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 15px; box-shadow: 0 5px 15px rgba(255,112,143,0.4); }
     </style>
 
@@ -283,40 +229,103 @@
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("dashboardWrapper").style.opacity = "1";
                 setTimeout(() => { document.getElementById('bottomNav').classList.add('slide-up'); }, 100);
-                initBackgroundVideo();
+                initSeamlessBackgroundLoop();
                 fetchTelegramProfile();
             });
         }
 
-        function initBackgroundVideo() {
-            const container = document.getElementById('bgContainer');
-            const loader = document.getElementById('bgLoader');
-            // ব্যাকগ্রাউন্ড ভিডিওর নির্দিষ্ট লিঙ্ক এবং ফিক্সড লুপ
-            const videoUrl = "https://videotourl.com/videos/1792086671209-6307f585-29a1-4494-a780-4dc3ccec9aa8.mp4";
+        // আপনার দেওয়া ভিডিওগুলোর লিস্ট
+        const videoList = [
+            "https://videotourl.com/videos/1792115942088-eff25b0e-8a1a-4876-b15e-3d497c75994c.mp4",
+            "https://videotourl.com/videos/1792116029397-04461f2f-773c-4fe8-9895-6a52c5c24e9a.mp4",
+            "https://videotourl.com/videos/1792116111716-9ff3420f-8eff-4036-bc28-df7effd7e054.mp4",
+            "https://videotourl.com/videos/1792116154494-dab611d0-e417-40bc-89f8-aaf9ae32ad82.mp4",
+            "https://videotourl.com/videos/1792116183757-1151b9ff-2cec-4f7a-a857-3e9f813f03e7.mp4",
+            "https://videotourl.com/videos/1792116234559-9ae334d1-a4dd-40e5-8780-a2b2c277aee6.mp4",
+            "https://videotourl.com/videos/1792116289476-302dfdec-1fa6-421f-b418-98d5f3972052.mp4",
+            "https://videotourl.com/videos/1792116472838-a13c48d5-3e97-42d1-9038-805488d146fb.mp4",
+            "https://videotourl.com/videos/1792116517278-ba6f9c49-0e2f-454e-9ecd-9a6d4a712dac.mp4",
+            "https://videotourl.com/videos/1792116875111-f31fb18a-ea85-44c9-b691-7939a1fe5d2b.mp4",
+            "https://videotourl.com/videos/1792116931460-f3d5b5f4-18ce-43a2-a4ee-70f7193c15a0.mp4",
+            "https://videotourl.com/videos/1792116959875-c5418422-ffff-48c9-b469-f2d86f6dcfd8.mp4",
+            "https://videotourl.com/videos/1792116993122-57725401-67aa-41c6-849b-b0644ac20e67.mp4",
+            "https://videotourl.com/videos/1792117041583-4e059f05-bc39-4860-b7af-88a54d38837d.mp4",
+            "https://videotourl.com/videos/1792117124588-08de4961-bbf0-40e0-8941-e9f429e1ffd9.mp4",
+            "https://videotourl.com/videos/1792117152124-7bf0483c-c480-4cb1-8c2b-0526386f4ec9.mp4",
+            "https://videotourl.com/videos/1792134543628-f8098f35-afb9-4677-9dbb-2d876eef457b.mp4",
+            "https://videotourl.com/videos/1792134586983-8cb8909f-a05a-40d0-88b4-13de0ad5d02b.mp4",
+            "https://videotourl.com/videos/1792134785750-fdee56ef-61cb-488c-8eb7-984cb7aeaf54.mp4",
+            "https://videotourl.com/videos/1792137197014-16204356-9c62-4a61-9fda-a52dc5d82f5e.mp4",
+            "https://videotourl.com/videos/1792137277544-78866d6c-77f0-4ab2-b827-6e78a84925da.mp4",
+            "https://videotourl.com/videos/1792137306693-13e2fb0d-f088-49b1-a93d-9c7e69383d61.mp4",
+            "https://videotourl.com/videos/1792137366030-5f0f3532-5113-4b2d-b537-a15bd4e87b8d.mp4",
+            "https://videotourl.com/videos/1792137553944-11d50a78-e118-4a12-b47a-8a818e111a5e.mp4"
+        ];
 
-            const bgVideo = document.createElement('video');
-            bgVideo.src = videoUrl;
-            bgVideo.autoplay = true;
-            bgVideo.muted = true;
-            bgVideo.loop = true; 
-            bgVideo.playsInline = true;
-            bgVideo.className = 'bg-media';
+        let shuffledQueue = [];
 
-            bgVideo.onloadeddata = () => {
-                bgVideo.play().then(() => {
-                    if (loader) {
-                        loader.style.opacity = '0';
-                        setTimeout(() => loader.style.display = 'none', 400);
-                    }
-                    bgVideo.classList.add('loaded');
-                }).catch(e => {
-                    if (loader) loader.style.display = 'none';
-                });
-            };
-
-            container.appendChild(bgVideo);
+        // রিফ্রেশ বা পেজ লোডের জন্য রেন্ডম ভিডিও লিস্ট তৈরির ফাংশন
+        function getNextRandomVideoUrl() {
+            if (shuffledQueue.length === 0) {
+                shuffledQueue = [...videoList].sort(() => Math.random() - 0.5);
+            }
+            return shuffledQueue.pop();
         }
 
+        // ব্যাকগ্রাউন্ড ভিডিও লুপ এবং ৪-৫ সেকেন্ড করে রেন্ডম ক্লিপ দেখানোর লজিক
+        function initSeamlessBackgroundLoop() {
+            const container = document.getElementById('bgContainer');
+            const loader = document.getElementById('bgLoader');
+
+            function playNextSegment(currentVideo = null) {
+                const videoUrl = getNextRandomVideoUrl();
+                const nextVideo = document.createElement('video');
+                nextVideo.src = videoUrl;
+                nextVideo.autoplay = true;
+                nextVideo.muted = true;
+                nextVideo.loop = false;
+                nextVideo.playsInline = true;
+                nextVideo.className = 'bg-media';
+                nextVideo.style.filter = 'blur(3px)'; // ৩% ব্লার নির্দিষ্ট করা হয়েছে
+
+                nextVideo.onloadedmetadata = () => {
+                    let duration = nextVideo.duration;
+                    let clipDuration = 5; // প্রতিবার ৪-৫ সেকেন্ড দেখানো হবে
+                    if (duration < clipDuration) clipDuration = duration;
+
+                    // ভিডিওর রেন্ডম কোনো অংশ থেকে ক্লিপ সিলেক্ট করা
+                    let maxStart = duration - clipDuration;
+                    let randomStart = maxStart > 0 ? Math.random() * maxStart : 0;
+                    let segmentEnd = randomStart + clipDuration;
+
+                    nextVideo.currentTime = randomStart;
+
+                    nextVideo.play().then(() => {
+                        if (loader && loader.style.display !== 'none') {
+                            loader.style.opacity = '0';
+                            setTimeout(() => loader.style.display = 'none', 400);
+                        }
+                        nextVideo.classList.add('loaded');
+                        
+                        if (currentVideo) {
+                            setTimeout(() => { currentVideo.remove(); }, 300);
+                        }
+
+                        const checkInterval = setInterval(() => {
+                            if (nextVideo.currentTime >= segmentEnd || nextVideo.ended) {
+                                clearInterval(checkInterval);
+                                playNextSegment(nextVideo);
+                            }
+                        }, 200);
+                    }).catch(e => { playNextSegment(currentVideo); });
+                };
+                nextVideo.onerror = () => playNextSegment(currentVideo);
+                container.appendChild(nextVideo);
+            }
+            playNextSegment();
+        }
+
+        // প্রোটেকশন
         document.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('dragstart', e => e.preventDefault());
         document.addEventListener('keydown', e => {
@@ -365,66 +374,24 @@
             const loader = document.getElementById('bgLoader');
             if (loader) { loader.style.display = 'flex'; loader.style.opacity = '1'; }
             setTimeout(() => {
-                window.location.reload();
+                window.location.reload(); // পেজ রিফ্রেশ করলে সম্পূর্ণ রেন্ডম নতুন ভিডিও লোড হবে
             }, 800);
         }
 
         function handleNavAction(type) { if (type === 'group') alert("Telegram Group section coming soon!"); }
 
-        function openChatWithLandAnimation() {
-            const landModal = document.getElementById('landAnimationModal');
-            landModal.style.display = 'flex';
-
-            setTimeout(() => {
-                landModal.style.display = 'none';
-                document.getElementById('chatOverlay').style.display = 'flex';
-            }, 1500);
-        }
-
-        function closeChatSection() {
-            document.getElementById('chatOverlay').style.display = 'none';
-        }
-
-        function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if(!text) return;
-
-            const chatBody = document.getElementById('chatBody');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'chat-message outgoing';
-            msgDiv.innerText = text;
-            chatBody.appendChild(msgDiv);
-            input.value = '';
-            chatBody.scrollTop = chatBody.scrollHeight;
-
-            setTimeout(() => {
-                const replyDiv = document.createElement('div');
-                replyDiv.className = 'chat-message incoming';
-                replyDiv.innerText = "Welcome to VIP Naughty NonStop! Media syncing to storage channel (-1004382857247) 💋";
-                chatBody.appendChild(replyDiv);
-                chatBody.scrollTop = chatBody.scrollHeight;
-            }, 1000);
-        }
-
-        function handleMediaUpload(event) {
-            const file = event.target.files[0];
-            if(!file) return;
-
-            const chatBody = document.getElementById('chatBody');
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const msgDiv = document.createElement('div');
-                msgDiv.className = 'chat-message outgoing';
-                if(file.type.startsWith('video/')) {
-                    msgDiv.innerHTML = `<video src="${e.target.result}" controls></video>`;
-                } else {
-                    msgDiv.innerHTML = `<img src="${e.target.result}" alt="Uploaded Media">`;
-                }
-                chatBody.appendChild(msgDiv);
-                chatBody.scrollTop = chatBody.scrollHeight;
-            }
-            reader.readAsDataURL(file);
+        function openKissingModal(name, subtitle) {
+            document.getElementById('modalName').innerText = name;
+            document.getElementById('modalInfo').innerHTML = `
+                <div class="kiss-animation-container">
+                    😘💋💖
+                    <span class="floating-heart" style="left: 20%; animation-delay: 0s;">❤️</span>
+                    <span class="floating-heart" style="left: 60%; animation-delay: 0.5s;">💖</span>
+                    <span class="floating-heart" style="left: 40%; animation-delay: 1s;">💕</span>
+                </div>
+                <p style="font-size: 13px; color: #cbd5e1; margin-top: 10px;">Status: LIVE VIP Access Granted 💋</p>
+            `;
+            document.getElementById('profileModal').style.display = 'flex';
         }
 
         function openProfile(name, subtitle) {
@@ -455,17 +422,17 @@
             <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
         </div>
 
+        <!-- ১. হোম ভিউ -->
         <div id="homeView" class="view-section active-view">
-            <div class="profile-card blink-glow" onclick="openChatWithLandAnimation()">
+            <div class="profile-card blink-glow" onclick="openKissingModal('⛔Naughty NonStop🚫', 'Open Media')">
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
-                        <!-- এখানে Naughty NonStop বাটনের ভেতরের ইমেজটি পরিবর্তন করে আপনার কাঙ্ক্ষিত ইমেজ দেওয়া হয়েছে -->
                         <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Avatar" class="avatar">
                         <div class="image-shield"></div>
                     </div>
                     <div class="user-details">
                         <h3>⛔Naughty NonStop🚫</h3>
-                        <p>Open Media & Chat 💋</p>
+                        <p>Open Media 💋</p>
                     </div>
                 </div>
                 <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
@@ -478,7 +445,7 @@
                         <div class="image-shield"></div>
                     </div>
                     <div class="user-details">
-                        <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿ᱥ𝗲 🍒</h3>
+                        <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
                         <p>Lock Media</p>
                     </div>
                 </div>
@@ -528,6 +495,7 @@
             </div>
         </div>
 
+        <!-- ২. প্রোফাইল ভিউ -->
         <div id="profileView" class="view-section">
             <div class="profile-card-modern">
                 <div class="card-image-wrapper">
@@ -549,52 +517,14 @@
             </div>
         </div>
 
+        <!-- বটম ন্যাভবার -->
         <div class="bottom-glass-nav" id="bottomNav">
             <button onclick="handleNavAction('group')" class="nav-item"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></button>
             <button onclick="switchView('home', this)" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
-            <button onclick="switchView('profile', this)" class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></button>
+            <button onclick="switchView('profile', this)" class="nav-item"><svg viewBox="0 0 24 24"><path_12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></button>
         </div>
 
-        <div class="land-modal-overlay" id="landAnimationModal">
-            <div class="land-animation-box">
-                <div class="land-icon-animation">🌾🚜</div>
-                <h3 style="color: #2ecc71; margin-bottom: 8px;">Land Property Scanning...</h3>
-                <p style="font-size: 13px; color: #cbd5e1;">Loading secure vault records & media...</p>
-            </div>
-        </div>
-
-        <!-- টেলিগ্রাম স্টাইল চ্যাট ওভারলে -->
-        <div class="chat-overlay" id="chatOverlay">
-            <div class="telegram-chat-header">
-                <div class="tg-header-left">
-                    <button class="tg-back-btn" onclick="closeChatSection()">←</button>
-                    <!-- চ্যাট ওভারলের ভেতরের প্রোফাইল পিকচার বা ইমেজ এখানে আপডেট করা হয়েছে -->
-                    <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Profile" class="tg-profile-pic">
-                    <div class="tg-header-info">
-                        <h4>⛔ Naughty NonStop 🚫</h4>
-                        <p>1925 members, 82 online</p>
-                    </div>
-                </div>
-                <div class="tg-header-right">
-                    <span>⋮</span>
-                </div>
-            </div>
-
-            <div class="chat-body" id="chatBody">
-                <div class="chat-message incoming">
-                    Hello! Welcome to Naughty NonStop VIP chat. All photos & videos will be securely stored in Telegram Channel (-1004382857247).
-                </div>
-            </div>
-
-            <div class="telegram-chat-footer">
-                <button class="tg-footer-icon">😊</button>
-                <input type="text" id="chatInput" class="chat-input" placeholder="Send anonymously..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                <label class="tg-footer-icon" title="Upload Photo/Video">
-                    📎 <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" onchange="handleMediaUpload(event)">
-                </label>
-            </div>
-        </div>
-
+        <!-- মোডাল পপআপ -->
         <div class="modal-overlay" id="profileModal">
             <div class="modal-box">
                 <h3 id="modalName">User Profile</h3>
