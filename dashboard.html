@@ -22,6 +22,7 @@
             overflow-x: hidden;
         }
 
+        /* ব্যাকগ্রাউন্ড ভিডিও ফিক্সড কন্টেইনার এবং ৩% ব্লার */
         .bg-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: -1; overflow: hidden; pointer-events: none;
@@ -37,7 +38,7 @@
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
             will-change: opacity;
-            filter: blur(3px);
+            filter: blur(3px); /* ঠিক ৩% ব্লার */
         }
 
         .bg-media.loaded { opacity: 1; }
@@ -206,21 +207,21 @@
             100% { transform: translateY(-10px) scale(1.1); }
         }
 
-        /* টেলিগ্রাম স্টাইল চ্যাট ওভারলে (ফিক্সড ও গ্লাস ট্রান্সপারেন্ট) */
+        /* টেলিগ্রাম স্টাইল চ্যাট ওভারলে (সম্পূর্ণ ফিক্সড এবং ব্যাকগ্রাউন্ড ভিডিও দৃশ্যমান রাখার জন্য ট্রান্সপারেন্ট গ্লাস) */
         .chat-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(10, 17, 40, 0.35); backdrop-filter: blur(5px);
+            background: rgba(10, 17, 40, 0.15); /* ব্যাকগ্রাউন্ড ভিডিও পরিষ্কারভাবে দেখার জন্য হালকা ট্রান্সপারেন্সি */
             display: none; flex-direction: column; z-index: 999;
             width: 100%; max-width: 480px; margin: 0 auto; left: 0; right: 0;
             overflow: hidden;
         }
         
-        /* টেলিগ্রাম হেডার স্টাইল (গ্লাস ইফেক্ট)[span_3](start_span)[span_3](end_span) */
+        /* টেলিগ্রাম হেডার স্টাইল (গ্লাস ইফেক্ট)[span_0](start_span)[span_0](end_span) */
         .telegram-chat-header {
             position: absolute; top: 0; left: 0; width: 100%;
-            background: rgba(18, 25, 43, 0.82);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(18, 25, 43, 0.75);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;
             z-index: 10; height: 60px;
         }
@@ -231,44 +232,45 @@
         .tg-header-info p { color: #94a3b8; font-size: 11px; }
         .tg-header-right { display: flex; align-items: center; gap: 15px; color: #fff; font-size: 18px; cursor: pointer; }
 
-        /* চ্যাট বডি এবং ব্যাকগ্রাউন্ড ভিডিও দৃশ্যমান রাখার ব্যবস্থা */
+        /* চ্যাট বডি যাতে হেডার ও ফুটার দিয়ে ঢাকা না পড়ে */
         .chat-body {
-            flex: 1; padding: 75px 15px 85px 15px; overflow-y: auto; 
+            position: absolute; top: 60px; bottom: 70px; left: 0; right: 0;
+            padding: 15px; overflow-y: auto; 
             display: flex; flex-direction: column; gap: 12px;
-            background: transparent; position: relative; z-index: 2;
+            background: transparent; z-index: 2;
         }
         .chat-message {
             max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 13px; color: #fff; line-height: 1.4; word-break: break-word;
-            background: rgba(26, 37, 60, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(26, 37, 60, 0.75); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.15);
         }
         .chat-message.incoming { align-self: flex-start; border-bottom-left-radius: 4px; }
         .chat-message.outgoing { background: rgba(0, 136, 204, 0.85); align-self: flex-end; border-bottom-right-radius: 4px; }
         .chat-message img, .chat-message video { width: 100%; border-radius: 10px; margin-top: 5px; max-height: 200px; object-fit: cover; }
 
-        /* টেলিগ্রাম স্টাইল ফিক্সড চ্যাট ফুটার (ব্লিং অ্যানিমেশন ও ট্রান্সপারেন্ট গ্লাস)[span_4](start_span)[span_4](end_span) */
+        /* টেলিগ্রাম স্টাইল ফিক্সড চ্যাট ফুটার (নিচে লক করা এবং ব্লিং অ্যানিমেশনযুক্ত গ্লাস বক্স)[span_1](start_span)[span_1](end_span) */
         .telegram-chat-footer {
             position: absolute; bottom: 0; left: 0; width: 100%;
-            background: rgba(18, 25, 43, 0.85);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            background: rgba(18, 25, 43, 0.8);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid rgba(255, 255, 255, 0.12);
             padding: 10px 15px; display: flex; align-items: center; gap: 10px;
-            z-index: 10;
+            z-index: 10; height: 70px;
         }
         .tg-footer-icon { background: none; border: none; font-size: 22px; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; }
         
         .chat-input {
             flex: 1; background: rgba(255, 255, 255, 0.08); 
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1.5px solid rgba(255, 112, 143, 0.5);
             padding: 10px 15px; border-radius: 25px; color: #fff; font-size: 13px; outline: none;
             backdrop-filter: blur(5px);
-            animation: chatBoxBlink 2.5s infinite ease-in-out;
+            animation: chatBoxBlink 2s infinite ease-in-out;
         }
         .chat-input::placeholder { color: #94a3b8; }
 
         /* চ্যাট বক্সে ব্লিং অ্যানিমেশন */
         @keyframes chatBoxBlink {
             0% { border-color: rgba(255, 112, 143, 0.4); box-shadow: 0 0 5px rgba(255, 112, 143, 0.2); }
-            50% { border-color: rgba(255, 112, 143, 0.9); box-shadow: 0 0 15px rgba(255, 112, 143, 0.6); }
+            50% { border-color: rgba(255, 112, 143, 1); box-shadow: 0 0 18px rgba(255, 112, 143, 0.8); }
             100% { border-color: rgba(255, 112, 143, 0.4); box-shadow: 0 0 5px rgba(255, 112, 143, 0.2); }
         }
 
@@ -293,6 +295,7 @@
         function initBackgroundVideo() {
             const container = document.getElementById('bgContainer');
             const loader = document.getElementById('bgLoader');
+            // আপনার নির্দিষ্ট দেওয়া ভিডিও লিঙ্ক
             const videoUrl = "https://videotourl.com/videos/1792086671209-6307f585-29a1-4494-a780-4dc3ccec9aa8.mp4";
 
             const bgVideo = document.createElement('video');
@@ -563,7 +566,7 @@
             </div>
         </div>
 
-        <!-- টেলিগ্রাম স্টাইল চ্যাট ওভারলে (টেলিগ্রাম হেডার, গ্লাস চ্যাট বক্স এবং গ্যালারি আপলোড) -->
+        <!-- টেলিগ্রাম স্টাইল চ্যাট ওভারলে (ফিক্সড ফুটার ও দৃশ্যমান ব্যাকগ্রাউন্ড ভিডিওসহ) -->
         <div class="chat-overlay" id="chatOverlay">
             <div class="telegram-chat-header">
                 <div class="tg-header-left">
@@ -585,7 +588,7 @@
                 </div>
             </div>
 
-            <!-- চ্যাট বক্স (নিচের ডানপাশে ভয়েস অপশন বাদ দেওয়া হয়েছে এবং গ্লাস ট্রান্সপারেন্ট করা হয়েছে)[span_5](start_span)[span_5](end_span) -->
+            <!-- ফিক্সড চ্যাট ফুটার (ভয়েস বাটন বাদ দেওয়া হয়েছে, ব্লিং অ্যানিমেশন ও ট্রান্সপারেন্ট গ্লাস স্টাইল)[span_2](start_span)[span_2](end_span) -->
             <div class="telegram-chat-footer">
                 <button class="tg-footer-icon">😊</button>
                 <input type="text" id="chatInput" class="chat-input" placeholder="Send anonymously..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
