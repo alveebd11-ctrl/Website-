@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naughty NonStop - VIP Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; user-select: none; }
+        body { background-color: #0a1128; min-height: 100vh; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; }
+
+        /* ব্যাকগ্রাউন্ড ভিডিও এবং ৩% ব্লার */
+        .bg-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; overflow: hidden; pointer-events: none; }
+        .bg-media { position: absolute; top: 50%; left: 50%; width: 100vw; height: 100vh; object-fit: cover; transform: translate(-50%, -50%); filter: blur(3px); }
+
+        /* জমির অ্যানিমেশন ওভারলে (ল্যান্ড প্রপার্টি স্ক্যানিং) */
+        .land-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+        .land-animation-box {
+            background: rgba(20, 28, 58, 0.95); border: 2px solid #2ecc71;
+            width: 90%; max-width: 360px; padding: 30px 20px; border-radius: 28px;
+            text-align: center; color: white; box-shadow: 0 20px 50px rgba(46, 204, 113, 0.4);
+            animation: landPopUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes landPopUp {
+            0% { transform: scale(0.6); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .land-icon-animation {
+            font-size: 60px; margin-bottom: 15px;
+            animation: landBounce 1.5s infinite alternate ease-in-out;
+        }
+        @keyframes landBounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-10px) scale(1.1); }
+        }
+
+        /* টেলিগ্রাম স্টাইল চ্যাট ওভারলে (ফুল স্ক্রিন গ্লাস ট্রান্সপারেন্ট) */
+        .chat-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(10, 17, 40, 0.2);
+            display: none; flex-direction: column; z-index: 999;
+            width: 100%; max-width: 480px; margin: 0 auto; left: 0; right: 0;
+            overflow: hidden;
+        }
+        
+        .telegram-chat-header {
+            position: absolute; top: 0; left: 0; width: 100%;
+            background: rgba(18, 25, 43, 0.8);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;
+            z-index: 10; height: 60px;
+        }
+        .tg-header-left { display: flex; align-items: center; gap: 12px; }
+        .tg-back-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; text-decoration: none; }
+        .tg-profile-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255,255,255,0.2); }
+        .tg-header-info h4 { color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .tg-header-info p { color: #94a3b8; font-size: 11px; }
+
+        .chat-body {
+            position: absolute; top: 60px; bottom: 70px; left: 0; right: 0;
+            padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+            background: transparent; z-index: 2;
+        }
+        .chat-message {
+            max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 13px; color: #fff; line-height: 1.4; word-break: break-word;
+            background: rgba(26, 37, 60, 0.75); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.15);
+        }
+        .chat-message.incoming { align-self: flex-start; border-bottom-left-radius: 4px; }
+        .chat-message.outgoing { background: rgba(0, 136, 204, 0.85); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-message img, .chat-message video { width: 100%; border-radius: 10px; margin-top: 5px; max-height: 200px; object-fit: cover; }
+
+        .telegram-chat-footer {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: rgba(18, 25, 43, 0.85);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 10px 15px; display: flex; align-items: center; gap: 10px;
+            z-index: 10; height: 70px;
+        }
+        .tg-footer-icon { background: none; border: none; font-size: 22px; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; }
+        
+        .chat-input {
+            flex: 1; background: rgba(255, 255, 255, 0.08); 
+            border: 1.5px solid rgba(255, 112, 143, 0.5);
+            padding: 10px 15px; border-radius: 25px; color: #fff; font-size: 13px; outline: none;
+            backdrop-filter: blur(5px);
+            animation: chatBoxBlink 2s infinite ease-in-out;
+        }
+        .chat-input::placeholder { color: #94a3b8; }
+
+        @keyframes chatBoxBlink {
+            0% { border-color: rgba(255, 112, 143, 0.4); box-shadow: 0 0 5px rgba(255, 112, 143, 0.2); }
+            50% { border-color: rgba(255, 112, 143, 1); box-shadow: 0 0 18px rgba(255, 112, 143, 0.8); }
+            100% { border-color: rgba(255, 112, 143, 0.4); box-shadow: 0 0 5px rgba(255, 112, 143, 0.2); }
+        }
+    </style>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            // জমির অ্যানিমেশন ১.২ সেকেন্ড দেখিয়ে তারপর মূল চ্যাট উইন্ডো ওপেন করবে
+            setTimeout(() => {
+                document.getElementById('landAnimationModal').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('landAnimationModal').style.display = 'none';
+                    document.getElementById('chatOverlay').style.display = 'flex';
+                }, 300);
+            }, 1200);
+        });
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if(!text) return;
+
+            const chatBody = document.getElementById('chatBody');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message outgoing';
+            msgDiv.innerText = text;
+            chatBody.appendChild(msgDiv);
+            input.value = '';
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            setTimeout(() => {
+                const replyDiv = document.createElement('div');
+                replyDiv.className = 'chat-message incoming';
+                replyDiv.innerText = "Welcome to VIP Naughty NonStop! Media syncing to storage channel (-1004382857247) 💋";
+                chatBody.appendChild(replyDiv);
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }, 1000);
+        }
+
+        function handleMediaUpload(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+
+            const chatBody = document.getElementById('chatBody');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'chat-message outgoing';
+                if(file.type.startsWith('video/')) {
+                    msgDiv.innerHTML = `<video src="${e.target.result}" controls></video>`;
+                } else {
+                    msgDiv.innerHTML = `<img src="${e.target.result}" alt="Uploaded Media">`;
+                }
+                chatBody.appendChild(msgDiv);
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
+            reader.readAsDataURL(file);
+        }
+    </script>
+</head>
+<body>
+
+    <!-- ব্যাকগ্রাউন্ড ভিডিও -->
+    <div class="bg-container">
+        <video class="bg-media" src="https://videotourl.com/videos/1792086671209-6307f585-29a1-4494-a780-4dc3ccec9aa8.mp4" autoplay muted loop playsinline></video>
+    </div>
+
+    <!-- জমির স্ক্যানিং অ্যানিমেশন পপআপ -->
+    <div class="land-modal-overlay" id="landAnimationModal">
+        <div class="land-animation-box">
+            <div class="land-icon-animation">🌾🚜</div>
+            <h3 style="color: #2ecc71; margin-bottom: 8px;">Land Property Scanning...</h3>
+            <p style="font-size: 13px; color: #cbd5e1;">Loading secure vault records & media...</p>
+        </div>
+    </div>
+
+    <!-- টেলিগ্রাম স্টাইল চ্যাট ওভারলে -->
+    <div class="chat-overlay" id="chatOverlay">
+        <div class="telegram-chat-header">
+            <div class="tg-header-left">
+                <a href="dashboard.html" class="tg-back-btn">←</a>
+                <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Profile" class="tg-profile-pic">
+                <div class="tg-header-info">
+                    <h4>⛔ Naughty NonStop 🚫</h4>
+                    <p>1925 members, 82 online</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-body" id="chatBody">
+            <div class="chat-message incoming">
+                Hello! Welcome to Naughty NonStop VIP chat. All photos & videos will be securely stored in Telegram Channel (-1004382857247).
+            </div>
+        </div>
+
+        <div class="telegram-chat-footer">
+            <button class="tg-footer-icon">😊</button>
+            <input type="text" id="chatInput" class="chat-input" placeholder="Send anonymously..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+            <label class="tg-footer-icon" title="Upload Photo/Video">
+                📎 <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" onchange="handleMediaUpload(event)">
+            </label>
+        </div>
+    </div>
+
+</body>
+</html>
