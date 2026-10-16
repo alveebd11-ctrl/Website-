@@ -269,6 +269,7 @@
             return shuffledQueue.pop();
         }
 
+        // ব্যাকগ্রাউন্ড ভিডিও লুপ এবং নিশ্চিত মিউট (Muted) করার লজিক
         function initSeamlessBackgroundLoop() {
             const container = document.getElementById('bgContainer');
             const loader = document.getElementById('bgLoader');
@@ -278,7 +279,8 @@
                 const nextVideo = document.createElement('video');
                 nextVideo.src = videoUrl;
                 nextVideo.autoplay = true;
-                nextVideo.muted = true;
+                nextVideo.muted = true; // প্রতিটি ভিডিওর সাউন্ড নিশ্চিতভাবে মিউট করা হলো
+                nextVideo.setAttribute('muted', '');
                 nextVideo.loop = false;
                 nextVideo.playsInline = true;
                 nextVideo.className = 'bg-media';
