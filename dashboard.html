@@ -22,7 +22,6 @@
             overflow-x: hidden;
         }
 
-        /* ব্যাকগ্রাউন্ড ফিক্সড কন্টেইনার (গ্লাস ইফেক্ট ও ৩% ব্লার) */
         .bg-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: -1; overflow: hidden; pointer-events: none;
@@ -38,7 +37,7 @@
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
             will-change: opacity;
-            filter: blur(3px); /* ৩% ব্লার নির্দিষ্ট করা হয়েছে এবং কোনো কালো শ্যাডো নেই */
+            filter: blur(3px);
         }
 
         .bg-media.loaded { opacity: 1; }
@@ -56,7 +55,6 @@
             z-index: 2;
         }
 
-        /* প্রিমিয়াম লোডিং স্পিনার */
         #bgLoader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -86,7 +84,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* হেডার ন্যাভবার */
         .header-nav {
             width: 100%; max-width: 440px;
             display: flex; justify-content: flex-end; align-items: center;
@@ -121,7 +118,6 @@
         }
         .view-section.active-view { display: flex; }
 
-        /* কার্ড স্টাইল এবং প্রথম কার্ডের ব্লিং অ্যানিমেশন */
         .profile-card {
             background: rgba(20, 25, 45, 0.65);
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -153,7 +149,6 @@
         .user-details h3 { font-size: 14px; color: #ffffff; font-weight: 700; }
         .user-details p { font-size: 11px; color: #94a3b8; font-weight: 500; }
 
-        /* প্রোফাইল পেজ স্টাইল */
         .profile-card-modern {
             width: 100%; background: rgba(26, 31, 46, 0.75);
             backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.15);
@@ -170,13 +165,11 @@
         .meta-value { font-size: 13px; color: #ffffff; font-weight: 600; word-break: break-all; }
         .logout-action-btn { width: 100%; background: rgba(255, 77, 77, 0.15); color: #ff4d4d; border: 1px solid rgba(255, 77, 77, 0.3); padding: 12px; border-radius: 16px; font-weight: 700; cursor: pointer; margin-top: 15px;}
 
-        /* লাইভ ব্যাজ */
         .live-badge-container { display: inline-flex; align-items: center; background: #000; border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 20px; }
         .live-dot { width: 9px; height: 9px; background: #ff1a1a; border-radius: 50%; box-shadow: 0 0 8px #ff1a1a; animation: livePulse 1.8s infinite; margin-right: 8px; }
         @keyframes livePulse { 0% { transform: scale(1); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
         .live-text { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; }
 
-        /* বটম ন্যাভবার */
         .bottom-glass-nav {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%) translateY(100px);
             width: 90%; max-width: 380px; height: 70px; background: rgba(20, 25, 45, 0.65);
@@ -189,7 +182,6 @@
         .nav-item.active { background: linear-gradient(135deg, rgba(0, 136, 204, 0.6), rgba(0, 191, 255, 0.8)); width: 58px; height: 58px; }
         .nav-item.active svg { fill: #ffffff; }
 
-        /* জমির অ্যানিমেশন পপআপ স্টাইল (Land Animation Modal) */
         .land-modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(12px);
@@ -214,45 +206,72 @@
             100% { transform: translateY(-10px) scale(1.1); }
         }
 
-        /* মেসেঞ্জার স্টাইল চ্যাট পেজ ওভারলে */
+        /* টেলিগ্রাম স্টাইল চ্যাট ওভারলে (ফিক্সড ও গ্লাস ট্রান্সপারেন্ট) */
         .chat-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(10, 17, 40, 0.9); backdrop-filter: blur(20px);
+            background: rgba(10, 17, 40, 0.35); backdrop-filter: blur(5px);
             display: none; flex-direction: column; z-index: 999;
             width: 100%; max-width: 480px; margin: 0 auto; left: 0; right: 0;
+            overflow: hidden;
         }
-        .chat-header {
-            padding: 15px 20px; background: rgba(20, 25, 45, 0.9);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .chat-header h3 { color: #fff; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-        .chat-close-btn { background: rgba(255,255,255,0.1); border: none; color: #fff; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
         
+        /* টেলিগ্রাম হেডার স্টাইল (গ্লাস ইফেক্ট)[span_3](start_span)[span_3](end_span) */
+        .telegram-chat-header {
+            position: absolute; top: 0; left: 0; width: 100%;
+            background: rgba(18, 25, 43, 0.82);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 10px 15px; display: flex; align-items: center; justify-content: space-between;
+            z-index: 10; height: 60px;
+        }
+        .tg-header-left { display: flex; align-items: center; gap: 12px; }
+        .tg-back-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; }
+        .tg-profile-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255,255,255,0.2); }
+        .tg-header-info h4 { color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .tg-header-info p { color: #94a3b8; font-size: 11px; }
+        .tg-header-right { display: flex; align-items: center; gap: 15px; color: #fff; font-size: 18px; cursor: pointer; }
+
+        /* চ্যাট বডি এবং ব্যাকগ্রাউন্ড ভিডিও দৃশ্যমান রাখার ব্যবস্থা */
         .chat-body {
-            flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+            flex: 1; padding: 75px 15px 85px 15px; overflow-y: auto; 
+            display: flex; flex-direction: column; gap: 12px;
+            background: transparent; position: relative; z-index: 2;
         }
         .chat-message {
             max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 13px; color: #fff; line-height: 1.4; word-break: break-word;
+            background: rgba(26, 37, 60, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
         }
-        .chat-message.incoming { background: rgba(255,255,255,0.1); align-self: flex-start; border-bottom-left-radius: 4px; }
-        .chat-message.outgoing { background: linear-gradient(135deg, #0088cc, #00bfff); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-message.incoming { align-self: flex-start; border-bottom-left-radius: 4px; }
+        .chat-message.outgoing { background: rgba(0, 136, 204, 0.85); align-self: flex-end; border-bottom-right-radius: 4px; }
         .chat-message img, .chat-message video { width: 100%; border-radius: 10px; margin-top: 5px; max-height: 200px; object-fit: cover; }
 
-        .chat-footer {
-            padding: 12px 15px; background: rgba(20, 25, 45, 0.9);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex; align-items: center; gap: 10px;
+        /* টেলিগ্রাম স্টাইল ফিক্সড চ্যাট ফুটার (ব্লিং অ্যানিমেশন ও ট্রান্সপারেন্ট গ্লাস)[span_4](start_span)[span_4](end_span) */
+        .telegram-chat-footer {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: rgba(18, 25, 43, 0.85);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 10px 15px; display: flex; align-items: center; gap: 10px;
+            z-index: 10;
         }
+        .tg-footer-icon { background: none; border: none; font-size: 22px; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; }
+        
         .chat-input {
-            flex: 1; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+            flex: 1; background: rgba(255, 255, 255, 0.08); 
+            border: 1px solid rgba(255, 255, 255, 0.15);
             padding: 10px 15px; border-radius: 25px; color: #fff; font-size: 13px; outline: none;
+            backdrop-filter: blur(5px);
+            animation: chatBoxBlink 2.5s infinite ease-in-out;
         }
         .chat-input::placeholder { color: #94a3b8; }
-        .media-upload-btn { background: transparent; border: none; color: #00bfff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; }
-        .send-btn { background: #ff708f; border: none; color: #fff; padding: 10px 18px; border-radius: 20px; font-weight: 700; font-size: 13px; cursor: pointer; }
 
-        /* সাধারণ পপআপ মোডাল */
+        /* চ্যাট বক্সে ব্লিং অ্যানিমেশন */
+        @keyframes chatBoxBlink {
+            0% { border-color: rgba(255, 112, 143, 0.4); box-shadow: 0 0 5px rgba(255, 112, 143, 0.2); }
+            50% { border-color: rgba(255, 112, 143, 0.9); box-shadow: 0 0 15px rgba(255, 112, 143, 0.6); }
+            100% { border-color: rgba(255, 112, 143, 0.4); box-shadow: 0 0 5px rgba(255, 112, 143, 0.2); }
+        }
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 999; }
         .modal-box { background: #141c3a; border: 1.5px solid rgba(255,112,143,0.4); width: 90%; max-width: 340px; padding: 25px; border-radius: 24px; text-align: center; color: white; box-shadow: 0 15px 40px rgba(0,0,0,0.7); }
         .modal-box h3 { margin-bottom: 15px; color: #ff708f; font-size: 20px; }
@@ -271,7 +290,6 @@
             });
         }
 
-        // ব্যাকগ্রাউন্ড ভিডিও লুপ (নির্দিষ্ট ৩ সেকেন্ডের ভিডিও লুপ করার জন্য এবং লোডিং প্রবলেম এড়াতে)
         function initBackgroundVideo() {
             const container = document.getElementById('bgContainer');
             const loader = document.getElementById('bgLoader');
@@ -293,7 +311,6 @@
                     }
                     bgVideo.classList.add('loaded');
                 }).catch(e => {
-                    console.log("Autoplay prevented:", e);
                     if (loader) loader.style.display = 'none';
                 });
             };
@@ -301,7 +318,6 @@
             container.appendChild(bgVideo);
         }
 
-        // প্রোটেকশন
         document.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('dragstart', e => e.preventDefault());
         document.addEventListener('keydown', e => {
@@ -356,12 +372,10 @@
 
         function handleNavAction(type) { if (type === 'group') alert("Telegram Group section coming soon!"); }
 
-        // 'Naughty NonStop' এ ক্লিক করলে প্রথমে জমির অ্যানিমেশন দেখাবে, তারপর চ্যাট পেজ ওপেন হবে
         function openChatWithLandAnimation() {
             const landModal = document.getElementById('landAnimationModal');
             landModal.style.display = 'flex';
 
-            // ১.৫ সেকেন্ড জমির অ্যানিমেশন দেখানোর পর তা অটো বন্ধ হয়ে চ্যাট উইন্ডো ওপেন হবে
             setTimeout(() => {
                 landModal.style.display = 'none';
                 document.getElementById('chatOverlay').style.display = 'flex';
@@ -372,7 +386,6 @@
             document.getElementById('chatOverlay').style.display = 'none';
         }
 
-        // মেসেঞ্জার চ্যাট সেন্ড ও মিডিয়া আপলোড ফাংশন (টেলিগ্রাম স্টোরেজ গ্রুপ ID: -1003903248257)
         function sendChatMessage() {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
@@ -389,7 +402,7 @@
             setTimeout(() => {
                 const replyDiv = document.createElement('div');
                 replyDiv.className = 'chat-message incoming';
-                replyDiv.innerText = "Welcome to VIP Naughty NonStop! Media syncing to storage channel (-1003903248257) 💋";
+                replyDiv.innerText = "Welcome to VIP Naughty NonStop! Media syncing to storage channel (-1004382857247) 💋";
                 chatBody.appendChild(replyDiv);
                 chatBody.scrollTop = chatBody.scrollHeight;
             }, 1000);
@@ -443,9 +456,7 @@
             <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
         </div>
 
-        <!-- ১. হোম ভিউ -->
         <div id="homeView" class="view-section active-view">
-            <!-- Naughty NonStop কার্ড যেখানে ক্লিক করলে জমির অ্যানিমেশন হয়ে চ্যাট পেজ ওপেন হবে -->
             <div class="profile-card blink-glow" onclick="openChatWithLandAnimation()">
                 <div class="user-info-wrapper">
                     <div class="avatar-container">
@@ -517,7 +528,6 @@
             </div>
         </div>
 
-        <!-- ২. প্রোফাইল ভিউ -->
         <div id="profileView" class="view-section">
             <div class="profile-card-modern">
                 <div class="card-image-wrapper">
@@ -539,14 +549,12 @@
             </div>
         </div>
 
-        <!-- বটম ন্যাভবার -->
         <div class="bottom-glass-nav" id="bottomNav">
             <button onclick="handleNavAction('group')" class="nav-item"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></button>
             <button onclick="switchView('home', this)" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
             <button onclick="switchView('profile', this)" class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></button>
         </div>
 
-        <!-- জমির অ্যানিমেশন পপআপ (Land Animation Modal) -->
         <div class="land-modal-overlay" id="landAnimationModal">
             <div class="land-animation-box">
                 <div class="land-icon-animation">🌾🚜</div>
@@ -555,27 +563,38 @@
             </div>
         </div>
 
-        <!-- মেসেঞ্জার স্টাইল চ্যাট ও মিডিয়া আপলোড ওভারলে উইন্ডো -->
+        <!-- টেলিগ্রাম স্টাইল চ্যাট ওভারলে (টেলিগ্রাম হেডার, গ্লাস চ্যাট বক্স এবং গ্যালারি আপলোড) -->
         <div class="chat-overlay" id="chatOverlay">
-            <div class="chat-header">
-                <h3>⛔ Naughty NonStop Chat 💋</h3>
-                <button class="chat-close-btn" onclick="closeChatSection()">✕</button>
-            </div>
-            <div class="chat-body" id="chatBody">
-                <div class="chat-message incoming">
-                    Hello! Welcome to Naughty NonStop VIP chat. All photos & videos will be securely stored in Telegram Storage (-1003903248257).
+            <div class="telegram-chat-header">
+                <div class="tg-header-left">
+                    <button class="tg-back-btn" onclick="closeChatSection()">←</button>
+                    <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Profile" class="tg-profile-pic">
+                    <div class="tg-header-info">
+                        <h4>⛔ Naughty NonStop 🚫</h4>
+                        <p>1925 members, 82 online</p>
+                    </div>
+                </div>
+                <div class="tg-header-right">
+                    <span>⋮</span>
                 </div>
             </div>
-            <div class="chat-footer">
-                <label class="media-upload-btn" title="Upload Photo/Video">
+
+            <div class="chat-body" id="chatBody">
+                <div class="chat-message incoming">
+                    Hello! Welcome to Naughty NonStop VIP chat. All photos & videos will be securely stored in Telegram Channel (-1004382857247).
+                </div>
+            </div>
+
+            <!-- চ্যাট বক্স (নিচের ডানপাশে ভয়েস অপশন বাদ দেওয়া হয়েছে এবং গ্লাস ট্রান্সপারেন্ট করা হয়েছে)[span_5](start_span)[span_5](end_span) -->
+            <div class="telegram-chat-footer">
+                <button class="tg-footer-icon">😊</button>
+                <input type="text" id="chatInput" class="chat-input" placeholder="Send anonymously..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <label class="tg-footer-icon" title="Upload Photo/Video">
                     📎 <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;" onchange="handleMediaUpload(event)">
                 </label>
-                <input type="text" id="chatInput" class="chat-input" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                <button class="send-btn" onclick="sendChatMessage()">Send</button>
             </div>
         </div>
 
-        <!-- মোডাল পপআপ -->
         <div class="modal-overlay" id="profileModal">
             <div class="modal-box">
                 <h3 id="modalName">User Profile</h3>
