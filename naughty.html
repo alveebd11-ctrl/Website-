@@ -7,10 +7,42 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Poppins,sans-serif}
-body{min-height:100vh;background:#080d20;color:#fff;overflow-x:hidden}
+body{min-height:100vh;background:#080d20;color:#fff;overflow-x:hidden;position:relative}
+
+/* Background Video and Overlay Styling */
+.bg-video-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.bg-video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(12px) brightness(1.1);
+    transform: scale(1.1); /* Prevents blur edges from showing */
+}
+
+.bg-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255, 112, 143, 0.15), rgba(10, 17, 40, 0.7));
+    backdrop-filter: blur(8px);
+    z-index: -1;
+}
+
 header{position:sticky;top:0;z-index:5;padding:16px;display:flex;align-items:center;justify-content:space-between;background:#0a1128d9;backdrop-filter:blur(16px);border-bottom:1px solid #ffffff1a}
 h1{font-size:18px} .back{color:#fff;background:#ff708f;border:0;border-radius:22px;padding:10px 15px;font-weight:700;cursor:pointer}
-main{max-width:900px;margin:auto;padding:22px 15px}
+main{max-width:900px;margin:auto;padding:22px 15px;position:relative;z-index:2}
 .notice{color:#cbd5e1;font-size:13px;margin-bottom:18px}
 .gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .tile{border:1px solid #ffffff20;background:#141c3a;border-radius:12px;overflow:hidden;aspect-ratio:3/4;cursor:pointer;position:relative}
@@ -22,6 +54,15 @@ main{max-width:900px;margin:auto;padding:22px 15px}
 </style>
 </head>
 <body>
+
+<!-- Background Video Section -->
+<div class="bg-video-container">
+    <video autoplay muted loop playsinline preload="auto">
+        <source src="https://videotourl.com/videos/1792086671209-6307f585-29a1-4494-a780-4dc3ccec9aa8.mp4" type="video/mp4">
+    </video>
+</div>
+<div class="bg-overlay"></div>
+
 <header><h1>⛔ Naughty NonStop</h1><button class="back" onclick="history.length>1?history.back():location.href='index.html'">← Back</button></header>
 <main><p class="notice">Media gallery · Tap an image to view it larger.</p><div class="gallery" id="gallery"></div></main>
 <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Image viewer"><button class="close" id="closeViewer" aria-label="Close">×</button><img id="largeImage" alt="Selected image"></div>
@@ -101,7 +142,7 @@ const images = [
 "https://carder.top/imagens/1792211586554-328495854.jpg"
 ];
 const gallery=document.getElementById('gallery'),viewer=document.getElementById('viewer'),largeImage=document.getElementById('largeImage');
-images.forEach((src,i)=>{const tile=document.createElement('button');tile.className='tile';tile.type='button';tile.setAttribute('aria-label','View image '+(i+1));const img=document.createElement('img');img.loading='lazy';img.src=src;img.alt='Gallery image '+(i+1);tile.appendChild(img);tile.addEventListener('click',()=>{largeImage.src=src;viewer.classList.add('open')});gallery.appendChild(tile)});
+images.forEach((src,i)=>{const tile=document.createElement('button');tile.className='tile';tile.type='button';tile.setAttribute('aria-label','View image '+(i+1));const img=document.createElement('img');img.loading='lazy';img.src=src;img.alt='Gallery image '+(i+1);tile.appendChild(img);tile.addEventListener('click',()=>{largeImage.src=src;viewer.classLis.add('open')});gallery.appendChild(tile)});
 function closeViewer(){viewer.classList.remove('open');largeImage.removeAttribute('src')}
 document.getElementById('closeViewer').addEventListener('click',closeViewer);
 viewer.addEventListener('click',e=>{if(e.target===viewer)closeViewer()});
