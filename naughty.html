@@ -1,152 +1,762 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Naughty NonStop — Media</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:Poppins,sans-serif}
-body{min-height:100vh;background:#080d20;color:#fff;overflow-x:hidden;position:relative}
+<meta name="theme-color" content="#080d20">
 
-/* Background Video and Overlay Styling */
+<title>Naughty NonStop — Media</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+/* =========================
+   GLOBAL STYLES
+========================= */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+html {
+    min-height: 100%;
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    background: #080d20;
+    color: #fff;
+    overflow-x: hidden;
+    position: relative;
+    isolation: isolate;
+}
+
+button {
+    font: inherit;
+}
+
+/* =========================
+   BACKGROUND VIDEO
+========================= */
+
 .bg-video-container {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
+    z-index: -2;
+    pointer-events: none;
+    background: #080d20;
+}
+
+.bg-video-container video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+
+    /* Background video blur: 3px */
+    filter: blur(3px) brightness(0.75);
+
+    /* Prevent blurred edges */
+    transform: scale(1.05);
+}
+
+/* =========================
+   BACKGROUND OVERLAY
+========================= */
+
+.bg-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+
+    background: linear-gradient(
+        135deg,
+        rgba(255, 112, 143, 0.13),
+        rgba(10, 17, 40, 0.45),
+        rgba(8, 13, 32, 0.58)
+    );
+
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+
     z-index: -1;
     pointer-events: none;
 }
 
-.bg-video-container video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: blur(12px) brightness(1.1);
-    transform: scale(1.1); /* Prevents blur edges from showing */
-}
+/* =========================
+   HEADER
+========================= */
 
-.bg-overlay {
-    position: fixed;
+header {
+    position: sticky;
     top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(255, 112, 143, 0.15), rgba(10, 17, 40, 0.7));
-    backdrop-filter: blur(8px);
-    z-index: -1;
+    z-index: 5;
+
+    padding: 15px 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    background: rgba(10, 17, 40, 0.58);
+
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.12);
 }
 
-header{position:sticky;top:0;z-index:5;padding:16px;display:flex;align-items:center;justify-content:space-between;background:#0a1128d9;backdrop-filter:blur(16px);border-bottom:1px solid #ffffff1a}
-h1{font-size:18px} .back{color:#fff;background:#ff708f;border:0;border-radius:22px;padding:10px 15px;font-weight:700;cursor:pointer}
-main{max-width:900px;margin:auto;padding:22px 15px;position:relative;z-index:2}
-.notice{color:#cbd5e1;font-size:13px;margin-bottom:18px}
-.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.tile{border:1px solid #ffffff20;background:#141c3a;border-radius:12px;overflow:hidden;aspect-ratio:3/4;cursor:pointer;position:relative}
-.tile img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s}
-.tile:hover img{transform:scale(1.04)}
-.viewer{position:fixed;inset:0;background:#000e;display:none;align-items:center;justify-content:center;z-index:20;padding:15px}
-.viewer.open{display:flex}.viewer img{max-width:100%;max-height:85vh;object-fit:contain;border-radius:12px}
-.close{position:absolute;top:15px;right:15px;border:0;border-radius:50%;width:42px;height:42px;font-size:24px;color:white;background:#ff708f;cursor:pointer}
+header h1 {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+}
+
+.back {
+    flex-shrink: 0;
+
+    color: #fff;
+    background: rgba(255, 112, 143, 0.85);
+
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 22px;
+
+    padding: 9px 15px;
+
+    font-size: 13px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.back:hover {
+    background: #ff547b;
+    transform: translateY(-1px);
+}
+
+/* =========================
+   MAIN CONTENT
+========================= */
+
+main {
+    width: 100%;
+    max-width: 900px;
+
+    margin: auto;
+    padding: 22px 15px 35px;
+
+    position: relative;
+    z-index: 1;
+}
+
+.notice {
+    color: #f1f5f9;
+    font-size: 13px;
+    line-height: 1.7;
+
+    margin-bottom: 18px;
+
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* =========================
+   IMAGE GALLERY
+========================= */
+
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(130px, 1fr)
+    );
+
+    gap: 12px;
+}
+
+.tile {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+
+    position: relative;
+    overflow: hidden;
+
+    padding: 0;
+
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    border-radius: 14px;
+
+    background: rgba(20, 28, 58, 0.52);
+
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    cursor: pointer;
+
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+
+    transition:
+        border-color 0.25s ease,
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.tile img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    transition: transform 0.3s ease;
+}
+
+.tile:hover {
+    border-color: rgba(255, 112, 143, 0.85);
+
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.30);
+
+    transform: translateY(-2px);
+}
+
+.tile:hover img {
+    transform: scale(1.045);
+}
+
+.tile:focus-visible,
+.back:focus-visible,
+.close:focus-visible {
+    outline: 2px solid #ff9db3;
+    outline-offset: 3px;
+}
+
+/* =========================
+   POPUP / IMAGE VIEWER
+   VIDEO VISIBLE BEHIND POPUP
+========================= */
+
+.viewer {
+    position: fixed;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 15px;
+
+    /*
+       Transparent background allows the video
+       behind the popup to remain visible.
+    */
+
+    background: rgba(8, 13, 32, 0.30);
+
+    /* Popup background blur: 3px */
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+
+    z-index: 20;
+
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+
+    transition:
+        opacity 0.25s ease,
+        visibility 0.25s ease;
+}
+
+.viewer.open {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* =========================
+   GLASSMORPHISM POPUP PANEL
+========================= */
+
+.viewer-card {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: auto;
+    max-width: calc(100vw - 30px);
+    max-height: 90vh;
+    max-height: 90dvh;
+
+    padding: 12px;
+
+    background: rgba(255, 255, 255, 0.09);
+
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 20px;
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.40),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+    transform: scale(0.97);
+
+    transition: transform 0.25s ease;
+}
+
+.viewer.open .viewer-card {
+    transform: scale(1);
+}
+
+/* =========================
+   POPUP IMAGE
+========================= */
+
+.viewer img {
+    display: block;
+
+    max-width: calc(100vw - 60px);
+    max-height: 84vh;
+    max-height: 84dvh;
+
+    width: auto;
+    height: auto;
+
+    object-fit: contain;
+
+    border-radius: 12px;
+
+    background: rgba(8, 13, 32, 0.25);
+
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* =========================
+   CLOSE BUTTON
+========================= */
+
+.close {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+
+    z-index: 2;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 42px;
+    height: 42px;
+
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 50%;
+
+    color: #fff;
+    background: rgba(255, 112, 143, 0.82);
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    font-size: 27px;
+    line-height: 1;
+
+    cursor: pointer;
+
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.25);
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.close:hover {
+    background: #ff547b;
+    transform: rotate(90deg);
+}
+
+/* =========================
+   RESPONSIVE DESIGN
+========================= */
+
+@media (max-width: 600px) {
+    header {
+        padding: 13px 12px;
+    }
+
+    header h1 {
+        font-size: 16px;
+    }
+
+    .back {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    main {
+        padding: 18px 10px 28px;
+    }
+
+    .gallery {
+        grid-template-columns: repeat(
+            auto-fit,
+            minmax(105px, 1fr)
+        );
+
+        gap: 9px;
+    }
+
+    .tile {
+        border-radius: 11px;
+    }
+
+    .viewer {
+        padding: 12px;
+    }
+
+    .viewer-card {
+        max-width: calc(100vw - 24px);
+        padding: 8px;
+        border-radius: 16px;
+    }
+
+    .viewer img {
+        max-width: calc(100vw - 44px);
+        max-height: 82vh;
+        max-height: 82dvh;
+        border-radius: 10px;
+    }
+
+    .close {
+        top: -10px;
+        right: -7px;
+
+        width: 38px;
+        height: 38px;
+
+        font-size: 24px;
+    }
+}
+
+/* Respect reduced-motion preference */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
 </style>
 </head>
+
 <body>
 
-<!-- Background Video Section -->
-<div class="bg-video-container">
-    <video autoplay muted loop playsinline preload="auto">
-        <source src="https://videotourl.com/videos/1792086671209-6307f585-29a1-4494-a780-4dc3ccec9aa8.mp4" type="video/mp4">
+<!-- =========================
+     BACKGROUND VIDEO
+========================= -->
+
+<div class="bg-video-container" aria-hidden="true">
+    <video
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="auto"
+        tabindex="-1"
+    >
+        <source
+            src="https://videotourl.com/videos/1792086671209-6307f585-29a1-4494-a780-4dc3ccec9aa8.mp4"
+            type="video/mp4"
+        >
     </video>
 </div>
-<div class="bg-overlay"></div>
 
-<header><h1>⛔ Naughty NonStop</h1><button class="back" onclick="history.length>1?history.back():location.href='index.html'">← Back</button></header>
-<main><p class="notice">Media gallery · Tap an image to view it larger.</p><div class="gallery" id="gallery"></div></main>
-<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Image viewer"><button class="close" id="closeViewer" aria-label="Close">×</button><img id="largeImage" alt="Selected image"></div>
+<!-- BACKGROUND GLASS OVERLAY -->
+
+<div class="bg-overlay" aria-hidden="true"></div>
+
+<!-- =========================
+     HEADER
+========================= -->
+
+<header>
+    <h1>⛔ Naughty NonStop</h1>
+
+    <button
+        class="back"
+        type="button"
+        onclick="history.length > 1 ? history.back() : location.assign('index.html')"
+    >
+        ← Back
+    </button>
+</header>
+
+<!-- =========================
+     MAIN GALLERY
+========================= -->
+
+<main>
+    <p class="notice">
+        Media gallery · Tap an image to view it larger.
+    </p>
+
+    <div class="gallery" id="gallery"></div>
+</main>
+
+<!-- =========================
+     GLASS IMAGE POPUP
+========================= -->
+
+<div
+    class="viewer"
+    id="viewer"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Image viewer"
+    aria-hidden="true"
+    inert
+>
+    <div class="viewer-card">
+
+        <button
+            class="close"
+            id="closeViewer"
+            type="button"
+            aria-label="Close image viewer"
+        >
+            ×
+        </button>
+
+        <img
+            id="largeImage"
+            alt="Selected gallery image"
+            decoding="async"
+        >
+
+    </div>
+</div>
+
 <script>
+/* =========================
+   IMAGE URLS
+   Original gallery preserved
+========================= */
+
 const images = [
-"https://carder.top/imagens/1792211356900-71480222.jpg",
-"https://carder.top/imagens/1792211360124-891549584.jpg",
-"https://carder.top/imagens/1792211363191-784655850.jpg",
-"https://carder.top/imagens/1792211366774-641483995.jpg",
-"https://carder.top/imagens/1792211369993-111319695.jpg",
-"https://carder.top/imagens/1792211373146-184568880.jpg",
-"https://carder.top/imagens/1792211376069-573878050.jpg",
-"https://carder.top/imagens/1792211380311-627549842.jpg",
-"https://carder.top/imagens/1792211383910-963888262.jpg",
-"https://carder.top/imagens/1792211387692-270445764.jpg",
-"https://carder.top/imagens/1792211391595-489421157.jpg",
-"https://carder.top/imagens/1792211395044-843776275.jpg",
-"https://carder.top/imagens/1792211397684-291575915.jpg",
-"https://carder.top/imagens/1792211400415-415837763.jpg",
-"https://carder.top/imagens/1792211404054-939376252.jpg",
-"https://carder.top/imagens/1792211408058-293630764.jpg",
-"https://carder.top/imagens/1792211411678-542592532.jpg",
-"https://carder.top/imagens/1792211415017-671187941.jpg",
-"https://carder.top/imagens/1792211418189-113447876.jpg",
-"https://carder.top/imagens/1792211421356-34034141.jpg",
-"https://carder.top/imagens/1792211424276-379864390.jpg",
-"https://carder.top/imagens/1792211427464-711583645.jpg",
-"https://carder.top/imagens/1792211430206-733635566.jpg",
-"https://carder.top/imagens/1792211432978-143819601.jpg",
-"https://carder.top/imagens/1792211435745-779586894.jpg",
-"https://carder.top/imagens/1792211438494-723266760.jpg",
-"https://carder.top/imagens/1792211441297-103954926.jpg",
-"https://carder.top/imagens/1792211444057-808023603.jpg",
-"https://carder.top/imagens/1792211446818-537266954.jpg",
-"https://carder.top/imagens/1792211449576-744912992.jpg",
-"https://carder.top/imagens/1792211452735-600817733.jpg",
-"https://carder.top/imagens/1792211455150-700726473.jpg",
-"https://carder.top/imagens/1792211458148-805658928.jpg",
-"https://carder.top/imagens/1792211461882-370527977.jpg",
-"https://carder.top/imagens/1792211465968-178127709.jpg",
-"https://carder.top/imagens/1792211469590-206467626.jpg",
-"https://carder.top/imagens/1792211472609-266813301.jpg",
-"https://carder.top/imagens/1792211474883-607797009.jpg",
-"https://carder.top/imagens/1792211477223-173816198.jpg",
-"https://carder.top/imagens/1792211479840-218047364.jpg",
-"https://carder.top/imagens/1792211483758-10876747.jpg",
-"https://carder.top/imagens/1792211487262-726904942.jpg",
-"https://carder.top/imagens/1792211491001-629023842.jpg",
-"https://carder.top/imagens/1792211494077-726546072.jpg",
-"https://carder.top/imagens/1792211497378-112198445.jpg",
-"https://carder.top/imagens/1792211500783-360904419.jpg",
-"https://carder.top/imagens/1792211503839-589067537.jpg",
-"https://carder.top/imagens/1792211506619-520153576.jpg",
-"https://carder.top/imagens/1792211509917-786999311.jpg",
-"https://carder.top/imagens/1792211513760-499373815.jpg",
-"https://carder.top/imagens/1792211516820-4850801.jpg",
-"https://carder.top/imagens/1792211520378-754954133.jpg",
-"https://carder.top/imagens/1792211524000-180277690.jpg",
-"https://carder.top/imagens/1792211527878-446991278.jpg",
-"https://carder.top/imagens/1792211531501-826241673.jpg",
-"https://carder.top/imagens/1792211534834-620267481.jpg",
-"https://carder.top/imagens/1792211538540-136169815.jpg",
-"https://carder.top/imagens/1792211542013-601676215.jpg",
-"https://carder.top/imagens/1792211545348-47666896.jpg",
-"https://carder.top/imagens/1792211548775-837836450.jpg",
-"https://carder.top/imagens/1792211552522-97453175.jpg",
-"https://carder.top/imagens/1792211556426-988478158.jpg",
-"https://carder.top/imagens/1792211559084-837253644.jpg",
-"https://carder.top/imagens/1792211562196-94845613.jpg",
-"https://carder.top/imagens/1792211565627-980869823.jpg",
-"https://carder.top/imagens/1792211569361-208903615.jpg",
-"https://carder.top/imagens/1792211572291-256536991.jpg",
-"https://carder.top/imagens/1792211575848-215322812.jpg",
-"https://carder.top/imagens/1792211580022-402778963.jpg",
-"https://carder.top/imagens/1792211582992-374926539.jpg",
-"https://carder.top/imagens/1792211585060-845746435.jpg",
-"https://carder.top/imagens/1792211586554-328495854.jpg"
+    "https://carder.top/imagens/1792211356900-71480222.jpg",
+    "https://carder.top/imagens/1792211360124-891549584.jpg",
+    "https://carder.top/imagens/1792211363191-784655850.jpg",
+    "https://carder.top/imagens/1792211366774-641483995.jpg",
+    "https://carder.top/imagens/1792211369993-111319695.jpg",
+    "https://carder.top/imagens/1792211373146-184568880.jpg",
+    "https://carder.top/imagens/1792211376069-573878050.jpg",
+    "https://carder.top/imagens/1792211380311-627549842.jpg",
+    "https://carder.top/imagens/1792211383910-963888262.jpg",
+    "https://carder.top/imagens/1792211387692-270445764.jpg",
+    "https://carder.top/imagens/1792211391595-489421157.jpg",
+    "https://carder.top/imagens/1792211395044-843776275.jpg",
+    "https://carder.top/imagens/1792211397684-291575915.jpg",
+    "https://carder.top/imagens/1792211400415-415837763.jpg",
+    "https://carder.top/imagens/1792211404054-939376252.jpg",
+    "https://carder.top/imagens/1792211408058-293630764.jpg",
+    "https://carder.top/imagens/1792211411678-542592532.jpg",
+    "https://carder.top/imagens/1792211415017-671187941.jpg",
+    "https://carder.top/imagens/1792211418189-113447876.jpg",
+    "https://carder.top/imagens/1792211421356-34034141.jpg",
+    "https://carder.top/imagens/1792211424276-379864390.jpg",
+    "https://carder.top/imagens/1792211427464-711583645.jpg",
+    "https://carder.top/imagens/1792211430206-733635566.jpg",
+    "https://carder.top/imagens/1792211432978-143819601.jpg",
+    "https://carder.top/imagens/1792211435745-779586894.jpg",
+    "https://carder.top/imagens/1792211438494-723266760.jpg",
+    "https://carder.top/imagens/1792211441297-103954926.jpg",
+    "https://carder.top/imagens/1792211444057-808023603.jpg",
+    "https://carder.top/imagens/1792211446818-537266954.jpg",
+    "https://carder.top/imagens/1792211449576-744912992.jpg",
+    "https://carder.top/imagens/1792211452735-600817733.jpg",
+    "https://carder.top/imagens/1792211455150-700726473.jpg",
+    "https://carder.top/imagens/1792211458148-805658928.jpg",
+    "https://carder.top/imagens/1792211461882-370527977.jpg",
+    "https://carder.top/imagens/1792211465968-178127709.jpg",
+    "https://carder.top/imagens/1792211469590-206467626.jpg",
+    "https://carder.top/imagens/1792211472609-266813301.jpg",
+    "https://carder.top/imagens/1792211474883-607797009.jpg",
+    "https://carder.top/imagens/1792211477223-173816198.jpg",
+    "https://carder.top/imagens/1792211479840-218047364.jpg",
+    "https://carder.top/imagens/1792211483758-10876747.jpg",
+    "https://carder.top/imagens/1792211487262-726904942.jpg",
+    "https://carder.top/imagens/1792211491001-629023842.jpg",
+    "https://carder.top/imagens/1792211494077-726546072.jpg",
+    "https://carder.top/imagens/1792211497378-112198445.jpg",
+    "https://carder.top/imagens/1792211500783-360904419.jpg",
+    "https://carder.top/imagens/1792211503839-589067537.jpg",
+    "https://carder.top/imagens/1792211506619-520153576.jpg",
+    "https://carder.top/imagens/1792211509917-786999311.jpg",
+    "https://carder.top/imagens/1792211513760-499373815.jpg",
+    "https://carder.top/imagens/1792211516820-4850801.jpg",
+    "https://carder.top/imagens/1792211520378-754954133.jpg",
+    "https://carder.top/imagens/1792211524000-180277690.jpg",
+    "https://carder.top/imagens/1792211527878-446991278.jpg",
+    "https://carder.top/imagens/1792211531501-826241673.jpg",
+    "https://carder.top/imagens/1792211534834-620267481.jpg",
+    "https://carder.top/imagens/1792211538540-136169815.jpg",
+    "https://carder.top/imagens/1792211542013-601676215.jpg",
+    "https://carder.top/imagens/1792211545348-47666896.jpg",
+    "https://carder.top/imagens/1792211548775-837836450.jpg",
+    "https://carder.top/imagens/1792211552522-97453175.jpg",
+    "https://carder.top/imagens/1792211556426-988478158.jpg",
+    "https://carder.top/imagens/1792211559084-837253644.jpg",
+    "https://carder.top/imagens/1792211562196-94845613.jpg",
+    "https://carder.top/imagens/1792211565627-980869823.jpg",
+    "https://carder.top/imagens/1792211569361-208903615.jpg",
+    "https://carder.top/imagens/1792211572291-256536991.jpg",
+    "https://carder.top/imagens/1792211575848-215322812.jpg",
+    "https://carder.top/imagens/1792211580022-402778963.jpg",
+    "https://carder.top/imagens/1792211582992-374926539.jpg",
+    "https://carder.top/imagens/1792211585060-845746435.jpg",
+    "https://carder.top/imagens/1792211586554-328495854.jpg"
 ];
-const gallery=document.getElementById('gallery'),viewer=document.getElementById('viewer'),largeImage=document.getElementById('largeImage');
-images.forEach((src,i)=>{const tile=document.createElement('button');tile.className='tile';tile.type='button';tile.setAttribute('aria-label','View image '+(i+1));const img=document.createElement('img');img.loading='lazy';img.src=src;img.alt='Gallery image '+(i+1);tile.appendChild(img);tile.addEventListener('click',()=>{largeImage.src=src;viewer.classLis.add('open')});gallery.appendChild(tile)});
-function closeViewer(){viewer.classList.remove('open');largeImage.removeAttribute('src')}
-document.getElementById('closeViewer').addEventListener('click',closeViewer);
-viewer.addEventListener('click',e=>{if(e.target===viewer)closeViewer()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeViewer()});
+
+/* =========================
+   ELEMENT REFERENCES
+========================= */
+
+const gallery = document.getElementById("gallery");
+const viewer = document.getElementById("viewer");
+const viewerCard = viewer.querySelector(".viewer-card");
+const largeImage = document.getElementById("largeImage");
+const closeButton = document.getElementById("closeViewer");
+
+let lastFocusedTile = null;
+
+/* =========================
+   CREATE GALLERY
+========================= */
+
+images.forEach((src, index) => {
+    const tile = document.createElement("button");
+
+    tile.className = "tile";
+    tile.type = "button";
+    tile.setAttribute(
+        "aria-label",
+        "View gallery image " + (index + 1)
+    );
+
+    const img = document.createElement("img");
+
+    img.src = src;
+    img.alt = "Gallery image " + (index + 1);
+    img.loading = "lazy";
+    img.decoding = "async";
+
+    tile.appendChild(img);
+
+    tile.addEventListener("click", () => {
+        openViewer(src, index, tile);
+    });
+
+    gallery.appendChild(tile);
+});
+
+/* =========================
+   OPEN POPUP
+========================= */
+
+function openViewer(src, index, tile) {
+    lastFocusedTile = tile;
+
+    largeImage.src = src;
+    largeImage.alt = "Gallery image " + (index + 1);
+
+    viewer.classList.add("open");
+
+    viewer.removeAttribute("inert");
+    viewer.setAttribute("aria-hidden", "false");
+
+    document.body.style.overflow = "hidden";
+
+    closeButton.focus();
+}
+
+/* =========================
+   CLOSE POPUP
+========================= */
+
+function closeViewer() {
+    if (!viewer.classList.contains("open")) {
+        return;
+    }
+
+    viewer.classList.remove("open");
+
+    viewer.setAttribute("aria-hidden", "true");
+    viewer.setAttribute("inert", "");
+
+    largeImage.removeAttribute("src");
+
+    document.body.style.overflow = "";
+
+    if (lastFocusedTile) {
+        lastFocusedTile.focus();
+    }
+}
+
+/* Close button */
+
+closeButton.addEventListener("click", closeViewer);
+
+/* Close when clicking the outside area */
+
+viewer.addEventListener("click", (event) => {
+    if (
+        event.target === viewer ||
+        event.target === viewerCard
+    ) {
+        closeViewer();
+    }
+});
+
+/* Close using Escape */
+
+document.addEventListener("keydown", (event) => {
+    if (
+        event.key === "Escape" &&
+        viewer.classList.contains("open")
+    ) {
+        closeViewer();
+    }
+});
 </script>
+
 </body>
 </html>
