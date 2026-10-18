@@ -12,10 +12,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-/* =========================
-   GLOBAL STYLES
-========================= */
-
 * {
     box-sizing: border-box;
     margin: 0;
@@ -35,10 +31,6 @@ body {
     overflow-x: hidden;
     position: relative;
     isolation: isolate;
-}
-
-button {
-    font: inherit;
 }
 
 /* =========================
@@ -86,63 +78,6 @@ button {
 }
 
 /* =========================
-   HEADER
-========================= */
-
-header {
-    position: sticky;
-    top: 0;
-    z-index: 5;
-
-    padding: 15px 18px;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-
-    background: rgba(10, 17, 40, 0.58);
-
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.12);
-}
-
-header h1 {
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: 0.2px;
-}
-
-.back {
-    flex-shrink: 0;
-
-    color: #fff;
-    background: rgba(255, 112, 143, 0.85);
-
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 22px;
-
-    padding: 9px 15px;
-
-    font-size: 13px;
-    font-weight: 700;
-
-    cursor: pointer;
-
-    transition:
-        background 0.2s ease,
-        transform 0.2s ease;
-}
-
-.back:hover {
-    background: #ff547b;
-    transform: translateY(-1px);
-}
-
-/* =========================
    MAIN CONTENT
 ========================= */
 
@@ -166,8 +101,6 @@ main {
 
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
-
-/* Respect reduced-motion preference */
 
 @media (prefers-reduced-motion: reduce) {
     *,
@@ -194,23 +127,7 @@ main {
 <div class="bg-overlay" aria-hidden="true"></div>
 
 <!-- =========================
-     HEADER
-========================= -->
-
-<header>
-    <h1>⛔ Naughty NonStop</h1>
-
-    <button
-        class="back"
-        type="button"
-        onclick="history.length > 1 ? history.back() : location.assign('index.html')"
-    >
-        ← Back
-    </button>
-</header>
-
-<!-- =========================
-     MAIN CONTENT
+     MAIN CONTENT (HEADER REMOVED)
 ========================= -->
 
 <main>
