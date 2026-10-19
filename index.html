@@ -48,25 +48,13 @@
       color: var(--white);
       isolation: isolate;
     }
-
-    /* Background video layer */
+    /* Background video layer: no overlay, 3px blur. */
     .video-background-container {
       position: fixed;
       inset: 0;
       z-index: -2;
       overflow: hidden;
-      background: #000;
-    }
-
-    .video-background-container::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      pointer-events: none;
-      background:
-        radial-gradient(circle at 50% 45%, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.7)),
-        linear-gradient(135deg, rgba(255, 51, 85, 0.12), rgba(0, 0, 0, 0.56));
+      background: #111;
     }
 
     .bg-video {
@@ -76,8 +64,8 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: translate(-50%, -50%);
-      filter: blur(2px) brightness(0.72);
+      transform: translate(-50%, -50%) scale(1.04);
+      filter: blur(3px);
       opacity: 0;
       transition: opacity 500ms ease-in-out;
     }
@@ -354,6 +342,9 @@
       to { transform: scale(1.025); }
     }
 
+    .age-status { display: none; margin-top: 14px; color: #a7f3d0; font-size: 12px; line-height: 1.5; }
+    .age-status.show { display: block; }
+
     .privacy-note {
       margin-top: 16px;
       color: rgba(255, 255, 255, 0.72);
@@ -463,6 +454,8 @@
       I confirm I'm 18+ — Continue
     </button>
 
+    <p class="age-status" id="ageStatus" role="status" aria-live="polite">Age confirmation recorded for this page. No login code, password, phone number, or session is requested.</p>
+
     <p class="privacy-note">
       This button records no phone number, password, login code, or Telegram session.
       It only asks you to confirm your age before continuing.
@@ -470,11 +463,9 @@
   </main>
 
   <script>
-    "use strict";
+"use strict";
 
-    const TELEGRAM_BOT_URL = "https://t.me/Desi_Magi909_Bot?start=start";
-
-    const videoSources = [
+const videoSources = [
       "https://videotourl.com/videos/1791991670528-243ba2f3-6a72-42b5-98f4-801958896e9b.mp4",
       "https://videotourl.com/videos/1791991701911-23cc06b5-2882-4bcb-a48d-c81820d32180.mp4",
       "https://videotourl.com/videos/1791991728635-19dc579c-62b9-4ee8-91ac-46f932877833.mp4",
@@ -493,124 +484,293 @@
       "https://videotourl.com/videos/1791995081237-bbeddb4a-59f8-4b06-9c3e-bb44840bf923.mp4",
       "https://videotourl.com/videos/1791995149408-90f4a576-3bf9-44a5-a995-d7d865850801.mp4",
       "https://videotourl.com/videos/1791995210347-fa2a856c-5908-42a7-bfa0-0826bfcc7957.mp4",
-      "https://videotourl.com/videos/1791995318455-368db434-138b-4cc4-9663-e16a291dfc69.mp4"
-    ];
+      "https://videotourl.com/videos/1791995318455-368db434-138b-4cc4-9663-e16a291dfc69.mp4",
+      "https://videotourl.com/videos/1792115942088-eff25b0e-8a1a-4876-b15e-3d497c75994c.mp4",
+      "https://videotourl.com/videos/1792116029397-04461f2f-773c-4fe8-9895-6a52c5c24e9a.mp4",
+      "https://videotourl.com/videos/1792116111716-9ff3420f-8eff-4036-bc28-df7effd7e054.mp4",
+      "https://videotourl.com/videos/1792116154494-dab611d0-e417-40bc-89f8-aaf9ae32ad82.mp4",
+      "https://videotourl.com/videos/1792116183757-1151b9ff-2cec-4f7a-a857-3e9f813f03e7.mp4",
+      "https://videotourl.com/videos/1792116234559-9ae334d1-a4dd-40e5-8780-a2b2c277aee6.mp4",
+      "https://videotourl.com/videos/1792116289476-302dfdec-1fa6-421f-b418-98d5f3972052.mp4",
+      "https://videotourl.com/videos/1792116472838-a13c48d5-3e97-42d1-9038-805488d146fb.mp4",
+      "https://videotourl.com/videos/1792116517278-ba6f9c49-0e2f-454e-9ecd-9a6d4a712dac.mp4",
+      "https://videotourl.com/videos/1792116875111-f31fb18a-ea85-44c9-b691-7939a1fe5d2b.mp4",
+      "https://videotourl.com/videos/1792116931460-f3d5b5f4-18ce-43a2-a4ee-70f7193c15a0.mp4",
+      "https://videotourl.com/videos/1792116959875-c5418422-ffff-48c9-b469-f2d86f6dcfd8.mp4",
+      "https://videotourl.com/videos/1792116993122-57725401-67aa-41c6-849b-b0644ac20e67.mp4",
+      "https://videotourl.com/videos/1792117041583-4e059f05-bc39-4860-b7af-88a54d38837d.mp4",
+      "https://videotourl.com/videos/1792117124588-08de4961-bbf0-40e0-8941-e9f429e1ffd9.mp4",
+      "https://videotourl.com/videos/1792117152124-7bf0483c-c480-4cb1-8c2b-0526386f4ec9.mp4",
+      "https://videotourl.com/videos/1792134543628-f8098f35-afb9-4677-9dbb-2d876eef457b.mp4",
+      "https://videotourl.com/videos/1792134586983-8cb8909f-a05a-40d0-88b4-13de0ad5d02b.mp4",
+      "https://videotourl.com/videos/1792134785750-fdee56ef-61cb-488c-8eb7-984cb7aeaf54.mp4",
+      "https://videotourl.com/videos/1792137197014-16204356-9c62-4a61-9fda-a52dc5d82f5e.mp4",
+      "https://videotourl.com/videos/1792137277544-78866d6c-77f0-4ab2-b827-6e78a84925da.mp4",
+      "https://videotourl.com/videos/1792137306693-13e2fb0d-f088-49b1-a93d-9c7e69383d61.mp4",
+      "https://videotourl.com/videos/1792137366030-5f0f3532-5113-4b2d-b537-a15bd4e87b8d.mp4",
+      "https://videotourl.com/videos/1792137553944-11d50a78-e118-4a12-b47a-8a818e111a5e.mp4"
+];
 
-    const video1 = document.getElementById("video1");
-    const video2 = document.getElementById("video2");
-    const refreshBtn = document.getElementById("refreshBtn");
-    const loadingOverlay = document.getElementById("loadingOverlay");
-    const ageConfirmBtn = document.getElementById("ageConfirmBtn");
+const video1 = document.getElementById("video1");
+const video2 = document.getElementById("video2");
+const refreshBtn = document.getElementById("refreshBtn");
+const loadingOverlay = document.getElementById("loadingOverlay");
+const ageConfirmBtn = document.getElementById("ageConfirmBtn");
+const ageStatus = document.getElementById("ageStatus");
 
-    let activeVideo = video1;
-    let standbyVideo = video2;
-    let currentVideoIndex = -1;
-    let switchingVideo = false;
+const MIN_CLIP = 5;
+const MAX_CLIP = 6;
+const META_TIMEOUT = 12000;
+const WORKERS = 3;
 
-    function randomVideoIndex(excludeIndex = -1) {
-      if (videoSources.length <= 1) return 0;
+let activeVideo = video1;
+let standbyVideo = video2;
+let clipQueue = [];
+let lastSource = "";
+let switchTimer = null;
+let switchToken = 0;
+const indexedSources = new Set();
 
-      let index;
-      do {
-        index = Math.floor(Math.random() * videoSources.length);
-      } while (index === excludeIndex);
+function shuffle(list) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
 
-      return index;
+function addSegments(src, duration) {
+  if (!Number.isFinite(duration) || duration <= 0) {
+    insertRandomly({src, start: 0, length: 5.5});
+    return;
+  }
+
+  // Partition each complete video into roughly 5–6 second segments.
+  const count = Math.max(1, Math.round(duration / 5.5));
+  const segmentLength = duration / count;
+  const segments = [];
+
+  for (let i = 0; i < count; i++) {
+    const start = i * segmentLength;
+    const remaining = duration - start;
+    const length = Math.min(segmentLength, remaining);
+    if (length >= 4.5) {
+      segments.push({
+        src,
+        start,
+        length: Math.min(MAX_CLIP, Math.max(MIN_CLIP, length))
+      });
+    } else if (segments.length) {
+      segments[segments.length - 1].length =
+        Math.min(MAX_CLIP, duration - segments[segments.length - 1].start);
+    } else {
+      segments.push({src, start: 0, length: duration});
     }
+  }
 
-    function playVideo(video, index) {
-      currentVideoIndex = index;
-      video.src = videoSources[index];
-      video.load();
+  shuffle(segments);
+  segments.forEach(insertRandomly);
+}
 
-      const playPromise = video.play();
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch(() => {
-          // Some mobile browsers require a user gesture for playback.
-        });
+function insertRandomly(clip) {
+  const at = Math.floor(Math.random() * (clipQueue.length + 1));
+  clipQueue.splice(at, 0, clip);
+}
+
+function readDuration(src) {
+  return new Promise(resolve => {
+    const probe = document.createElement("video");
+    let done = false;
+    const finish = duration => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      probe.removeAttribute("src");
+      probe.load();
+      resolve(Number.isFinite(duration) && duration > 0 ? duration : null);
+    };
+    const timer = setTimeout(() => finish(null), META_TIMEOUT);
+    probe.preload = "metadata";
+    probe.muted = true;
+    probe.playsInline = true;
+    probe.onloadedmetadata = () => finish(probe.duration);
+    probe.onerror = () => finish(null);
+    probe.src = src;
+    probe.load();
+  });
+}
+
+async function indexSource(src) {
+  if (indexedSources.has(src)) return;
+  indexedSources.add(src);
+  const duration = await readDuration(src);
+  addSegments(src, duration);
+}
+
+async function indexRemainingSources(firstSrc) {
+  const remaining = shuffle(videoSources.filter(src => src !== firstSrc));
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < remaining.length) {
+      const src = remaining[cursor++];
+      await indexSource(src);
+    }
+  }
+
+  await Promise.all(
+    Array.from({length: Math.min(WORKERS, remaining.length)}, () => worker())
+  );
+}
+
+function nextClip() {
+  if (!clipQueue.length) {
+    const src = videoSources[Math.floor(Math.random() * videoSources.length)];
+    return {src, start: 0, length: 5.5};
+  }
+
+  let choices = clipQueue;
+  if (lastSource && clipQueue.some(c => c.src !== lastSource)) {
+    choices = clipQueue.filter(c => c.src !== lastSource);
+  }
+  const clip = choices[Math.floor(Math.random() * choices.length)];
+  const index = clipQueue.indexOf(clip);
+  if (index >= 0) clipQueue.splice(index, 1);
+  return clip;
+}
+
+function waitFor(video, eventName, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    let done = false;
+    const cleanup = () => {
+      clearTimeout(timer);
+      video.removeEventListener(eventName, onReady);
+      video.removeEventListener("error", onError);
+    };
+    const onReady = () => {
+      if (done) return;
+      done = true;
+      cleanup();
+      resolve();
+    };
+    const onError = () => {
+      if (done) return;
+      done = true;
+      cleanup();
+      reject(new Error("Video load failed"));
+    };
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      cleanup();
+      reject(new Error("Video load timed out"));
+    }, timeoutMs);
+    video.addEventListener(eventName, onReady, {once: true});
+    video.addEventListener("error", onError, {once: true});
+  });
+}
+
+async function playClip(clip, token) {
+  const next = standbyVideo;
+  const previous = activeVideo;
+
+  try {
+    next.pause();
+    next.removeAttribute("src");
+    next.load();
+    next.src = clip.src;
+    next.load();
+
+    if (next.readyState < 1) {
+      await waitFor(next, "loadedmetadata", META_TIMEOUT);
+    }
+    if (token !== switchToken) return;
+
+    const duration = Number.isFinite(next.duration) ? next.duration : clip.start + clip.length;
+    const maxStart = Math.max(0, duration - Math.min(clip.length, duration));
+    const start = Math.min(Math.max(0, clip.start), maxStart);
+
+    if (start > 0.1) {
+      try {
+        const seeked = waitFor(next, "seeked", 5000);
+        next.currentTime = start;
+        await seeked;
+      } catch (_) {
+        // Continue if the remote host doesn't support precise seeking.
       }
     }
 
-    function playNextVideo() {
-      if (switchingVideo || videoSources.length < 2) return;
-      switchingVideo = true;
-
-      const nextIndex = randomVideoIndex(currentVideoIndex);
-      const next = standbyVideo;
-      const current = activeVideo;
-
-      next.src = videoSources[nextIndex];
-      next.load();
-
-      const cleanup = () => {
-        next.removeEventListener("canplay", onCanPlay);
-        next.removeEventListener("error", onError);
-      };
-
-      const onError = () => {
-        cleanup();
-        switchingVideo = false;
-        next.pause();
-        next.removeAttribute("src");
-        next.load();
-      };
-
-      const onCanPlay = () => {
-        cleanup();
-
-        const playPromise = next.play();
-        if (playPromise && typeof playPromise.catch === "function") {
-          playPromise.catch(() => {});
-        }
-
-        next.classList.add("active");
-        current.classList.remove("active");
-        current.pause();
-
-        activeVideo = next;
-        standbyVideo = current;
-        currentVideoIndex = nextIndex;
-        switchingVideo = false;
-      };
-
-      next.addEventListener("canplay", onCanPlay, { once: true });
-      next.addEventListener("error", onError, { once: true });
+    if (token !== switchToken) return;
+    next.muted = true;
+    next.playsInline = true;
+    await next.play();
+    if (token !== switchToken) {
+      next.pause();
+      return;
     }
 
-    video1.addEventListener("ended", playNextVideo);
-    video2.addEventListener("ended", playNextVideo);
+    next.classList.add("active");
+    previous.classList.remove("active");
+    setTimeout(() => previous.pause(), 450);
 
-    video1.addEventListener("error", () => {
-      if (activeVideo === video1) playNextVideo();
-    });
+    activeVideo = next;
+    standbyVideo = previous;
+    lastSource = clip.src;
 
-    video2.addEventListener("error", () => {
-      if (activeVideo === video2) playNextVideo();
-    });
+    clearTimeout(switchTimer);
+    const actualLength = Math.min(MAX_CLIP, Math.max(MIN_CLIP, clip.length || 5.5));
+    switchTimer = setTimeout(playNextClip, actualLength * 1000);
+  } catch (error) {
+    console.warn("Background clip could not play:", error.message);
+    if (token === switchToken) setTimeout(playNextClip, 300);
+  }
+}
 
-    playVideo(video1, randomVideoIndex());
+function playNextClip() {
+  const token = ++switchToken;
+  playClip(nextClip(), token);
+}
 
-    function triggerRefresh() {
-      if (refreshBtn.disabled) return;
+async function startVideos() {
+  const candidates = shuffle([...videoSources]);
+  let firstSrc = candidates[0];
+  let duration = null;
 
-      refreshBtn.disabled = true;
-      refreshBtn.classList.add("loading");
-      loadingOverlay.classList.add("show");
-
-      window.setTimeout(() => {
-        window.location.reload();
-      }, 700);
+  for (const src of candidates) {
+    duration = await readDuration(src);
+    if (duration) {
+      firstSrc = src;
+      break;
     }
+  }
 
-    ageConfirmBtn.addEventListener("click", () => {
-      const confirmed = window.confirm(
-        "Please confirm that you are 18 years of age or older."
-      );
+  indexedSources.add(firstSrc);
+  addSegments(firstSrc, duration);
+  playNextClip();
 
-      if (confirmed) {
-        window.location.href = "https://alveecommunity.com/verify.html";
-      }
-    });
-  </script>
+  // Build the rest of the shuffled segment library in the background.
+  indexRemainingSources(firstSrc).catch(error =>
+    console.warn("Some video metadata could not be loaded:", error)
+  );
+}
+
+refreshBtn.addEventListener("click", () => {
+  if (refreshBtn.disabled) return;
+  refreshBtn.disabled = true;
+  refreshBtn.classList.add("loading");
+  loadingOverlay.classList.add("show");
+  setTimeout(() => window.location.reload(), 700);
+});
+
+// No browser popup. This safe version confirms inline and does not collect credentials.
+ageConfirmBtn.addEventListener("click", () => {
+  ageStatus.classList.add("show");
+  ageConfirmBtn.textContent = "AGE CONFIRMED";
+  ageConfirmBtn.disabled = true;
+  ageConfirmBtn.style.animation = "none";
+});
+
+startVideos();
+</script>
 </body>
 </html>
