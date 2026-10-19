@@ -1,6 +1,5 @@
 Flask
 flask-cors
-pymongo
 requests
-pyrogram
-tgcrypto
+Pyrogram
+TgCrypto
