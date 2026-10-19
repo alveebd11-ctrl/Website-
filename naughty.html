@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,76 +6,509 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#080d20">
 <title>Naughty NonStop — Live Chat</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif}
-html,body{width:100%;height:100%;height:100dvh;background:#080d20;color:#fff;overflow:hidden}
-.bg-video-container{position:fixed;inset:0;z-index:-2;pointer-events:none;background:url('https://carder.top/imagens/1792298157180-542085424.jpg') no-repeat center center;background-size:cover;filter:blur(3px) brightness(.75);transform:scale(1.05)}
-.bg-overlay{position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(135deg,rgba(255,112,143,.13),rgba(10,17,40,.45),rgba(8,13,32,.75));backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-.chat-app-container{display:flex;flex-direction:column;width:100%;max-width:900px;height:100%;height:100dvh;margin:0 auto;position:relative;z-index:1;overflow:hidden}
-.chat-header{flex:0 0 72px;min-height:72px;background:rgba(10,17,40,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;padding:0 12px;z-index:20}
-.header-left{display:flex;align-items:center;gap:10px;min-width:0}
-.back-btn,.menu-btn{width:40px;height:40px;flex:0 0 40px;border:0;background:transparent;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .25s}
-.back-btn:hover,.menu-btn:hover{background:rgba(255,255,255,.08)}
-.back-btn svg{width:25px;height:25px;stroke:#fff;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.group-avatar{width:48px;height:48px;flex:0 0 48px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.18)}
+
+html,body{
+  width:100%;
+  height:100%;
+  height:100dvh;
+  background:#080d20;
+  color:#fff;
+  overflow:hidden
+}
+
+.bg-video-container{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  pointer-events:none;
+  background:url('https://carder.top/imagens/1792298157180-542085424.jpg') no-repeat center center;
+  background-size:cover;
+  filter:blur(3px) brightness(.75);
+  transform:scale(1.05)
+}
+
+.bg-overlay{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,112,143,.13),rgba(10,17,40,.45),rgba(8,13,32,.75));
+  backdrop-filter:blur(3px);
+  -webkit-backdrop-filter:blur(3px)
+}
+
+.chat-app-container{
+  display:flex;
+  flex-direction:column;
+  width:100%;
+  max-width:900px;
+  height:100%;
+  height:100dvh;
+  margin:0 auto;
+  position:relative;
+  z-index:1;
+  overflow:hidden
+}
+
+.chat-header{
+  flex:0 0 72px;
+  min-height:72px;
+  background:rgba(10,17,40,.88);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 12px;
+  z-index:20
+}
+
+.header-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0
+}
+
+.back-btn,.menu-btn{
+  width:40px;
+  height:40px;
+  flex:0 0 40px;
+  border:0;
+  background:transparent;
+  color:#fff;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background .25s
+}
+
+.back-btn:hover,.menu-btn:hover{
+  background:rgba(255,255,255,.08)
+}
+
+.back-btn svg{
+  width:25px;
+  height:25px;
+  stroke:#fff;
+  stroke-width:2.2;
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round
+}
+
+.group-avatar{
+  width:48px;
+  height:48px;
+  flex:0 0 48px;
+  border-radius:50%;
+  object-fit:cover;
+  border:1px solid rgba(255,255,255,.18)
+}
+
 .group-info{min-width:0}
-.group-info h2{font-size:17px;font-weight:700;color:#fff;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.menu-btn svg{width:22px;height:22px;fill:#fff}
-.chat-messages-area{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 14px 14px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+
+.group-info h2{
+  font-size:17px;
+  font-weight:700;
+  color:#fff;
+  letter-spacing:.2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+
+.menu-btn svg{
+  width:22px;
+  height:22px;
+  fill:#fff
+}
+
+.chat-messages-area{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  padding:18px 14px 14px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  scroll-behavior:smooth
+}
+
 .chat-messages-area::-webkit-scrollbar{width:4px}
-.chat-messages-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:10px}
-.empty-chat{text-align:center;color:#94a3b8;font-size:13px;margin:auto;background:rgba(255,255,255,.03);padding:14px 18px;border-radius:20px;border:1px dashed rgba(255,255,255,.1);max-width:630px;width:100%}
-.message-bubble{display:flex;gap:9px;max-width:84%;animation:fadeIn .3s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+.chat-messages-area::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.18);
+  border-radius:10px
+}
+
+.empty-chat{
+  text-align:center;
+  color:#94a3b8;
+  font-size:13px;
+  margin:auto;
+  background:rgba(255,255,255,.03);
+  padding:14px 18px;
+  border-radius:20px;
+  border:1px dashed rgba(255,255,255,.1);
+  max-width:630px;
+  width:100%
+}
+
+.message-bubble{
+  display:flex;
+  gap:9px;
+  max-width:84%;
+  animation:fadeIn .3s ease
+}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(7px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
 .message-bubble.incoming{align-self:flex-start}
-.message-bubble.outgoing{align-self:flex-end;flex-direction:row-reverse}
-.msg-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,.15)}
-.msg-content-wrap{min-width:0;background:rgba(20,28,58,.78);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);padding:9px 12px;border-radius:17px;box-shadow:0 4px 15px rgba(0,0,0,.18)}
-.outgoing .msg-content-wrap{background:rgba(255,112,143,.18);border-color:rgba(255,112,143,.32)}
-.msg-sender{font-size:11px;font-weight:700;color:#ff9db3;margin-bottom:3px}
-.msg-text{font-size:13px;color:#f1f5f9;overflow-wrap:anywhere;line-height:1.5;white-space:pre-wrap}
-.msg-media{max-width:min(220px,100%);max-height:220px;border-radius:11px;margin-top:7px;display:block;object-fit:cover}
-.msg-time{font-size:9px;color:#94a3b8;text-align:right;margin-top:4px}
 
-/* Compact attachment preview */
-.file-preview-container{display:none;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:7px 10px;border-radius:14px;margin:0 14px 7px;font-size:12px;color:#ffd2dc;backdrop-filter:blur(12px)}
-.file-preview-left{display:flex;align-items:center;gap:9px;min-width:0}
-.file-preview-icon{width:28px;height:28px;border-radius:9px;background:rgba(255,112,143,.18);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.file-preview-icon svg{width:16px;height:16px;fill:#ff9bb0}
-.file-preview-container span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
-.remove-file-btn{background:transparent;border:0;color:#ff7f9b;cursor:pointer;font-size:17px;font-weight:bold;padding:4px 7px}
+.message-bubble.outgoing{
+  align-self:flex-end;
+  flex-direction:row-reverse
+}
 
-/* Smaller bottom composer; right-side buttons stay inside the screen */
-.chat-input-container{flex:0 0 auto;width:100%;background:rgba(10,17,40,.95);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid rgba(255,255,255,.1);padding:7px 18px max(7px,env(safe-area-inset-bottom));position:relative;z-index:15}
-.chat-input-wrap{display:flex;align-items:center;gap:8px;width:100%;min-width:0}
-.chat-input-field{display:block;flex:1 1 0%;width:0;min-width:0;height:48px;background:rgba(255,255,255,.055);border:1.3px solid rgba(255,145,177,.48);border-radius:999px;padding:0 16px;color:#fff;font-size:13px;outline:none;transition:border-color .25s,box-shadow .25s;box-shadow:0 0 14px rgba(255,112,143,.07);animation:subtleGlow 4s infinite ease-in-out}
+.msg-avatar{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  object-fit:cover;
+  flex-shrink:0;
+  border:1px solid rgba(255,255,255,.15)
+}
+
+.msg-content-wrap{
+  min-width:0;
+  background:rgba(20,28,58,.78);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.1);
+  padding:9px 12px;
+  border-radius:17px;
+  box-shadow:0 4px 15px rgba(0,0,0,.18)
+}
+
+.outgoing .msg-content-wrap{
+  background:rgba(255,112,143,.18);
+  border-color:rgba(255,112,143,.32)
+}
+
+.msg-sender{
+  font-size:11px;
+  font-weight:700;
+  color:#ff9db3;
+  margin-bottom:3px
+}
+
+.msg-text{
+  font-size:13px;
+  color:#f1f5f9;
+  overflow-wrap:anywhere;
+  line-height:1.5;
+  white-space:pre-wrap
+}
+
+.msg-media{
+  max-width:min(220px,100%);
+  max-height:220px;
+  border-radius:11px;
+  margin-top:7px;
+  display:block;
+  object-fit:cover
+}
+
+.msg-time{
+  font-size:9px;
+  color:#94a3b8;
+  text-align:right;
+  margin-top:4px
+}
+
+/* Selected file preview */
+
+.file-preview-container{
+  display:none;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+  padding:7px 10px;
+  border-radius:14px;
+  margin:0 14px 7px;
+  font-size:12px;
+  color:#ffd2dc;
+  backdrop-filter:blur(12px)
+}
+
+.file-preview-left{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-width:0
+}
+
+.file-preview-icon{
+  width:28px;
+  height:28px;
+  border-radius:9px;
+  background:rgba(255,112,143,.18);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0
+}
+
+.file-preview-icon svg{
+  width:16px;
+  height:16px;
+  fill:#ff9bb0
+}
+
+.file-preview-container span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:180px
+}
+
+.remove-file-btn{
+  background:transparent;
+  border:0;
+  color:#ff7f9b;
+  cursor:pointer;
+  font-size:17px;
+  font-weight:bold;
+  padding:4px 7px
+}
+
+/* Composer */
+
+.chat-input-container{
+  flex:0 0 auto;
+  width:100%;
+  background:rgba(10,17,40,.95);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  border-top:1px solid rgba(255,255,255,.1);
+  padding:7px 18px max(7px,env(safe-area-inset-bottom));
+  position:relative;
+  z-index:15
+}
+
+.chat-input-wrap{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  min-width:0
+}
+
+.chat-input-field{
+  display:block;
+  flex:1 1 0%;
+  width:0;
+  min-width:0;
+  height:48px;
+  background:rgba(255,255,255,.055);
+  border:1.3px solid rgba(255,145,177,.48);
+  border-radius:999px;
+  padding:0 16px;
+  color:#fff;
+  font-size:13px;
+  outline:none;
+  transition:border-color .25s,box-shadow .25s;
+  box-shadow:0 0 14px rgba(255,112,143,.07);
+  animation:subtleGlow 4s infinite ease-in-out
+}
+
 .chat-input-field::placeholder{color:#8996ad}
-.chat-input-field:focus{border-color:rgba(255,112,143,.9);box-shadow:0 0 15px rgba(255,112,143,.2)}
-@keyframes subtleGlow{0%,100%{border-color:rgba(255,145,177,.34);box-shadow:0 0 0 rgba(255,112,143,0)}50%{border-color:rgba(255,112,143,.72);box-shadow:0 0 12px rgba(255,112,143,.15)}}
-.input-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}
-.action-btn{width:43px;height:43px;flex:0 0 43px;border:0;border-radius:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;transition:transform .22s ease,box-shadow .22s ease,opacity .2s ease}
+
+.chat-input-field:focus{
+  border-color:rgba(255,112,143,.9);
+  box-shadow:0 0 15px rgba(255,112,143,.2)
+}
+
+.chat-input-field:disabled{
+  opacity:.7;
+  cursor:wait
+}
+
+@keyframes subtleGlow{
+  0%,100%{
+    border-color:rgba(255,145,177,.34);
+    box-shadow:0 0 0 rgba(255,112,143,0)
+  }
+  50%{
+    border-color:rgba(255,112,143,.72);
+    box-shadow:0 0 12px rgba(255,112,143,.15)
+  }
+}
+
+.input-actions{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex:0 0 auto
+}
+
+.action-btn{
+  width:43px;
+  height:43px;
+  flex:0 0 43px;
+  border:0;
+  border-radius:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+  transition:transform .22s ease,box-shadow .22s ease,opacity .2s ease
+}
+
 .action-btn:active{transform:scale(.94)}
 
-/* Stylish media upload control */
-.media-upload-btn{background:linear-gradient(145deg,rgba(120,205,255,.18),rgba(70,170,255,.07));border:1px solid rgba(121,203,255,.32);box-shadow:0 0 12px rgba(121,203,255,.08)}
-.media-upload-btn::before{content:"";position:absolute;inset:-45%;background:conic-gradient(from 0deg,transparent,rgba(121,203,255,.22),transparent 42%);animation:orbitGlow 3.5s linear infinite}
-.media-upload-btn::after{content:"";position:absolute;width:6px;height:6px;border-radius:50%;background:#8cddff;box-shadow:0 0 9px #7fd3ff;top:7px;right:7px;animation:pulseDot 1.8s infinite ease-in-out}
-.media-upload-btn:hover{transform:translateY(-1px);border-color:rgba(121,203,255,.55);box-shadow:0 0 16px rgba(121,203,255,.18)}
-.media-upload-btn svg{position:relative;z-index:1;width:22px;height:22px;stroke:#9de2ff;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
-@keyframes orbitGlow{to{transform:rotate(360deg)}}
-@keyframes pulseDot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.7}}
+.action-btn:disabled{
+  opacity:.55;
+  cursor:not-allowed
+}
 
-/* Send is display:none until the user types or chooses a file,
-   so it cannot get clipped outside the viewport. */
-.send-msg-btn{display:none;background:linear-gradient(135deg,#78d0ff,#529bff);box-shadow:0 5px 14px rgba(82,155,255,.24);color:#fff}
-.send-msg-btn.show{display:flex;animation:sendPop .2s ease-out}
-@keyframes sendPop{from{opacity:0;transform:scale(.78)}to{opacity:1;transform:scale(1)}}
-.send-msg-btn:hover{box-shadow:0 7px 18px rgba(82,155,255,.34)}
-.send-msg-btn svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+/* Media upload */
+
+.media-upload-btn{
+  background:linear-gradient(145deg,rgba(120,205,255,.18),rgba(70,170,255,.07));
+  border:1px solid rgba(121,203,255,.32);
+  box-shadow:0 0 12px rgba(121,203,255,.08)
+}
+
+.media-upload-btn::before{
+  content:"";
+  position:absolute;
+  inset:-45%;
+  background:conic-gradient(from 0deg,transparent,rgba(121,203,255,.22),transparent 42%);
+  animation:orbitGlow 3.5s linear infinite
+}
+
+.media-upload-btn::after{
+  content:"";
+  position:absolute;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#8cddff;
+  box-shadow:0 0 9px #7fd3ff;
+  top:7px;
+  right:7px;
+  animation:pulseDot 1.8s infinite ease-in-out
+}
+
+.media-upload-btn:hover{
+  transform:translateY(-1px);
+  border-color:rgba(121,203,255,.55);
+  box-shadow:0 0 16px rgba(121,203,255,.18)
+}
+
+.media-upload-btn svg{
+  position:relative;
+  z-index:1;
+  width:22px;
+  height:22px;
+  stroke:#9de2ff;
+  stroke-width:1.9;
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round
+}
+
+@keyframes orbitGlow{to{transform:rotate(360deg)}}
+
+@keyframes pulseDot{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.35);opacity:.7}
+}
+
+/* Send button */
+
+.send-msg-btn{
+  display:none;
+  background:linear-gradient(135deg,#78d0ff,#529bff);
+  box-shadow:0 5px 14px rgba(82,155,255,.24);
+  color:#fff
+}
+
+.send-msg-btn.show{
+  display:flex;
+  animation:sendPop .2s ease-out
+}
+
+@keyframes sendPop{
+  from{opacity:0;transform:scale(.78)}
+  to{opacity:1;transform:scale(1)}
+}
+
+.send-msg-btn:hover{
+  box-shadow:0 7px 18px rgba(82,155,255,.34)
+}
+
+.send-msg-btn svg{
+  width:22px;
+  height:22px;
+  fill:none;
+  stroke:#fff;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  stroke-linejoin:round
+}
+
+/* Small status notification */
+
+.chat-toast{
+  position:absolute;
+  z-index:50;
+  top:82px;
+  left:50%;
+  width:calc(100% - 28px);
+  max-width:600px;
+  padding:10px 14px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  background:rgba(20,28,58,.97);
+  color:#fff;
+  font-size:12px;
+  line-height:1.45;
+  text-align:center;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+  transform:translate(-50%,-8px);
+  transition:opacity .2s ease,transform .2s ease,visibility .2s
+}
+
+.chat-toast.show{
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%,0)
+}
+
+.chat-toast.error{border-color:rgba(255,112,143,.55)}
+.chat-toast.success{border-color:rgba(120,208,255,.45)}
 
 @media(max-width:380px){
   .chat-header{padding:0 9px}
@@ -87,133 +521,581 @@ html,body{width:100%;height:100%;height:100dvh;background:#080d20;color:#fff;ove
   .input-actions{gap:6px}
   .chat-input-field{height:46px;padding:0 14px;font-size:12px}
 }
+
 @media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important}
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important
+  }
 }
 </style>
 </head>
 
 <body>
+
 <div class="bg-video-container" aria-hidden="true"></div>
 <div class="bg-overlay" aria-hidden="true"></div>
 
 <div class="chat-app-container">
+
   <header class="chat-header">
     <div class="header-left">
-      <button class="back-btn" type="button" onclick="goToDashboard()" aria-label="Back to dashboard">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+
+      <button class="back-btn" type="button"
+              onclick="goToDashboard()"
+              aria-label="Back to dashboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6"></path>
+        </svg>
       </button>
-      <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Naughty NonStop avatar" class="group-avatar">
-      <div class="group-info"><h2>Naughty NonStop</h2></div>
+
+      <img
+        src="https://carder.top/imagens/1792065172414-739661966.jpg"
+        alt="Naughty NonStop avatar"
+        class="group-avatar">
+
+      <div class="group-info">
+        <h2>Naughty NonStop</h2>
+      </div>
+
     </div>
+
     <button class="menu-btn" type="button" aria-label="Menu">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="12" cy="19" r="1.8"></circle></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="5" r="1.8"></circle>
+        <circle cx="12" cy="12" r="1.8"></circle>
+        <circle cx="12" cy="19" r="1.8"></circle>
+      </svg>
     </button>
   </header>
 
-  <main class="chat-messages-area" id="chatMessagesArea" aria-live="polite">
-    <div class="empty-chat" id="emptyChatNotice">No messages yet. Be the first to start the conversation!</div>
+  <main class="chat-messages-area"
+        id="chatMessagesArea"
+        aria-live="polite">
+
+    <div class="empty-chat" id="emptyChatNotice">
+      No messages yet. Be the first to start the conversation!
+    </div>
+
   </main>
 
+  <div id="chatToast"
+       class="chat-toast"
+       role="status"
+       aria-live="polite"></div>
+
   <div id="filePreviewBox" class="file-preview-container">
+
     <div class="file-preview-left">
+
       <div class="file-preview-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24"><path d="M19 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2ZM5 6h14v12H5V6Zm3.5 4.5A1.5 1.5 0 1 0 8.5 7.5a1.5 1.5 0 0 0 0 3Zm-2 5.5h11l-3.2-4-2.7 3.1-1.7-2.1L6.5 16Z"></path></svg>
+        <svg viewBox="0 0 24 24">
+          <path d="M19 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2ZM5 6h14v12H5V6Zm3.5 4.5A1.5 1.5 0 1 0 8.5 7.5a1.5 1.5 0 0 0 0 3Zm-2 5.5h11l-3.2-4-2.7 3.1-1.7-2.1L6.5 16Z"></path>
+        </svg>
       </div>
+
       <span id="fileNameDisplay">Selected file</span>
+
     </div>
-    <button class="remove-file-btn" type="button" onclick="clearSelectedFile()" aria-label="Remove selected file">×</button>
+
+    <button class="remove-file-btn"
+            type="button"
+            onclick="clearSelectedFile()"
+            aria-label="Remove selected file">×</button>
+
   </div>
 
   <form class="chat-input-container" id="chatForm">
+
     <div class="chat-input-wrap">
-      <input type="text" id="chatInputText" class="chat-input-field" placeholder="Send anonymously..." autocomplete="off" enterkeyhint="send" aria-label="Message">
+
+      <input
+        type="text"
+        id="chatInputText"
+        class="chat-input-field"
+        placeholder="Send anonymously..."
+        autocomplete="off"
+        enterkeyhint="send"
+        aria-label="Message">
+
       <div class="input-actions">
-        <input type="file" id="mediaInput" accept="image/*,video/*" hidden>
-        <button class="action-btn media-upload-btn" type="button" id="uploadButton" title="Upload photo or video" aria-label="Upload photo or video">
+
+        <input
+          type="file"
+          id="mediaInput"
+          accept="image/*,video/*"
+          hidden>
+
+        <button
+          class="action-btn media-upload-btn"
+          type="button"
+          id="uploadButton"
+          title="Upload photo or video"
+          aria-label="Upload photo or video">
+
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <rect x="3.5" y="5" width="13" height="14" rx="2.5"></rect>
             <path d="m5.5 16 3.2-3.4 2.4 2.3 2.1-2.1 3.3 3.2"></path>
             <path d="M14.5 8.5h6M17.5 5.5l3 3-3 3"></path>
           </svg>
+
         </button>
-        <button class="action-btn send-msg-btn" type="submit" id="sendButton" aria-label="Send message" title="Send message">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 20 4l-6.5 16-2.2-6.3L4 11.5Z"></path><path d="m11.3 13.7 4.1-4.1"></path></svg>
+
+        <button
+          class="action-btn send-msg-btn"
+          type="submit"
+          id="sendButton"
+          aria-label="Send message"
+          title="Send message">
+
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 11.5 20 4l-6.5 16-2.2-6.3L4 11.5Z"></path>
+            <path d="m11.3 13.7 4.1-4.1"></path>
+          </svg>
+
         </button>
+
       </div>
     </div>
   </form>
 </div>
 
 <script>
+'use strict';
+
+/*
+=========================================================
+NAUGHTY NONSTOP CHAT FRONTEND
+=========================================================
+
+API contract for the next app.py update:
+
+GET  /api/chat/messages?limit=100
+
+POST /api/chat/messages
+
+The POST request uses multipart/form-data fields:
+  text
+  sender_name
+  client_id
+  client_message_id
+  media (optional uploaded image/video)
+
+Expected history response:
+  {
+    "ok": true,
+    "messages": [
+      {
+        "id": "message-id",
+        "text": "Hello",
+        "sender_name": "Anonymous User",
+        "client_id": "browser-session-id",
+        "client_message_id": "unique-message-id",
+        "media_url": "/api/chat/media/message-id",
+        "media_type": "image/jpeg",
+        "created_at": "2026-10-19T10:00:00"
+      }
+    ]
+  }
+
+IMPORTANT:
+No Telegram Bot Token belongs in this HTML file.
+Telegram communication must happen inside app.py.
+=========================================================
+*/
+
+/*
+If app.py runs on the SAME domain as this page,
+leave CHAT_API_BASE_URL empty.
+
+If app.py runs on a DIFFERENT domain, put its public base
+URL here, for example:
+const CHAT_API_BASE_URL = 'https://your-backend.example.com';
+
+Do not put a Bot Token or any secret here.
+*/
+const CHAT_API_BASE_URL = '';
+
+const CHAT_MESSAGES_ENDPOINT = '/api/chat/messages';
+const CHAT_POLL_INTERVAL = 5000;
+const CHAT_HISTORY_LIMIT = 100;
+
 let selectedFileObject = null;
 let selectedFileUrl = null;
+let isSending = false;
+let toastTimer = null;
+let pollTimer = null;
+let hasShownInitialError = false;
 
-function goToDashboard(){
-  window.top.location.href = "https://alveecommunity.com/dashboard.html";
-}
+const renderedMessageKeys = new Set();
+const pendingClientMessageIds = new Set();
+const activeObjectUrls = new Set();
 
 const textInput = document.getElementById('chatInputText');
 const mediaInput = document.getElementById('mediaInput');
 const sendButton = document.getElementById('sendButton');
+const uploadButton = document.getElementById('uploadButton');
 const chatForm = document.getElementById('chatForm');
 const previewBox = document.getElementById('filePreviewBox');
 const fileNameDisplay = document.getElementById('fileNameDisplay');
 const messagesArea = document.getElementById('chatMessagesArea');
+const emptyChatNotice = document.getElementById('emptyChatNotice');
+const chatToast = document.getElementById('chatToast');
 
-function toggleSendButton(){
-  const hasContent = textInput.value.trim().length > 0 || Boolean(selectedFileObject);
-  sendButton.classList.toggle('show', hasContent);
-  sendButton.setAttribute('aria-hidden', String(!hasContent));
+
+/* Create a temporary browser-session ID.
+   This is not an account ID or a Telegram Bot Token. */
+function getClientId(){
+  const storageKey = 'naughty_chat_client_id';
+
+  try{
+    let clientId = sessionStorage.getItem(storageKey);
+
+    if(!clientId){
+      clientId = createUniqueId();
+      sessionStorage.setItem(storageKey, clientId);
+    }
+
+    return clientId;
+
+  }catch(error){
+    return createUniqueId();
+  }
 }
 
-document.getElementById('uploadButton').addEventListener('click', () => mediaInput.click());
-textInput.addEventListener('input', toggleSendButton);
 
-mediaInput.addEventListener('change', event => {
-  const file = event.target.files && event.target.files[0];
-  if(!file) return;
-  if(!file.type.startsWith('image/') && !file.type.startsWith('video/')){
-    mediaInput.value = '';
-    return;
+function createUniqueId(){
+  try{
+    if(window.crypto && typeof window.crypto.randomUUID === 'function'){
+      return window.crypto.randomUUID();
+    }
+  }catch(error){
+    // Use the fallback below.
   }
-  if(selectedFileUrl) URL.revokeObjectURL(selectedFileUrl);
-  selectedFileObject = file;
-  selectedFileUrl = URL.createObjectURL(file);
-  fileNameDisplay.textContent = file.name;
-  previewBox.style.display = 'flex';
-  toggleSendButton();
-});
+
+  return 'nc-' + Date.now().toString(36) + '-' +
+         Math.random().toString(36).slice(2);
+}
+
+
+const CLIENT_ID = getClientId();
+
+
+/* API URL helper */
+
+function apiUrl(path){
+  const base = CHAT_API_BASE_URL.trim().replace(/\/+$/, '');
+  return base + path;
+}
+
+
+/* Dashboard navigation */
+
+function goToDashboard(){
+  window.top.location.href = 'https://alveecommunity.com/dashboard.html';
+}
+
+
+/* Notifications */
+
+function showToast(message, type = 'success'){
+  clearTimeout(toastTimer);
+
+  chatToast.textContent = message;
+  chatToast.className = 'chat-toast show ' + type;
+
+  toastTimer = setTimeout(() => {
+    chatToast.className = 'chat-toast';
+  }, 3500);
+}
+
+
+/* File handling */
+
+function revokeObjectUrl(url){
+  if(!url) return;
+
+  try{
+    URL.revokeObjectURL(url);
+  }catch(error){
+    // Ignore cleanup errors.
+  }
+
+  activeObjectUrls.delete(url);
+}
+
 
 function clearSelectedFile(){
   selectedFileObject = null;
+
   if(selectedFileUrl){
-    URL.revokeObjectURL(selectedFileUrl);
+    revokeObjectUrl(selectedFileUrl);
     selectedFileUrl = null;
   }
+
   mediaInput.value = '';
   previewBox.style.display = 'none';
+
   toggleSendButton();
 }
 
-chatForm.addEventListener('submit', event => {
-  event.preventDefault();
-  sendMessage();
+
+uploadButton.addEventListener('click', () => {
+  if(isSending) return;
+
+  /* Reset the picker so selecting the same file again
+     triggers the change event. */
+  mediaInput.value = '';
+  mediaInput.click();
 });
 
-function sendMessage(){
-  const text = textInput.value.trim();
-  if(!text && !selectedFileObject) return;
 
-  const emptyNotice = document.getElementById('emptyChatNotice');
-  if(emptyNotice) emptyNotice.remove();
+mediaInput.addEventListener('change', event => {
+  const file = event.target.files && event.target.files[0];
+
+  if(!file) return;
+
+  if(
+    !file.type.startsWith('image/') &&
+    !file.type.startsWith('video/')
+  ){
+    showToast('Please select an image or video.', 'error');
+    mediaInput.value = '';
+    return;
+  }
+
+  if(selectedFileUrl){
+    revokeObjectUrl(selectedFileUrl);
+    selectedFileUrl = null;
+  }
+
+  selectedFileObject = file;
+  selectedFileUrl = URL.createObjectURL(file);
+  activeObjectUrls.add(selectedFileUrl);
+
+  fileNameDisplay.textContent = file.name;
+  previewBox.style.display = 'flex';
+
+  toggleSendButton();
+});
+
+
+/* Show the send button only when there is content */
+
+function toggleSendButton(){
+  const hasContent =
+    textInput.value.trim().length > 0 ||
+    Boolean(selectedFileObject);
+
+  sendButton.classList.toggle('show', hasContent);
+  sendButton.setAttribute('aria-hidden', String(!hasContent));
+  sendButton.disabled = isSending || !hasContent;
+
+  uploadButton.disabled = isSending;
+  textInput.disabled = isSending;
+}
+
+
+textInput.addEventListener('input', toggleSendButton);
+
+
+/* Response helpers */
+
+async function readJsonResponse(response){
+  let payload = {};
+
+  try{
+    payload = await response.json();
+  }catch(error){
+    payload = {};
+  }
+
+  if(!response.ok || payload.ok === false){
+    const errorMessage =
+      payload.error ||
+      payload.message ||
+      ('Server request failed (' + response.status + ').');
+
+    throw new Error(errorMessage);
+  }
+
+  return payload;
+}
+
+
+function extractMessages(payload){
+  if(Array.isArray(payload)){
+    return payload;
+  }
+
+  if(payload && Array.isArray(payload.messages)){
+    return payload.messages;
+  }
+
+  if(payload && payload.data && Array.isArray(payload.data.messages)){
+    return payload.data.messages;
+  }
+
+  return [];
+}
+
+
+function getMessageId(message){
+  return String(
+    message.client_message_id ||
+    message.clientMessageId ||
+    message.id ||
+    message._id ||
+    message.message_id ||
+    message.messageId ||
+    ''
+  );
+}
+
+
+function getMessageTimestamp(message){
+  const value =
+    message.created_at ||
+    message.createdAt ||
+    message.timestamp ||
+    message.time ||
+    '';
+
+  if(typeof value === 'number'){
+    return value < 1000000000000 ? value * 1000 : value;
+  }
+
+  const parsed = value ? Date.parse(value) : NaN;
+
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+
+function formatMessageTime(message){
+  const timestamp = getMessageTimestamp(message);
+  const date = timestamp ? new Date(timestamp) : new Date();
+
+  if(Number.isNaN(date.getTime())){
+    return new Date().toLocaleTimeString([], {
+      hour:'2-digit',
+      minute:'2-digit'
+    });
+  }
+
+  return date.toLocaleTimeString([], {
+    hour:'2-digit',
+    minute:'2-digit'
+  });
+}
+
+
+/* Resolve media paths returned by app.py.
+   A relative path is resolved against the API domain. */
+
+function resolveMediaUrl(rawUrl){
+  if(!rawUrl || typeof rawUrl !== 'string'){
+    return '';
+  }
+
+  try{
+    const base = CHAT_API_BASE_URL.trim()
+      ? CHAT_API_BASE_URL.trim().replace(/\/+$/, '') + '/'
+      : window.location.origin + '/';
+
+    const resolved = new URL(rawUrl, base);
+
+    if(
+      resolved.protocol !== 'http:' &&
+      resolved.protocol !== 'https:'
+    ){
+      return '';
+    }
+
+    return resolved.href;
+
+  }catch(error){
+    return '';
+  }
+}
+
+
+function isVideoMessage(message, mediaUrl){
+  const mediaType = String(
+    message.media_type ||
+    message.mediaType ||
+    message.mime_type ||
+    message.mimeType ||
+    message.file_type ||
+    message.fileType ||
+    message.media?.mime_type ||
+    ''
+  ).toLowerCase();
+
+  if(mediaType === 'video' || mediaType.startsWith('video/')){
+    return true;
+  }
+
+  if(/\.(mp4|webm|mov|m4v|ogv)(\?.*)?$/i.test(mediaUrl)){
+    return true;
+  }
+
+  return false;
+}
+
+
+/* Render a single message.
+   Returns true only if a new message was added. */
+
+function renderMessage(rawMessage, options = {}){
+  if(!rawMessage || typeof rawMessage !== 'object'){
+    return false;
+  }
+
+  const message = rawMessage;
+  const clientMessageId = String(
+    message.client_message_id ||
+    message.clientMessageId ||
+    ''
+  );
+
+  const messageKey = getMessageId(message) ||
+    [
+      message.client_id || message.clientId || '',
+      message.created_at || message.createdAt || '',
+      message.text || ''
+    ].join('|');
+
+  if(!messageKey || renderedMessageKeys.has(messageKey)){
+    return false;
+  }
+
+  renderedMessageKeys.add(messageKey);
+
+  if(emptyChatNotice && emptyChatNotice.parentNode){
+    emptyChatNotice.remove();
+  }
+
+  const clientId = String(
+    message.client_id ||
+    message.clientId ||
+    ''
+  );
+
+  const outgoing =
+    clientId === CLIENT_ID ||
+    (clientMessageId && pendingClientMessageIds.has(clientMessageId));
 
   const bubble = document.createElement('div');
-  bubble.className = 'message-bubble outgoing';
+
+  bubble.className =
+    'message-bubble ' + (outgoing ? 'outgoing' : 'incoming');
 
   const avatar = document.createElement('img');
+
   avatar.className = 'msg-avatar';
   avatar.alt = 'Avatar';
+  avatar.loading = 'lazy';
   avatar.src = 'https://carder.top/imagens/1791918460640-323067073.jpg';
 
   const wrap = document.createElement('div');
@@ -221,48 +1103,338 @@ function sendMessage(){
 
   const sender = document.createElement('div');
   sender.className = 'msg-sender';
-  sender.textContent = 'Anonymous User';
+
+  sender.textContent = outgoing
+    ? 'Anonymous User'
+    : String(
+        message.sender_name ||
+        message.senderName ||
+        message.sender ||
+        'Anonymous User'
+      );
+
   wrap.appendChild(sender);
+
+  const text = typeof message.text === 'string'
+    ? message.text
+    : '';
 
   if(text){
     const textEl = document.createElement('div');
     textEl.className = 'msg-text';
+
+    /* textContent prevents message text from being
+       interpreted as HTML. */
     textEl.textContent = text;
+
     wrap.appendChild(textEl);
   }
 
-  if(selectedFileObject && selectedFileUrl){
+  const rawMediaUrl =
+    message.media_url ||
+    message.mediaUrl ||
+    message.file_url ||
+    message.fileUrl ||
+    message.media?.url ||
+    '';
+
+  const remoteMediaUrl = resolveMediaUrl(rawMediaUrl);
+  const mediaUrl = remoteMediaUrl || options.localMediaUrl || '';
+
+  if(mediaUrl){
     let media;
-    if(selectedFileObject.type.startsWith('image/')){
-      media = document.createElement('img');
-      media.alt = 'Uploaded image';
-    }else{
+
+    if(isVideoMessage(message, mediaUrl)){
       media = document.createElement('video');
       media.controls = true;
       media.playsInline = true;
+      media.preload = 'metadata';
+    }else{
+      media = document.createElement('img');
+      media.alt = 'Uploaded image';
+      media.loading = 'lazy';
     }
+
     media.className = 'msg-media';
-    media.src = selectedFileUrl;
+    media.src = mediaUrl;
+
     wrap.appendChild(media);
-    selectedFileUrl = null; // Keep the object URL alive for the rendered message.
-    selectedFileObject = null;
-    mediaInput.value = '';
-    previewBox.style.display = 'none';
   }
 
   const time = document.createElement('div');
   time.className = 'msg-time';
-  time.textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-  wrap.appendChild(time);
+  time.textContent = formatMessageTime(message);
 
+  wrap.appendChild(time);
   bubble.append(avatar, wrap);
   messagesArea.appendChild(bubble);
-  textInput.value = '';
-  toggleSendButton();
-  messagesArea.scrollTop = messagesArea.scrollHeight;
+
+  return true;
 }
 
+
+/* Load chat history from app.py */
+
+async function loadMessages(options = {}){
+  const silent = Boolean(options.silent);
+
+  try{
+    const wasNearBottom =
+      messagesArea.scrollHeight -
+      messagesArea.scrollTop -
+      messagesArea.clientHeight < 100;
+
+    const hadMessages =
+      Boolean(messagesArea.querySelector('.message-bubble'));
+
+    const response = await fetch(
+      apiUrl(
+        CHAT_MESSAGES_ENDPOINT +
+        '?limit=' + CHAT_HISTORY_LIMIT
+      ),
+      {
+        method:'GET',
+        headers:{
+          'Accept':'application/json'
+        },
+        cache:'no-store'
+      }
+    );
+
+    const payload = await readJsonResponse(response);
+    const messages = extractMessages(payload);
+
+    /* Sort messages chronologically when timestamps exist. */
+    messages.sort((a, b) => {
+      return getMessageTimestamp(a) - getMessageTimestamp(b);
+    });
+
+    let addedCount = 0;
+
+    for(const message of messages){
+      if(renderMessage(message)){
+        addedCount++;
+      }
+    }
+
+    if(addedCount > 0 && (!hadMessages || wasNearBottom)){
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    return true;
+
+  }catch(error){
+    console.error('Chat history error:', error);
+
+    if(!silent && !hasShownInitialError){
+      hasShownInitialError = true;
+
+      showToast(
+        'Chat server is not connected yet. The app.py API must be configured.',
+        'error'
+      );
+    }
+
+    return false;
+  }
+}
+
+
+/* Send text and/or media to the backend */
+
+async function sendMessage(){
+  if(isSending) return;
+
+  const text = textInput.value.trim();
+  const file = selectedFileObject;
+  const localMediaUrl = selectedFileUrl;
+
+  if(!text && !file) return;
+
+  const clientMessageId = createUniqueId();
+
+  const formData = new FormData();
+
+  formData.append('text', text);
+  formData.append('sender_name', 'Anonymous User');
+  formData.append('client_id', CLIENT_ID);
+  formData.append('client_message_id', clientMessageId);
+
+  if(file){
+    formData.append('media', file, file.name);
+  }
+
+  pendingClientMessageIds.add(clientMessageId);
+
+  isSending = true;
+  toggleSendButton();
+
+  try{
+    const response = await fetch(
+      apiUrl(CHAT_MESSAGES_ENDPOINT),
+      {
+        method:'POST',
+        headers:{
+          'Accept':'application/json'
+        },
+        body:formData
+      }
+    );
+
+    const payload = await readJsonResponse(response);
+
+    const serverMessage =
+      payload.message ||
+      (payload.data && payload.data.message) ||
+      payload;
+
+    const messageToRender = {
+      ...serverMessage,
+
+      text: typeof serverMessage.text === 'string'
+        ? serverMessage.text
+        : text,
+
+      sender_name:
+        serverMessage.sender_name ||
+        serverMessage.senderName ||
+        'Anonymous User',
+
+      client_id:
+        serverMessage.client_id ||
+        serverMessage.clientId ||
+        CLIENT_ID,
+
+      client_message_id:
+        serverMessage.client_message_id ||
+        serverMessage.clientMessageId ||
+        clientMessageId,
+
+      created_at:
+        serverMessage.created_at ||
+        serverMessage.createdAt ||
+        new Date().toISOString(),
+
+      media_type:
+        serverMessage.media_type ||
+        serverMessage.mediaType ||
+        (file ? file.type : ''),
+
+      media_url:
+        serverMessage.media_url ||
+        serverMessage.mediaUrl ||
+        ''
+    };
+
+    const wasNearBottom =
+      messagesArea.scrollHeight -
+      messagesArea.scrollTop -
+      messagesArea.clientHeight < 100;
+
+    renderMessage(messageToRender, {
+      localMediaUrl:localMediaUrl
+    });
+
+    /* Only clear the selected file after the server
+       has accepted the request. Keep its object URL
+       alive so the locally displayed media still works. */
+
+    if(file && selectedFileObject === file){
+      selectedFileObject = null;
+      selectedFileUrl = null;
+      mediaInput.value = '';
+      previewBox.style.display = 'none';
+    }
+
+    textInput.value = '';
+    toggleSendButton();
+
+    if(!wasNearBottom){
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }else{
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    if(
+      payload.telegram_saved === false ||
+      payload.telegram_backup === false
+    ){
+      showToast(
+        'Message received, but Telegram backup failed.',
+        'error'
+      );
+    }else{
+      showToast('Message sent successfully.', 'success');
+    }
+
+    /* Refresh from the backend so the server version
+       becomes the source of truth. */
+    await loadMessages({silent:true});
+
+  }catch(error){
+    console.error('Send message error:', error);
+
+    showToast(
+      error.message ||
+      'Message could not be sent. Please try again.',
+      'error'
+    );
+
+    /* Keep text and selected file so the user can retry. */
+
+  }finally{
+    isSending = false;
+    toggleSendButton();
+  }
+}
+
+
+/* Form submission */
+
+chatForm.addEventListener('submit', event => {
+  event.preventDefault();
+  sendMessage();
+});
+
+
+/* Start chat */
+
 toggleSendButton();
+
+/* Load messages immediately. */
+loadMessages();
+
+/* Poll for new messages every five seconds.
+   No Telegram token is used in this browser code. */
+pollTimer = setInterval(() => {
+  if(document.visibilityState === 'visible'){
+    loadMessages({silent:true});
+  }
+}, CHAT_POLL_INTERVAL);
+
+
+/* Clean up temporary media URLs when leaving the page. */
+
+window.addEventListener('pagehide', () => {
+  if(pollTimer){
+    clearInterval(pollTimer);
+  }
+
+  if(toastTimer){
+    clearTimeout(toastTimer);
+  }
+
+  for(const url of activeObjectUrls){
+    try{
+      URL.revokeObjectURL(url);
+    }catch(error){
+      // Ignore cleanup errors.
+    }
+  }
+
+  activeObjectUrls.clear();
+});
 </script>
+
 </body>
 </html>
