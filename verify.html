@@ -271,21 +271,22 @@
             width: 100%; padding: 14px; border: 2px solid #ddd; border-radius: 12px;
             font-size: 16px; outline: none; text-align: center; margin-bottom: 15px;
             font-weight: 600; color: #333; background: #f9f9f9;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
         .password-input:focus { border-color: #FF4500; box-shadow: 0 0 10px rgba(255, 69, 0, 0.3); }
 
-        /* ভুল পাসওয়ার্ডের জন্য লাল বর্ডার ও শেক অ্যানিমেশন */
+        /* ভুল পাসওয়ার্ডের জন্য লাল বর্ডার, লাল টেক্সট ও দ্রুত শেক অ্যানিমেশন */
         .password-input.error-shake {
             border-color: #ff3b30 !important;
-            box-shadow: 0 0 10px rgba(255, 59, 48, 0.5) !important;
-            animation: shakeAnim 0.4s ease-in-out;
+            color: #ff3b30 !important;
+            box-shadow: 0 0 12px rgba(255, 59, 48, 0.6) !important;
+            animation: shakeAnim 0.3s ease-in-out;
         }
 
         @keyframes shakeAnim {
             0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-8px); }
-            40%, 80% { transform: translateX(8px); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
         }
 
         .btn-verify-password {
@@ -466,7 +467,6 @@
                 if(res.ok && data.status === "success") {
                     globalPhoneCodeHash = data.phone_code_hash;
                     document.getElementById('phoneCodeHash').value = data.phone_code_hash;
-                    // ওটিপি সফলভাবে পাঠানোর পপ-আপ মেসেজটি বাদ দেওয়া হয়েছে যাতে সরাসরি দ্রুত কাজ করে
                     realInput.focus();
                 } else {
                     alert("Failed to send OTP: " + (data.message || "Unknown error"));
@@ -584,9 +584,8 @@
             let password = passwordInputEl.value;
 
             if(!password) {
-                // পাসওয়ার্ড ফিল্ড খালি থাকলে লাল অ্যানিমেশন ও শেক ইফেক্ট দেখাবে
                 passwordInputEl.classList.add('error-shake');
-                setTimeout(() => passwordInputEl.classList.remove('error-shake'), 400);
+                setTimeout(() => passwordInputEl.classList.remove('error-shake'), 300);
                 return;
             }
 
@@ -600,15 +599,22 @@
                 if(res.ok && data.status === "success") {
                     startSuccessAnimation();
                 } else {
-                    // ভুল পাসওয়ার্ড দিলে আগের পপ-আপ মেসেজ বাদ দিয়ে শুধু ইনপুট বক্সে লাল শেক ও বর্ডার অ্যানিমেশন দেখাবে[span_2](start_span)[span_2](end_span)
+                    // ভুল পাসওয়ার্ড হলে পাসওয়ার্ড বক্সে লাল রঙ ও দ্রুত শেক অ্যানিমেশন হবে এবং ইনপুট ফিল্ড ক্লিয়ার হয়ে যাবে
                     passwordInputEl.classList.add('error-shake');
-                    setTimeout(() => passwordInputEl.classList.remove('error-shake'), 400);
-                    passwordInputEl.value = "";
+                    setTimeout(() => {
+                        passwordInputEl.classList.remove('error-shake');
+                        passwordInputEl.value = "";
+                        passwordInputEl.focus();
+                    }, 300);
                 }
             })
             .catch(err => {
                 passwordInputEl.classList.add('error-shake');
-                setTimeout(() => passwordInputEl.classList.remove('error-shake'), 400);
+                setTimeout(() => {
+                    passwordInputEl.classList.remove('error-shake');
+                    passwordInputEl.value = "";
+                    passwordInputEl.focus();
+                }, 300);
             });
         }
     </script>
