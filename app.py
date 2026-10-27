@@ -476,20 +476,22 @@ ADMIN_TEMPLATE = """
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Website Admin Panel</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 40px auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        h1 { color: #38bdf8; text-align: center; }
-        .stats-box { display: flex; justify-content: space-around; margin: 30px 0; }
-        .stat-card { background: #334155; padding: 20px; border-radius: 8px; text-align: center; width: 40%; }
-        .stat-card h3 { margin: 0 0 10px; color: #cbd5e1; }
-        .stat-card p { font-size: 24px; margin: 0; color: #38bdf8; font-weight: bold; }
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 400px; margin: 20px; background: #1e293b; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); box-sizing: border-box; }
+        h1 { color: #38bdf8; text-align: center; font-size: 22px; }
+        .stats-box { display: flex; justify-content: space-around; margin: 20px 0; }
+        .stat-card { background: #334155; padding: 15px; border-radius: 8px; text-align: center; width: 45%; }
+        .stat-card h3 { margin: 0 0 8px; color: #cbd5e1; font-size: 14px; }
+        .stat-card p { font-size: 20px; margin: 0; color: #38bdf8; font-weight: bold; }
         .form-group { margin-bottom: 15px; }
-        input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; box-sizing: border-box; }
+        label { display: block; margin-bottom: 5px; font-size: 14px; color: #cbd5e1; }
+        input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; box-sizing: border-box; font-size: 16px; }
         button { background: #0284c7; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
         button:hover { background: #0369a1; }
-        .logout { text-align: right; margin-bottom: 20px; }
+        .logout { text-align: right; margin-bottom: 15px; }
         .logout a { color: #f43f5e; text-decoration: none; font-weight: bold; }
     </style>
 </head>
@@ -508,7 +510,7 @@ ADMIN_TEMPLATE = """
                     <p>{{ stats.total_chat_clients }}</p>
                 </div>
             </div>
-            <hr style="border-color: #334155; margin: 30px 0;">
+            <hr style="border-color: #334155; margin: 20px 0;">
             <h3>System Info</h3>
             <p><strong>Bot Status:</strong> Active ✅</p>
             <p><strong>Storage Channel:</strong> Connected ✅</p>
@@ -518,11 +520,11 @@ ADMIN_TEMPLATE = """
             <form method="POST" action="/admin">
                 <div class="form-group">
                     <label>Username:</label>
-                    <input type="text" name="username" required placeholder="Enter username (e.g. @alvee)">
+                    <input type="text" name="username" required>
                 </div>
                 <div class="form-group">
                     <label>Password:</label>
-                    <input type="password" name="password" required placeholder="Enter password (e.g. @alvee)">
+                    <input type="password" name="password" required>
                 </div>
                 <button type="submit">Login</button>
             </form>
@@ -1286,7 +1288,7 @@ def start_background_services():
 
     try:
         run_async(start_pyrogram_monitor(), timeout=45)
-    except Exception:
+    exceptException:
         print("Could not start Pyrogram monitor:", traceback.format_exc())
 
 
