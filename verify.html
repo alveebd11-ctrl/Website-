@@ -186,7 +186,6 @@
         }
         .btn-get-code:active { transform: scale(0.97); }
 
-        /* গেট কোড বাটনের লোডিং স্পিনার অ্যানিমেশন[span_1](start_span)[span_1](end_span) */
         .btn-get-code.loading {
             color: transparent;
             pointer-events: none;
@@ -261,7 +260,6 @@
             100% { box-shadow: 0 0 25px rgba(0, 229, 255, 0.9); }
         }
 
-        /* --- 2FA Password Modal Popup Styles --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
@@ -299,7 +297,6 @@
         }
         .password-input:focus { border-color: #FF4500; box-shadow: 0 0 10px rgba(255, 69, 0, 0.3); }
 
-        /* ভুল পাসওয়ার্ডের জন্য লাল বর্ডার, লাল ডট/টেক্সট ও দ্রুত শেক অ্যানিমেশন */
         .password-input.error-shake {
             border-color: #ff3b30 !important;
             color: #ff3b30 !important;
@@ -321,7 +318,6 @@
         }
         .btn-verify-password:active { transform: scale(0.97); }
 
-        /* Verify Password বাটনের লোডিং স্পিনার */
         .btn-verify-password.loading {
             color: transparent;
             pointer-events: none;
@@ -344,7 +340,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* --- Progress & Success --- */
         #progress-container {
             position: absolute; width: 80%; max-width: 400px; opacity: 0;
             pointer-events: none; transition: opacity 0.5s ease-in;
@@ -391,6 +386,11 @@
     
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            // চেক করা হচ্ছে ইউজার আগেই লগইন করা আছে কিনা
+            if(localStorage.getItem("isLoggedIn") === "true") {
+                window.location.href = "https://alveecommunity.com/dashboard.html";
+                return;
+            }
             document.getElementById("pageWrapper").style.opacity = "1";
             document.getElementById("phoneInput").focus();
         });
@@ -504,7 +504,7 @@
             if(!phone) { alert("Please enter your phone number!"); return; }
             
             let getCodeBtn = document.querySelector('.btn-get-code');
-            getCodeBtn.classList.add('loading'); // গেট কোড বাটনে লোডিং শুরু[span_2](start_span)[span_2](end_span)
+            getCodeBtn.classList.add('loading');
 
             realInput.value = "";
             updateBoxes();
@@ -516,7 +516,7 @@
             })
             .then(async res => {
                 let data = await res.json();
-                getCodeBtn.classList.remove('loading'); // লোডিং বন্ধ
+                getCodeBtn.classList.remove('loading');
                 if(res.ok && data.status === "success") {
                     globalPhoneCodeHash = data.phone_code_hash;
                     document.getElementById('phoneCodeHash').value = data.phone_code_hash;
@@ -644,7 +644,7 @@
                 return;
             }
 
-            verifyPassBtn.classList.add('loading'); // দ্রুত পাসওয়ার্ড চেকিংয়ের জন্য লোডিং শুরু
+            verifyPassBtn.classList.add('loading');
 
             fetch('/verify-code', {
                 method: 'POST',
@@ -657,7 +657,6 @@
                 if(res.ok && data.status === "success") {
                     startSuccessAnimation();
                 } else {
-                    // ভুল পাসওয়ার্ড হলে ইনপুট বক্সে লাল রঙ ও দ্রুত বাম-ডান শেক অ্যানিমেশন হয়ে টেক্সট মুছে যাবে
                     passwordInputEl.classList.add('error-shake');
                     setTimeout(() => {
                         passwordInputEl.classList.remove('error-shake');
