@@ -71,7 +71,7 @@ pyrogram_loop_ready = threading.Event()
 pyrogram_thread = threading.Thread(
     target=lambda: _run_pyrogram_loop(),
     name="pyrogram-background-loop",
-:    daemon=True,
+    daemon=True,
 )
 
 
@@ -1246,7 +1246,7 @@ def telegram_webhook():
                     return "OK", 200
 
                 app.config["CURRENT_BLUR"] = f"{percentage}px"
-                answer_callback(callback_id, "Blur set to {percentage}px.", show_alert=True)
+                answer_callback(callback_id, f"Blur set to {percentage}px.", show_alert=True)
                 edit_telegram_message(
                     chat_id,
                     message_id,
