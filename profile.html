@@ -1,371 +1,528 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Style Profile Card</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
-        
-        body { 
-            background-color: #0a1128; 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            padding: 20px 15px 100px 15px; 
-            position: relative;
-            overflow-x: hidden;
-            color: #ffffff;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0a1128">
+  <title>User Profile</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-        /* সিকিউরিটি গার্ড: লগইন করা না থাকলে প্রোফাইল দেখতে দেবে না */
-        #profileWrapper {
-            opacity: 0;
-            transition: opacity 0.4s ease;
-            width: 100%;
-            max-width: 380px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
 
-        /* ব্যাকগ্রাউন্ড ভিডিও */
-        .bg-video {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: -1; filter: brightness(0.4);
-        }
+    body {
+      background: #0a1128;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 15px 120px;
+      position: relative;
+      overflow-x: hidden;
+      color: #fff;
+    }
 
-        /* প্রথম স্ক্রিনশটের মতো প্রিমিয়াম কার্ড স্টাইল */
-        .profile-card-modern {
-            width: 100%;
-            background: rgba(26, 31, 46, 0.85);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 28px;
-            padding: 16px 16px 24px 16px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
+    .bg-video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -2;
+      filter: brightness(.38);
+    }
 
-        /* ওপরের বড় প্রোফাইল ইমেজ কার্ড */
-        .card-image-wrapper {
-            width: 100%;
-            height: 300px;
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
-            background: rgba(255, 255, 255, 0.05); /* লোডিংয়ের সময় সুন্দর ব্যাকগ্রাউন্ড দেখাবে */
-        }
+    .bg-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 10, 25, .28);
+      z-index: -1;
+      pointer-events: none;
+    }
 
-        .card-image-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
+    #profileWrapper {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0;
+      transition: opacity .35s ease;
+    }
 
-        /* ইউজার ইনফো সেকশন */
-        .card-user-info {
-            padding: 16px 6px 4px 6px;
-        }
+    #profileWrapper.visible { opacity: 1; }
 
-        .name-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 2px;
-        }
+    .profile-card-modern {
+      width: 100%;
+      padding: 16px 16px 24px;
+      background: rgba(26, 31, 46, .88);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, .13);
+      border-radius: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, .48);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
 
-        .name-row h2 {
-            font-size: 18px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 0.3px;
-            word-break: break-word;
-        }
+    .card-image-wrapper {
+      width: 100%;
+      height: clamp(220px, 72vw, 330px);
+      max-height: 330px;
+      border-radius: 22px;
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(100,116,139,.13));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-        .username-text {
-            font-size: 13px;
-            color: #00bfff;
-            margin-bottom: 12px;
-            font-weight: 500;
-        }
+    #profileImage {
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      inset: 0;
+    }
 
-        /* বায়ো সেকশন */
-        .card-bio {
-            font-size: 13px;
-            color: #cbd5e1;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            font-weight: 400;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 10px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            word-break: break-word;
-        }
+    #photoPlaceholder {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #b8c2d3;
+      text-align: center;
+      padding: 20px;
+    }
 
-        /* অ্যাকাউন্ট ডিটেইলস লিস্ট */
-        .telegram-meta-details {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            padding-top: 12px;
-            margin-top: 5px;
-        }
+    #profileInitials {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0088cc, #00bfff);
+      color: #fff;
+      font-size: 34px;
+      font-weight: 700;
+      box-shadow: 0 10px 28px rgba(0, 136, 204, .28);
+    }
 
-        .meta-row {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
+    #photoPlaceholder small { font-size: 12px; }
 
-        .meta-label {
-            font-size: 11px;
-            color: #94a3b8;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    .card-user-info { padding: 18px 6px 4px; min-width: 0; }
 
-        .meta-value {
-            font-size: 13px;
-            color: #ffffff;
-            font-weight: 600;
-            word-break: break-all;
-        }
+    .name-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
 
-        /* লগআউট বাটন */
-        .logout-box {
-            width: 100%;
-            max-width: 380px;
-            margin-top: 15px;
-        }
+    .name-row h1 {
+      font-size: clamp(19px, 5vw, 25px);
+      line-height: 1.35;
+      font-weight: 700;
+      color: #fff;
+      overflow-wrap: anywhere;
+    }
 
-        .logout-action-btn {
-            width: 100%;
-            background: rgba(255, 77, 77, 0.15);
-            color: #ff4d4d;
-            border: 1px solid rgba(255, 77, 77, 0.3);
-            padding: 12px;
-            border-radius: 16px;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+    .username-text {
+      font-size: 14px;
+      color: #19bfff;
+      margin-bottom: 14px;
+      font-weight: 500;
+      overflow-wrap: anywhere;
+    }
 
-        .logout-action-btn:active {
-            transform: scale(0.97);
-        }
+    .card-bio {
+      font-size: 13px;
+      color: #d0d8e5;
+      line-height: 1.65;
+      margin-bottom: 16px;
+      font-weight: 400;
+      background: rgba(255, 255, 255, .045);
+      padding: 12px 13px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, .055);
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      min-height: 44px;
+    }
 
-        /* --- বটম গ্লাস ন্যাভবার --- */
-        .bottom-glass-nav {
-            position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            width: 90%;
-            max-width: 380px;
-            height: 70px;
-            background: rgba(20, 25, 45, 0.65);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            padding: 0 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.05);
-            z-index: 100;
-            opacity: 0;
-            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.6s ease;
-        }
+    .telegram-meta-details {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border-top: 1px solid rgba(255, 255, 255, .10);
+      padding-top: 16px;
+      margin-top: 4px;
+    }
 
-        .bottom-glass-nav.slide-up {
-            transform: translateX(-50%) translateY(0);
-            opacity: 1;
-        }
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 5px 7px;
+      min-width: 0;
+    }
 
-        .nav-item {
-            background: transparent;
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
+    .meta-label {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .15px;
+    }
 
-        .nav-item svg {
-            width: 22px;
-            height: 22px;
-            fill: #94a3b8;
-            transition: fill 0.3s ease;
-        }
+    .meta-value {
+      font-size: 14px;
+      color: #fff;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
 
-        .nav-item.active {
-            background: linear-gradient(135deg, rgba(0, 136, 204, 0.6), rgba(0, 191, 255, 0.8));
-            box-shadow: 0 0 20px rgba(0, 191, 255, 0.6), inset 0 0 8px rgba(255, 255, 255, 0.4);
-            width: 58px;
-            height: 58px;
-        }
+    #profileStatus {
+      display: none;
+      width: 100%;
+      margin-top: 12px;
+      padding: 11px 13px;
+      border-radius: 12px;
+      background: rgba(255, 180, 70, .10);
+      border: 1px solid rgba(255, 180, 70, .25);
+      color: #ffd49a;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
 
-        .nav-item.active svg {
-            fill: #ffffff;
-            width: 26px;
-            height: 26px;
-        }
+    #profileStatus.show { display: block; }
 
-        .nav-item:hover svg {
-            fill: #ffffff;
-        }
-    </style>
+    .logout-box { width: 100%; margin-top: 15px; }
 
-    <script>
-        // সিকিউরিটি গার্ড: লগইন করা না থাকলে প্রোফাইলে ঢুকতে দেবে না
-        if (localStorage.getItem("isLoggedIn") !== "true") {
-            window.location.replace("verify");
-        } else {
-            document.addEventListener("DOMContentLoaded", () => {
-                document.getElementById("profileWrapper").style.opacity = "1";
-                setTimeout(() => {
-                    document.getElementById('bottomNav').classList.add('slide-up');
-                }, 100);
+    .logout-action-btn {
+      width: 100%;
+      background: rgba(255, 77, 77, .14);
+      color: #ff7777;
+      border: 1px solid rgba(255, 77, 77, .32);
+      padding: 13px;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: transform .2s, background .2s;
+    }
 
-                // টেলিগ্রামের আসল রিয়েল-টাইম ডাটা ব্যাকএন্ড থেকে ফেচ করা
-                fetchTelegramProfile();
-            });
-        }
+    .logout-action-btn:active { transform: scale(.98); }
+    .logout-action-btn:hover { background: rgba(255, 77, 77, .22); }
 
-        function fetchTelegramProfile() {
-            let userPhone = localStorage.getItem("userPhone");
-            
-            if (userPhone) {
-                fetch('/get-user-profile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: userPhone })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        let p = data.profile;
-                        document.getElementById('profileName').innerText = p.name;
-                        document.getElementById('profileUsername').innerText = p.username;
-                        document.getElementById('profileId').innerText = p.id;
-                        document.getElementById('profilePhone').innerText = p.phone;
-                        document.getElementById('profileBio').innerText = p.bio;
-                        
-                        if (p.photo) {
-                            let imgElement = document.getElementById('profileImage');
-                            imgElement.src = p.photo;
-                            imgElement.onload = () => {
-                                imgElement.style.opacity = "1"; // ছবি লোড হওয়ার পর স্মুথলি ভেসে উঠবে
-                            };
-                        }
-                    }
-                })
-                .catch(err => console.log("Profile fetch error"));
-            }
-        }
-    </script>
+    .bottom-glass-nav {
+      position: fixed;
+      bottom: max(20px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      width: calc(100% - 36px);
+      max-width: 390px;
+      height: 74px;
+      background: rgba(20, 25, 45, .78);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 12px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, .42), inset 0 0 15px rgba(255, 255, 255, .04);
+      z-index: 100;
+      opacity: 0;
+      transition: transform .55s ease, opacity .4s ease;
+    }
+
+    .bottom-glass-nav.slide-up {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .nav-item {
+      background: transparent;
+      border: none;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all .25s ease;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .nav-item svg {
+      width: 23px;
+      height: 23px;
+      fill: #a5b1c4;
+      transition: fill .25s ease;
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, #087fba, #00a9e8);
+      box-shadow: 0 0 18px rgba(0, 191, 255, .24);
+      width: 58px;
+      height: 58px;
+    }
+
+    .nav-item.active svg { fill: #fff; width: 26px; height: 26px; }
+    .nav-item:hover svg { fill: #fff; }
+
+    @media (max-width: 360px) {
+      body { padding-left: 10px; padding-right: 10px; }
+      .profile-card-modern { padding: 12px 12px 20px; border-radius: 24px; }
+      .card-image-wrapper { border-radius: 18px; }
+      .meta-label { font-size: 11px; }
+      .meta-value { font-size: 13px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: .01ms !important; }
+    }
+  </style>
 </head>
+
 <body>
+  <video autoplay muted loop playsinline class="bg-video" aria-hidden="true">
+    <source src="https://videotourl.com/videos/1791952459901-05439f7d-513c-4994-b03b-ca0ca313b9cc.mp4" type="video/mp4">
+  </video>
+  <div class="bg-overlay" aria-hidden="true"></div>
 
-    <!-- ব্যাকগ্রাউন্ড ভিডিও -->
-    <video autoplay muted loop playsinline class="bg-video">
-        <source src="https://videotourl.com/videos/1791952459901-05439f7d-513c-4994-b03b-ca0ca313b9cc.mp4" type="video/mp4">
-    </video>
-
-    <div id="profileWrapper">
-        <!-- কার্ড স্টাইল প্রোফাইল বক্স -->
-        .  <div class="profile-card-modern">
-            <!-- বড় প্রোফাইল ইমেজ -->
-            <div class="card-image-wrapper">
-                <img id="profileImage" src="" alt="Profile Picture">
-            </div>
-
-            <!-- টেলিগ্রাম ইনফো লিস্ট -->
-            <div class="card-user-info">
-                <div class="name-row">
-                    <h2 id="profileName">Loading...</h2>
-                </div>
-                <div id="profileUsername" class="username-text">@username</div>
-
-                <div id="profileBio" class="card-bio">
-                    Loading bio...
-                </div>
-
-                <!-- টেলিগ্রাম মেটা ডিটেইলস (ফোন নম্বর ও আইডি) -->
-                <div class="telegram-meta-details">
-                    <div class="meta-row">
-                        <span class="meta-label">Phone Number</span>
-                        <span id="profilePhone" class="meta-value">+880 XXXXXXXXXX</span>
-                    </div>
-                    <div class="meta-row">
-                        <span class="meta-label">Telegram ID</span>
-                        <span id="profileId" class="meta-value">000000000</span>
-                    </div>
-                </div>
-            </div>
+  <main id="profileWrapper" aria-label="User profile">
+    <section class="profile-card-modern">
+      <div class="card-image-wrapper">
+        <div id="photoPlaceholder">
+          <div id="profileInitials">?</div>
+          <small id="photoPlaceholderText">প্রোফাইল ছবি লোড হচ্ছে...</small>
         </div>
+        <img id="profileImage" alt="Profile picture">
+      </div>
 
-        <!-- লগআউট বাটন -->
-        <div class="logout-box">
-            <button onclick="logoutUser()" class="logout-action-btn">Log Out Account 🚪</button>
+      <div class="card-user-info">
+        <div class="name-row">
+          <h1 id="profileName">প্রোফাইল লোড হচ্ছে...</h1>
         </div>
+        <div id="profileUsername" class="username-text">@username</div>
+
+        <div id="profileBio" class="card-bio">Bio লোড হচ্ছে...</div>
+
+        <div class="telegram-meta-details">
+          <div class="meta-row">
+            <span class="meta-label">Phone Number</span>
+            <span id="profilePhone" class="meta-value">লোড হচ্ছে...</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Telegram ID</span>
+            <span id="profileId" class="meta-value">লোড হচ্ছে...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="profileStatus" role="status" aria-live="polite"></div>
+
+    <div class="logout-box">
+      <button type="button" id="logoutButton" class="logout-action-btn">Log Out Account</button>
     </div>
+  </main>
 
-    <!-- বটম গ্লাস ন্যাভবার -->
-    <div class="bottom-glass-nav" id="bottomNav">
-        <!-- বাম পাশে: গ্রুপ বাটন -->
-        <button onclick="handleNavAction('group')" class="nav-item" title="Group">
-            <svg viewBox="0 0 24 24">
-                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-            </svg>
-        </button>
+  <nav class="bottom-glass-nav" id="bottomNav" aria-label="Main navigation">
+    <button type="button" id="groupButton" class="nav-item" title="Group" aria-label="Group">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+      </svg>
+    </button>
 
-        <!-- মাঝে: হোম/ড্যাশবোর্ড বাটন -->
-        <a href="dashboard.html" class="nav-item" title="Home">
-            <svg viewBox="0 0 24 24">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-            </svg>
-        </a>
+    <a href="dashboard.html" class="nav-item" title="Home" aria-label="Home">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+    </a>
 
-        <!-- ডান পাশে: প্রোফাইল বাটন (বর্তমান পেজ, তাই একটিভ) -->
-        <button class="nav-item active" title="Profile">
-            <svg viewBox="0 0 24 24">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-        </button>
-    </div>
+    <button type="button" class="nav-item active" title="Profile" aria-label="Profile" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+      </svg>
+    </button>
+  </nav>
 
-    <script>
-        function handleNavAction(type) {
-            if (type === 'group') {
-                alert("Telegram Group section coming soon!");
-            }
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      // এটি শুধু front-end guard। প্রকৃত authentication সার্ভারেও যাচাই করতে হবে।
+      if (localStorage.getItem("isLoggedIn") !== "true") {
+        window.location.replace("verify");
+        return;
+      }
+
+      $("profileWrapper").classList.add("visible");
+      window.setTimeout(() => $("bottomNav").classList.add("slide-up"), 100);
+
+      $("logoutButton").addEventListener("click", logoutUser);
+      $("groupButton").addEventListener("click", () => {
+        alert("Telegram Group section coming soon!");
+      });
+
+      await fetchTelegramProfile();
+    });
+
+    function showStatus(message) {
+      const status = $("profileStatus");
+      status.textContent = message;
+      status.classList.add("show");
+    }
+
+    function hideStatus() {
+      $("profileStatus").textContent = "";
+      $("profileStatus").classList.remove("show");
+    }
+
+    function setText(id, value, fallback) {
+      const text = value === undefined || value === null ? "" : String(value).trim();
+      $(id).textContent = text || fallback;
+    }
+
+    function makeInitials(name) {
+      const cleanName = String(name || "").trim();
+      if (!cleanName) return "?";
+      const parts = cleanName.split(/\s+/).filter(Boolean);
+      return parts.length > 1
+        ? (Array.from(parts[0])[0] + Array.from(parts[parts.length - 1])[0]).toUpperCase()
+        : Array.from(parts[0]).slice(0, 2).join("").toUpperCase();
+    }
+
+    function setProfilePhoto(photoUrl, displayName) {
+      const img = $("profileImage");
+      const placeholder = $("photoPlaceholder");
+      $("profileInitials").textContent = makeInitials(displayName);
+      img.style.display = "none";
+      img.removeAttribute("src");
+      placeholder.style.display = "flex";
+
+      if (typeof photoUrl !== "string" || !photoUrl.trim()) {
+        $("photoPlaceholderText").textContent = "প্রোফাইল ছবি পাওয়া যায়নি";
+        return;
+      }
+
+      let safeUrl;
+      try {
+        safeUrl = new URL(photoUrl.trim(), window.location.href);
+      } catch (_) {
+        $("photoPlaceholderText").textContent = "প্রোফাইল ছবি পাওয়া যায়নি";
+        return;
+      }
+
+      if (safeUrl.protocol !== "https:" && safeUrl.protocol !== "http:") {
+        $("photoPlaceholderText").textContent = "প্রোফাইল ছবি পাওয়া যায়নি";
+        return;
+      }
+
+      $("photoPlaceholderText").textContent = "ছবি লোড হচ্ছে...";
+      img.onload = () => {
+        img.style.display = "block";
+        placeholder.style.display = "none";
+      };
+      img.onerror = () => {
+        img.style.display = "none";
+        placeholder.style.display = "flex";
+        $("photoPlaceholderText").textContent = "ছবি লোড করা যায়নি";
+      };
+      img.src = safeUrl.href;
+    }
+
+    function renderProfile(profile, savedPhone) {
+      const p = profile || {};
+      const composedName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+      const name = p.name || p.full_name || composedName || p.firstName || "নাম পাওয়া যায়নি";
+      const rawUsername = p.username || p.user_name || p.telegram_username || "";
+      const username = rawUsername
+        ? (String(rawUsername).startsWith("@") ? String(rawUsername) : "@" + rawUsername)
+        : "Username দেওয়া নেই";
+
+      const phone = p.phone || p.phone_number || p.phoneNumber || savedPhone || "Phone number পাওয়া যায়নি";
+      const telegramId = p.id ?? p.telegram_id ?? p.telegramId ?? p.user_id ?? "Telegram ID পাওয়া যায়নি";
+      const bio = p.bio || p.about || p.description || "Bio দেওয়া হয়নি";
+      const photo = p.photo || p.photo_url || p.photoUrl || p.profile_photo ||
+                    p.profile_picture || p.avatar || p.avatar_url || "";
+
+      setText("profileName", name, "নাম পাওয়া যায়নি");
+      setText("profileUsername", username, "Username দেওয়া নেই");
+      setText("profilePhone", phone, "Phone number পাওয়া যায়নি");
+      setText("profileId", telegramId, "Telegram ID পাওয়া যায়নি");
+      setText("profileBio", bio, "Bio দেওয়া হয়নি");
+      setProfilePhoto(photo, name);
+    }
+
+    async function fetchTelegramProfile() {
+      const savedPhone = (localStorage.getItem("userPhone") || "").trim();
+
+      // বর্তমান backend phone দিয়ে profile খোঁজে, তাই ফোন না থাকলে স্পষ্ট বার্তা দেখানো হচ্ছে।
+      if (!savedPhone) {
+        renderProfile({}, "");
+        showStatus("লগইন তথ্য পাওয়া যায়নি। আবার লগইন করুন অথবা আপনার backend-এ Telegram user ID/session অনুযায়ী প্রোফাইল লোড করার ব্যবস্থা করুন।");
+        return;
+      }
+
+      hideStatus();
+
+      try {
+        const response = await fetch("/get-user-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ phone: savedPhone })
+        });
+
+        if (!response.ok) {
+          throw new Error("Profile API returned HTTP " + response.status);
         }
 
-        function logoutUser() {
-            localStorage.removeItem("isLoggedIn");
-            localStorage.removeItem("userPhone");
-            window.location.href = "verify";
+        const data = await response.json();
+
+        if (data && data.status === "success" && data.profile && typeof data.profile === "object") {
+          renderProfile(data.profile, savedPhone);
+          return;
         }
-    </script>
+
+        renderProfile({}, savedPhone);
+        showStatus(
+          (data && data.message)
+            ? String(data.message)
+            : "প্রোফাইল ডেটা পাওয়া যায়নি। /get-user-profile API-এর response পরীক্ষা করুন।"
+        );
+      } catch (error) {
+        console.error("Profile fetch error:", error);
+        renderProfile({}, savedPhone);
+        showStatus("প্রোফাইল সার্ভার থেকে লোড করা যায়নি। API URL, server response এবং network connection পরীক্ষা করুন।");
+      }
+    }
+
+    async function logoutUser() {
+      // আপনার বর্তমান login flow-এর local keys মুছে দেয়।
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("userPhone");
+      localStorage.removeItem("telegramUser");
+      localStorage.removeItem("telegramUserId");
+      localStorage.removeItem("authToken");
+      window.location.replace("verify");
+    }
+  </script>
 </body>
 </html>
