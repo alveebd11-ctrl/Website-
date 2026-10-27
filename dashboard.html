@@ -3,195 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#2b5278">
-<title>OC Collection Universe - Telegram Channel</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#080d20">
+<title>User Profile / Leaderboard - Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif;-webkit-user-select:none;user-select:none}
-html,body{width:100%;height:100%;background:#0e1621;overflow:hidden}
-
-/* Dashboard Main View Styles */
-.bg-container{position:fixed;inset:0;width:100%;height:100%;z-index:-1;overflow:hidden;background:#0a1128}
-.bg-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;filter:blur(3px);transition:opacity .7s ease}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{width:100%;min-height:100%}
+body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;align-items:center;position:relative;overflow-x:hidden}
+.bg-container{position:fixed;inset:0;width:100%;height:100%;z-index:-1;overflow:hidden;pointer-events:none;background:#0a1128;transform:translateZ(0)}
+.bg-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center center;opacity:0;filter:blur(3px);transition:opacity .7s ease;will-change:opacity}
 .bg-image.visible{opacity:1}
-#dashboardWrapper{width:100%;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:30px 15px 100px;position:relative;z-index:2;overflow-y:auto}
-
+.bg-shade{position:absolute;inset:0;background:transparent}
+#dashboardWrapper{opacity:0;transition:opacity .4s ease;width:100%;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:30px 15px 100px;position:relative;z-index:2}
 #bgLoader{position:fixed;inset:0;background:rgba(10,17,40,.85);backdrop-filter:blur(10px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99;transition:opacity .5s ease}
 .spinner-box{width:55px;height:55px;border:3px solid rgba(255,255,255,.1);border-top:3px solid #ff708f;border-radius:50%;animation:spinLoader .8s linear infinite;margin-bottom:12px}
 .loader-text{color:#fff;font-size:13px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase}
 @keyframes spinLoader{to{transform:rotate(360deg)}}
-
-.header-nav{width:100%;max-width:440px;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px}
-.header-btn{background:linear-gradient(145deg,#ff9bb0,#ff708f);border:0;border-radius:50px;color:#fff;cursor:pointer;padding:10px 20px;font-size:11px;font-weight:700}
-
+.header-nav{width:100%;max-width:440px;display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;z-index:10}
+.header-btn{position:relative;background:linear-gradient(145deg,#ff9bb0,#ff708f);border:0;border-radius:50px;color:#fff;cursor:pointer;box-shadow:6px 6px 15px #0004;display:flex;align-items:center;justify-content:center;transition:all .3s ease;text-decoration:none}
+.refresh-btn{width:95px;height:38px;font-size:11px;font-weight:700;letter-spacing:1px}
+.refresh-btn.loading{width:38px;border-radius:50%;color:transparent;pointer-events:none}
+.refresh-btn.loading:after{content:"";position:absolute;width:18px;height:18px;border:2.5px solid #ffffff66;border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 .view-section{width:100%;max-width:440px;display:none;flex-direction:column;gap:15px}
 .view-section.active-view{display:flex}
 .profile-card{background:rgba(20,25,45,.75);backdrop-filter:blur(20px);border:1px solid #ffffff1a;border-radius:50px;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 10px 30px #0008;cursor:pointer;transition:all .3s ease}
+.profile-card.blink-glow{background:linear-gradient(135deg,#ff708f4d,rgba(20,25,45,.85));border:1.5px solid #ff708f;animation:cardBlink 2s infinite ease-in-out}
+@keyframes cardBlink{0%,100%{box-shadow:0 0 10px #ff708f66;border-color:#ff708f80}50%{box-shadow:0 0 25px #ff708fe6;border-color:#ff708f}}
+.profile-card:hover{transform:translateY(-3px);border-color:#ffffff4d}
 .user-info-wrapper{display:flex;align-items:center;gap:15px;min-width:0}
 .avatar-container{position:relative;flex:0 0 50px;width:50px;height:50px;border-radius:50%;overflow:hidden;border:2px solid #ffffff33}
-.avatar{width:100%;height:100%;object-fit:cover}
+.avatar{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.image-shield{position:absolute;inset:0;z-index:5;background:transparent}
+.user-details{min-width:0}
 .user-details h3{font-size:14px;color:#fff;font-weight:700}
 .user-details p{font-size:11px;color:#94a3b8;font-weight:500}
-
-.live-badge-container{display:inline-flex;align-items:center;background:#000;border:1px solid #ffffff1a;padding:6px 14px;border-radius:20px}
-.live-dot{width:9px;height:9px;background:#ff1a1a;border-radius:50%;box-shadow:0 0 8px #ff1a1a;margin-right:8px}
-.live-text{color:#fff;font-size:12px;font-weight:700}
-
-/* ==========================================================
-   Telegram Exact Channel UI (Like Provided Screenshot)
-   ================================================---------- */
-.telegram-channel-window {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    background: #0e1621;
-    z-index: 3000;
-    display: none;
-    flex-direction: column;
-}
-.telegram-channel-window.open {
-    display: flex;
-}
-
-/* Telegram Top Header */
-.tg-top-header {
-    height: 56px;
-    background: #17212b;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 12px;
-    color: #fff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-.tg-header-left {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-.tg-back-btn, .tg-menu-btn {
-    background: none;
-    border: none;
-    color: #7f91a4;
-    cursor: pointer;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-}
-.tg-back-btn:hover, .tg-menu-btn:hover {
-    background: rgba(255,255,255,0.08);
-}
-.tg-channel-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.tg-channel-avatar {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: #2b5278;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 14px;
-}
-.tg-channel-text h3 {
-    font-size: 15px;
-    font-weight: 600;
-    color: #fff;
-    line-height: 1.2;
-}
-.tg-channel-text p {
-    font-size: 12px;
-    color: #7f91a4;
-}
-
-/* Telegram Chat Body with Pattern Background */
-.tg-chat-body {
-    flex: 1;
-    background-color: #0e1621;
-    /* টেলিগ্রামের ক্লাসিক ডট বা ব্যাকগ্রাউন্ড প্যাটার্ন টোন */
-    background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
-    background-size: 20px 20px;
-    overflow-y: auto;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-.tg-date-badge {
-    background: rgba(0,0,0,0.4);
-    color: #fff;
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-}
-.tg-media-box {
-    width: 100%;
-    max-width: 340px;
-    background: #18222d;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-}
-.tg-media-box video {
-    width: 100%;
-    max-height: 320px;
-    object-fit: cover;
-    display: block;
-}
-
-/* Telegram Bottom Bar (Search & Unmute) */
-.tg-bottom-bar {
-    height: 70px;
-    background: #17212b;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 15px;
-    gap: 12px;
-}
-.tg-search-icon-btn {
-    width: 44px;
-    height: 44px;
-    background: #232e3c;
-    border: none;
-    border-radius: 50%;
-    color: #7f91a4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-.tg-unmute-btn {
-    flex: 1;
-    height: 44px;
-    background: #232e3c;
-    border: none;
-    border-radius: 22px;
-    color: #fff;
-    font-weight: 600;
-    font-size: 14px;
-    cursor: pointer;
-    letter-spacing: 0.5px;
-    transition: background 0.2s;
-}
-.tg-unmute-btn:hover {
-    background: #2b3b4f;
-}
-
-/* Profile and Navigation Bar */
+.land-modal-overlay{position:fixed;inset:0;background:#000d;backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;z-index:1000}
+.land-animation-box{background:#141c3af2;border:2px solid #2ecc71;width:90%;max-width:360px;padding:30px 20px;border-radius:28px;text-align:center;color:white;box-shadow:0 20px 50px #2ecc7166;animation:landPopUp .4s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes landPopUp{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.land-icon-animation{font-size:60px;margin-bottom:15px;animation:landBounce 1.5s infinite alternate ease-in-out}
+@keyframes landBounce{to{transform:translateY(-10px) scale(1.1)}}
 .profile-card-modern{width:100%;background:#1a1f2eed;backdrop-filter:blur(25px);border:1px solid #ffffff1f;border-radius:28px;padding:16px 16px 24px;color:#fff}
 .card-image-wrapper{width:100%;height:280px;border-radius:20px;overflow:hidden;position:relative;background:#ffffff0d}
 .card-image-wrapper img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s ease}
@@ -203,20 +55,32 @@ html,body{width:100%;height:100%;background:#0e1621;overflow:hidden}
 .meta-label{font-size:11px;color:#94a3b8;text-transform:uppercase}
 .meta-value{font-size:13px;color:#fff;font-weight:600;word-break:break-all}
 .logout-action-btn{width:100%;background:#ff4d4d26;color:#ff4d4d;border:1px solid #ff4d4d4d;padding:12px;border-radius:16px;font-weight:700;cursor:pointer;margin-top:15px}
-
+.live-badge-container{display:inline-flex;align-items:center;background:#000;border:1px solid #ffffff1a;padding:6px 14px;border-radius:20px;flex-shrink:0}
+.live-dot{width:9px;height:9px;background:#ff1a1a;border-radius:50%;box-shadow:0 0 8px #ff1a1a;animation:livePulse 1.8s infinite;margin-right:8px}
+@keyframes livePulse{0%,100%{transform:scale(1)}70%{transform:scale(1.18)}}
+.live-text{color:#fff;font-size:12px;font-weight:700;letter-spacing:1.2px}
 .bottom-glass-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%) translateY(100px);width:90%;max-width:380px;height:70px;background:#14192da6;backdrop-filter:blur(25px);border:1px solid #ffffff26;border-radius:50px;display:flex;align-items:center;justify-content:space-around;padding:0 15px;z-index:100;opacity:0;transition:all .6s ease}
 .bottom-glass-nav.slide-up{transform:translateX(-50%) translateY(0);opacity:1}
 .nav-item{background:transparent;border:0;width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.nav-item svg{width:22px;height:22px;fill:#94a3b8}
+.nav-item svg{width:22px;height:22px;fill:#94a3b8;transition:fill .3s}
 .nav-item.active{background:linear-gradient(135deg,#0088cc99,#00bfffcc);width:58px;height:58px}
 .nav-item.active svg{fill:#fff}
-
 .modal-overlay{position:fixed;inset:0;background:#000d;backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:999}
-.modal-box{background:#141c3a;border:1.5px solid #ff708f66;width:90%;max-width:340px;padding:25px;border-radius:24px;text-align:center;color:#fff}
-.close-btn{background:linear-gradient(135deg,#ff9bb0,#ff708f);color:#fff;border:0;padding:10px 25px;border-radius:12px;font-weight:700;cursor:pointer;margin-top:15px}
-.naughty-window{position:fixed;inset:0;width:100vw;height:100vh;background:#080d20;z-index:2000;display:none;flex-direction:column}
+.modal-box{background:#141c3a;border:1.5px solid #ff708f66;width:90%;max-width:340px;padding:25px;border-radius:24px;text-align:center;color:#fff;box-shadow:0 15px 40px #000b}
+.modal-box h3{margin-bottom:15px;color:#ff708f;font-size:20px}
+.close-btn{background:linear-gradient(135deg,#ff9bb0,#ff708f);color:#fff;border:0;padding:10px 25px;border-radius:12px;font-weight:700;cursor:pointer;margin-top:15px;box-shadow:0 5px 15px #ff708f66}
+
+/* Full-screen Naughty NonStop window.
+   The old top title/Close bar is removed; naughty.html starts at the top. */
+.naughty-window{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;background:#080d20;z-index:2000;display:none;flex-direction:column;overflow:hidden}
 .naughty-window.open{display:flex}
-.naughty-window iframe{width:100%;height:100%;border:0}
+.naughty-window iframe{display:block;width:100%;height:100%;min-height:0;flex:1;border:0;background:#080d20}
+
+@media(max-width:360px){
+    .profile-card{padding:10px 13px}
+    .user-info-wrapper{gap:10px}
+    .user-details h3{font-size:12px}
+}
 </style>
 
 <script>
@@ -295,18 +159,59 @@ const backgroundImages = [
 "https://carder.top/imagens/1792211586554-328495854.jpg"
 ];
 
+function shuffled(items){
+    const a=[...items];
+    for(let i=a.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+}
+
 function initRandomBackground(){
     const container=document.getElementById('bgContainer');
     const loader=document.getElementById('bgLoader');
     if(!container)return;
-    const selected = backgroundImages[Math.floor(Math.random() * backgroundImages.length)];
+
+    const queueKey='dashboardBackgroundImageQueueV1';
+    let queue=[];
+    try{queue=JSON.parse(localStorage.getItem(queueKey)||'[]');}catch(e){}
+    queue=queue.filter(url=>backgroundImages.includes(url));
+    if(!queue.length)queue=shuffled(backgroundImages);
+
+    const previous=localStorage.getItem('dashboardLastBackgroundImageV1');
+    if(queue.length>1&&queue[queue.length-1]===previous){
+        [queue[0],queue[queue.length-1]]=[queue[queue.length-1],queue[0]];
+    }
+
+    const selected=queue.pop();
+    try{localStorage.setItem(queueKey,JSON.stringify(queue));}catch(e){}
+
     const img=new Image();
     img.className='bg-image';
+    img.alt='';
+    img.draggable=false;
+
     img.onload=()=>{
         container.insertBefore(img,container.querySelector('.bg-shade'));
         requestAnimationFrame(()=>img.classList.add('visible'));
-        if(loader){loader.style.opacity='0';setTimeout(()=>loader.style.display='none',500);}
+        try{localStorage.setItem('dashboardLastBackgroundImageV1',selected);}catch(e){}
+        if(loader){
+            loader.style.opacity='0';
+            setTimeout(()=>loader.style.display='none',500);
+        }
     };
+
+    img.onerror=()=>{
+        if(queue.length){
+            const next=queue.pop();
+            try{localStorage.setItem(queueKey,JSON.stringify(queue));}catch(e){}
+            img.src=next;
+        }else if(loader){
+            loader.innerHTML='<div class="loader-text">Unable to load background images</div>';
+        }
+    };
+
     img.src=selected;
 }
 
@@ -321,6 +226,17 @@ if(localStorage.getItem("isLoggedIn")!=="true"){
     });
 }
 
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('dragstart',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{
+    if(e.key==='F12'||
+       (e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key))||
+       (e.ctrlKey&&['u','s','p'].includes(e.key))){
+        e.preventDefault();
+        return false;
+    }
+});
+
 function switchView(viewName,element){
     document.querySelectorAll('.view-section').forEach(sec=>sec.classList.remove('active-view'));
     document.querySelectorAll('.nav-item').forEach(nav=>nav.classList.remove('active'));
@@ -331,7 +247,12 @@ function switchView(viewName,element){
 function fetchTelegramProfile(){
     const userPhone=localStorage.getItem("userPhone");
     if(!userPhone)return;
-    fetch('/get-user-profile',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:userPhone})})
+
+    fetch('/get-user-profile',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({phone:userPhone})
+    })
     .then(res=>res.json())
     .then(data=>{
         if(data.status!=="success")return;
@@ -341,42 +262,55 @@ function fetchTelegramProfile(){
         document.getElementById('profileId').innerText=p.id||'';
         document.getElementById('profilePhone').innerText=p.phone||'';
         document.getElementById('profileBio').innerText=p.bio||'';
-        if(p.photo){const img=document.getElementById('profileImage');img.src=p.photo;img.onload=()=>img.style.opacity='1';}
-    }).catch(()=>{});
+
+        if(p.photo){
+            const img=document.getElementById('profileImage');
+            img.src=p.photo;
+            img.onload=()=>img.style.opacity='1';
+        }
+    })
+    .catch(()=>{});
 }
 
 function triggerRefresh(btn){
     btn.classList.add('loading');
+    const loader=document.getElementById('bgLoader');
+    if(loader){
+        loader.style.display='flex';
+        loader.style.opacity='1';
+    }
     setTimeout(()=>window.location.reload(),300);
 }
 
+function handleNavAction(type){
+    if(type==='group')alert("Telegram Group section coming soon!");
+}
+
 function openNaughtyWithLandAnimation(){
-    document.getElementById('naughtyWindow').classList.add('open');
-}
-
-/* Telegram Channel UI Open/Close Control */
-function openTgChannelWindow() {
-    document.getElementById('telegramChannelWindow').classList.add('open');
-}
-
-function closeTgChannelWindow() {
-    const win = document.getElementById('telegramChannelWindow');
-    win.classList.remove('open');
-    const vid = document.getElementById('tgChannelVideo');
-    if(vid){ vid.pause(); vid.currentTime=0; }
+    const modal=document.getElementById('naughtyWindow');
+    if(modal)modal.classList.add('open');
 }
 
 function openProfile(name,subtitle){
     document.getElementById('modalName').innerText=name;
-    document.getElementById('modalInfo').innerHTML=`<p>Status: LIVE<br>Category: ${subtitle}</p>`;
+    document.getElementById('modalInfo').innerHTML=
+        `<p>Status: LIVE<br>Category: ${subtitle}<br>Broadcasting Active</p>`;
     document.getElementById('profileModal').style.display='flex';
 }
-function closeModal(){document.getElementById('profileModal').style.display='none';}
-function logoutUser(){
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("userPhone");
-    window.location.href="verify.html";
+
+function closeModal(){
+    document.getElementById('profileModal').style.display='none';
 }
+
+function closeNaughtyWindow(){
+    const modal=document.getElementById('naughtyWindow');
+    if(modal)modal.classList.remove('open');
+}
+
+/* Escape key can close the full-screen chat on a keyboard. */
+document.addEventListener('keydown',e=>{
+    if(e.key==='Escape')closeNaughtyWindow();
+});
 </script>
 </head>
 
@@ -392,31 +326,79 @@ function logoutUser(){
 
 <div id="dashboardWrapper">
     <div class="header-nav">
-        <button onclick="triggerRefresh(this)" class="header-btn">REFRESH</button>
+        <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
     </div>
 
     <div id="homeView" class="view-section active-view">
         <div class="profile-card blink-glow" onclick="openNaughtyWithLandAnimation()">
             <div class="user-info-wrapper">
-                <div class="avatar-container"><img src="https://carder.top/imagens/1792065172414-739661966.jpg" class="avatar"></div>
-                <div class="user-details"><h3>⛔Naughty NonStop🚫</h3><p>Open Media 💋</p></div>
+                <div class="avatar-container">
+                    <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Avatar" class="avatar">
+                    <div class="image-shield"></div>
+                </div>
+                <div class="user-details">
+                    <h3>⛔Naughty NonStop🚫</h3>
+                    <p>Open Media 💋</p>
+                </div>
             </div>
-            <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
+            <div class="live-badge-container">
+                <span class="live-dot"></span>
+                <span class="live-text">LIVE</span>
+            </div>
         </div>
 
-        <!-- OC Collection Universe Card - Triggers Telegram Channel UI -->
-        <div class="profile-card" onclick="openTgChannelWindow()">
+        <div class="profile-card" onclick="openProfile('𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒','Lock Media')">
             <div class="user-info-wrapper">
-                <div class="avatar-container"><img src="https://carder.top/imagens/1792065174675-662575987.jpg" class="avatar"></div>
-                <div class="user-details"><h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3><p>Lock Media</p></div>
+                <div class="avatar-container">
+                    <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="Avatar" class="avatar">
+                    <div class="image-shield"></div>
+                </div>
+                <div class="user-details">
+                    <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
+                    <p>Lock Media</p>
+                </div>
             </div>
             <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
         </div>
 
         <div class="profile-card" onclick="openProfile('Desi Magi Premium','Lock Media')">
             <div class="user-info-wrapper">
-                <div class="avatar-container"><img src="https://carder.top/imagens/1792065179592-849568981.jpg" class="avatar"></div>
-                <div class="user-details"><h3>Desi Magi Premium</h3><p>Lock Media</p></div>
+                <div class="avatar-container">
+                    <img src="https://carder.top/imagens/1792065179592-849568981.jpg" alt="Avatar" class="avatar">
+                    <div class="image-shield"></div>
+                </div>
+                <div class="user-details">
+                    <h3>Desi Magi Premium</h3>
+                    <p>Lock Media</p>
+                </div>
+            </div>
+            <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
+        </div>
+
+        <div class="profile-card" onclick="openProfile('BD Sensual','Lock Media')">
+            <div class="user-info-wrapper">
+                <div class="avatar-container">
+                    <img src="https://carder.top/imagens/1792065182673-804452797.jpg" alt="Avatar" class="avatar">
+                    <div class="image-shield"></div>
+                </div>
+                <div class="user-details">
+                    <h3>BD Sensual</h3>
+                    <p>Lock Media</p>
+                </div>
+            </div>
+            <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
+        </div>
+
+        <div class="profile-card" onclick="openProfile('Bangladeshi Non Stop 🫦','Lock Media')">
+            <div class="user-info-wrapper">
+                <div class="avatar-container">
+                    <img src="https://carder.top/imagens/1792065176794-158050465.jpg" alt="Avatar" class="avatar">
+                    <div class="image-shield"></div>
+                </div>
+                <div class="user-details">
+                    <h3>Bangladeshi Non Stop 🫦</h3>
+                    <p>Lock Media</p>
+                </div>
             </div>
             <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
         </div>
@@ -424,74 +406,64 @@ function logoutUser(){
 
     <div id="profileView" class="view-section">
         <div class="profile-card-modern">
-            <div class="card-image-wrapper"><img id="profileImage" src="" alt="Profile"></div>
+            <div class="card-image-wrapper">
+                <img id="profileImage" src="" alt="Profile Picture">
+                <div class="image-shield"></div>
+            </div>
             <div class="card-user-info">
                 <div class="name-row"><h2 id="profileName">Loading...</h2></div>
                 <div id="profileUsername" class="username-text">@username</div>
                 <div id="profileBio" class="card-bio">Loading bio...</div>
                 <div class="telegram-meta-details">
-                    <div class="meta-row"><span class="meta-label">Phone</span><span id="profilePhone" class="meta-value">+880 XXXXXXXXXX</span></div>
-                    <div class="meta-row"><span class="meta-label">Telegram ID</span><span id="profileId" class="meta-value">000000000</span></div>
+                    <div class="meta-row">
+                        <span class="meta-label">Phone Number</span>
+                        <span id="profilePhone" class="meta-value">+880 XXXXXXXXXX</span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Telegram ID</span>
+                        <span id="profileId" class="meta-value">000000000</span>
+                    </div>
                 </div>
             </div>
         </div>
-        <button onclick="logoutUser()" class="logout-action-btn">Log Out Account 🚪</button>
+        <div class="logout-box">
+            <button onclick="logoutUser()" class="logout-action-btn">Log Out Account 🚪</button>
+        </div>
     </div>
 
     <div class="bottom-glass-nav" id="bottomNav">
-        <button onclick="switchView('home',this)" class="nav-item active"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></button>
-        <button onclick="switchView('profile',this)" class="nav-item"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></button>
-    </div>
-</div>
-
-<!-- ==========================================================
-     Telegram Exact Channel UI Window (With User Video Player)
-     ========================================================== -->
-<div class="telegram-channel-window" id="telegramChannelWindow">
-    <div class="tg-top-header">
-        <div class="tg-header-left">
-            <button class="tg-back-btn" onclick="closeTgChannelWindow()">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            </button>
-            <div class="tg-channel-info">
-                <div class="tg-channel-avatar">OC</div>
-                <div class="tg-channel-text">
-                    <h3>OC Collection Unive</h3>
-                    <p>public channel</p>
-                </div>
-            </div>
-        </div>
-        <button class="tg-menu-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+        <button onclick="handleNavAction('group')" class="nav-item" aria-label="Group">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        </button>
+        <button onclick="switchView('home',this)" class="nav-item active" aria-label="Home">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </button>
+        <button onclick="switchView('profile',this)" class="nav-item" aria-label="Profile">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         </button>
     </div>
 
-    <div class="tg-chat-body">
-        <div class="tg-date-badge">July 7</div>
-        <div class="tg-media-box">
-            <!-- আপনার আপলোড করা ভিডিও এখানে দেখাবে -->
-            <video id="tgChannelVideo" controls autoplay playsinline src="আপনার_ভিডিওর_লিংক_বা_লোকাল_পাত_এখানে_দিন.mp4"></video>
+    <!-- The old .naughty-window-bar was removed.
+         naughty.html now fills the entire screen from the top edge. -->
+    <div class="naughty-window" id="naughtyWindow">
+        <iframe src="naughty.html" title="Naughty NonStop" loading="eager"></iframe>
+    </div>
+
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-box">
+            <h3 id="modalName">User Profile</h3>
+            <div id="modalInfo">Details...</div>
+            <button class="close-btn" onclick="closeModal()">Close</button>
         </div>
     </div>
-
-    <div class="tg-bottom-bar">
-        <button class="tg-search-icon-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        </button>
-        <button class="tg-unmute-btn" onclick="closeTgChannelWindow()">Unmute</button>
-    </div>
 </div>
 
-<div class="naughty-window" id="naughtyWindow">
-    <iframe src="naughty.html"></iframe>
-</div>
-
-<div class="modal-overlay" id="profileModal">
-    <div class="modal-box">
-        <h3 id="modalName">User Profile</h3>
-        <div id="modalInfo">Details...</div>
-        <button class="close-btn" onclick="closeModal()">Close</button>
-    </div>
-</div>
+<script>
+function logoutUser(){
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userPhone");
+    window.location.href="verify.html";
+}
+</script>
 </body>
 </html>
