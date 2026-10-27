@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0a1128">
-<title>Dashboard - OC Collection Universe</title>
+<title>User Dashboard - OC Collection Universe</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -35,6 +35,8 @@ body {
     overflow-x: hidden;
 }
 
+/* ================= BACKGROUND ================= */
+
 .bg-container {
     position: fixed;
     inset: 0;
@@ -53,7 +55,7 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center center;
+    object-position: center;
     opacity: 0;
     filter: blur(3px);
     transition: opacity .7s ease;
@@ -70,29 +72,19 @@ body {
     background: transparent;
 }
 
-#dashboardWrapper {
-    opacity: 0;
-    transition: opacity .4s ease;
-    width: 100%;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 30px 15px 100px;
-    position: relative;
-    z-index: 2;
-}
+/* ================= INITIAL LOADER ================= */
 
 #bgLoader {
     position: fixed;
     inset: 0;
     background: rgba(10,17,40,.85);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 99;
+    z-index: 9999;
     transition: opacity .5s ease;
 }
 
@@ -116,6 +108,21 @@ body {
 
 @keyframes spinLoader {
     to { transform: rotate(360deg); }
+}
+
+/* ================= DASHBOARD ================= */
+
+#dashboardWrapper {
+    opacity: 0;
+    transition: opacity .4s ease;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 15px 100px;
+    position: relative;
+    z-index: 2;
 }
 
 .header-nav {
@@ -158,7 +165,7 @@ body {
     pointer-events: none;
 }
 
-.refresh-btn.loading:after {
+.refresh-btn.loading::after {
     content: "";
     position: absolute;
     width: 18px;
@@ -181,6 +188,8 @@ body {
     display: flex;
 }
 
+/* ================= PROFILE CARDS ================= */
+
 .profile-card {
     background: rgba(20,25,45,.75);
     backdrop-filter: blur(20px);
@@ -191,22 +200,30 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
     box-shadow: 0 10px 30px #0008;
     cursor: pointer;
-    transition: all .3s ease;
+    transition: transform .18s ease, border-color .3s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 .profile-card.blink-glow {
-    background: linear-gradient(135deg,#ff708f4d,rgba(20,25,45,.85));
+    background: linear-gradient(
+        135deg,
+        #ff708f4d,
+        rgba(20,25,45,.85)
+    );
     border: 1.5px solid #ff708f;
     animation: cardBlink 2s infinite ease-in-out;
 }
 
 @keyframes cardBlink {
-    0%,100% {
+    0%, 100% {
         box-shadow: 0 0 10px #ff708f66;
         border-color: #ff708f80;
     }
+
     50% {
         box-shadow: 0 0 25px #ff708fe6;
         border-color: #ff708f;
@@ -214,8 +231,23 @@ body {
 }
 
 .profile-card:hover {
-    transform: translateY(-3px);
     border-color: #ffffff4d;
+}
+
+/* OC card: Naughty NonStop-style animation + zoom-out */
+
+.oc-collection-card {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: transform .16s ease, border-color .3s ease;
+}
+
+.oc-collection-card:active {
+    transform: scale(.94);
+}
+
+.profile-card.blink-glow:active {
+    transform: scale(.94);
 }
 
 .user-info-wrapper {
@@ -223,6 +255,7 @@ body {
     align-items: center;
     gap: 15px;
     min-width: 0;
+    flex: 1;
 }
 
 .avatar-container {
@@ -257,12 +290,14 @@ body {
     font-size: 14px;
     color: #fff;
     font-weight: 700;
+    line-height: 1.5;
 }
 
 .user-details p {
     font-size: 11px;
     color: #94a3b8;
     font-weight: 500;
+    margin-top: 2px;
 }
 
 .live-badge-container {
@@ -286,7 +321,7 @@ body {
 }
 
 @keyframes livePulse {
-    0%,100% { transform: scale(1); }
+    0%, 100% { transform: scale(1); }
     70% { transform: scale(1.18); }
 }
 
@@ -297,12 +332,13 @@ body {
     letter-spacing: 1.2px;
 }
 
-/* Profile page */
+/* ================= PROFILE VIEW ================= */
 
 .profile-card-modern {
     width: 100%;
     background: #1a1f2eed;
     backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
     border: 1px solid #ffffff1f;
     border-radius: 28px;
     padding: 16px 16px 24px;
@@ -349,6 +385,7 @@ body {
     background: #ffffff0a;
     border-radius: 12px;
     margin-bottom: 15px;
+    overflow-wrap: anywhere;
 }
 
 .telegram-meta-details {
@@ -390,7 +427,7 @@ body {
     margin-top: 15px;
 }
 
-/* Bottom navigation */
+/* ================= BOTTOM NAVIGATION ================= */
 
 .bottom-glass-nav {
     position: fixed;
@@ -402,6 +439,7 @@ body {
     height: 70px;
     background: #14192da6;
     backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
     border: 1px solid #ffffff26;
     border-radius: 50px;
     display: flex;
@@ -447,13 +485,14 @@ body {
     fill: #fff;
 }
 
-/* Existing profile modal */
+/* ================= PROFILE MODAL ================= */
 
 .modal-overlay {
     position: fixed;
     inset: 0;
     background: #000d;
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: none;
     align-items: center;
     justify-content: center;
@@ -489,7 +528,7 @@ body {
     margin-top: 15px;
 }
 
-/* Naughty NonStop full-screen window */
+/* ================= NAUGHTY NONSTOP ================= */
 
 .naughty-window {
     position: fixed;
@@ -518,10 +557,9 @@ body {
     background: #080d20;
 }
 
-/* =========================================
-   OC COLLECTION UNIVERSE FULL-SCREEN POPUP
-   Opens/closes instantly without page reload
-   ========================================= */
+/* ==================================================
+   OC COLLECTION UNIVERSE - TELEGRAM STYLE POPUP
+   ================================================== */
 
 .oc-channel-window {
     position: fixed;
@@ -547,7 +585,7 @@ body {
     display: flex;
 }
 
-/* Wallpaper pattern */
+/* Decorative wallpaper */
 
 .oc-doodle-wallpaper {
     position: absolute;
@@ -563,7 +601,7 @@ body {
     transform: rotate(-10deg) scale(1.1);
 }
 
-/* Header */
+/* Popup header */
 
 .oc-channel-header {
     position: relative;
@@ -590,10 +628,15 @@ body {
     background: rgba(249,250,241,.94);
     box-shadow: 0 3px 14px rgba(0,0,0,.06);
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.oc-back-btn svg,
-.oc-search-btn svg {
+.oc-back-btn:active,
+.oc-menu-btn:active {
+    transform: scale(.94);
+}
+
+.oc-back-btn svg {
     width: 32px;
     height: 32px;
     stroke: currentColor;
@@ -602,6 +645,8 @@ body {
     stroke-linecap: round;
     stroke-linejoin: round;
 }
+
+/* Header title capsule */
 
 .oc-channel-title-pill {
     flex: 1;
@@ -618,19 +663,25 @@ body {
     -webkit-backdrop-filter: blur(12px);
 }
 
+/* Same profile image as the dashboard OC card */
+
 .oc-channel-avatar {
     flex: 0 0 clamp(42px,11vw,80px);
     width: clamp(42px,11vw,80px);
     height: clamp(42px,11vw,80px);
     border: 3px solid rgba(255,255,255,.9);
     border-radius: 50%;
-    background: linear-gradient(135deg,#69b5ed,#2680d1);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(17px,4vw,30px);
-    font-weight: 800;
+    overflow: hidden;
+    background: #3485d0;
+}
+
+.oc-channel-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    pointer-events: none;
 }
 
 .oc-channel-title-text {
@@ -642,8 +693,8 @@ body {
     margin: 0;
     color: #171b1d;
     font-size: clamp(14px,3.8vw,28px);
-    line-height: 1.2;
-    font-weight: 800;
+    line-height: 1.25;
+    font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -653,17 +704,61 @@ body {
     margin: 3px 0 0;
     color: #778078;
     font-size: clamp(11px,2.6vw,18px);
-    font-weight: 600;
+    font-weight: 500;
 }
 
-/* Center channel information */
+/* Three-dot menu */
+
+.oc-menu-popover {
+    position: absolute;
+    top: 100px;
+    right: 16px;
+    z-index: 5;
+    display: none;
+    width: min(270px,calc(100vw - 32px));
+    padding: 16px;
+    flex-direction: column;
+    gap: 8px;
+    background: #f8f9f2;
+    color: #26312c;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+}
+
+.oc-menu-popover.open {
+    display: flex;
+}
+
+.oc-menu-popover strong {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.oc-menu-popover small {
+    color: #78817a;
+    font-size: 12px;
+}
+
+.oc-menu-popover button {
+    margin-top: 8px;
+    padding: 10px;
+    border: none;
+    border-radius: 12px;
+    background: #dcebdc;
+    color: #234d38;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Center timeline */
 
 .oc-channel-timeline {
     position: absolute;
     z-index: 2;
     left: 10px;
     right: 10px;
-    bottom: clamp(135px,19vh,205px);
+    bottom: clamp(130px,18vh,190px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -678,12 +773,12 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: #fff;
     background: rgba(35,133,92,.84);
     border-radius: 100px;
     box-shadow: 0 2px 8px rgba(0,0,0,.04);
     font-size: clamp(13px,3vw,19px);
-    font-weight: 800;
+    font-weight: 700;
     text-align: center;
 }
 
@@ -703,7 +798,7 @@ body {
     border-radius: 30px;
     background: rgba(255,255,255,.13);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .oc-joined-pill {
@@ -711,23 +806,27 @@ body {
     padding: 10px 18px;
 }
 
-/* Bottom search and unmute buttons */
+/* ================= REDUCED BOTTOM BOX ================= */
+
+/* Lower height prevents the buttons from looking too thick. */
 
 .oc-bottom-actions {
     position: absolute;
     z-index: 3;
     left: 14px;
     right: 14px;
-    bottom: clamp(32px,4vh,58px);
-    height: clamp(64px,13vw,96px);
+    bottom: clamp(30px,4vh,48px);
+    height: clamp(56px,9vw,68px);
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
 }
 
+/* Search circle */
+
 .oc-search-btn {
-    flex: 0 0 clamp(64px,13vw,96px);
-    width: clamp(64px,13vw,96px);
+    flex: 0 0 clamp(56px,9vw,68px);
+    width: clamp(56px,9vw,68px);
     height: 100%;
     padding: 0;
     border: none;
@@ -738,76 +837,55 @@ body {
     color: #738078;
     background: rgba(249,250,245,.95);
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
+
+.oc-search-btn svg {
+    width: 27px;
+    height: 27px;
+    stroke-width: 2.2;
+}
+
+/* Unmute text: English, lighter font and slimmer button */
 
 .oc-unmute-btn {
     flex: 1;
+    min-width: 0;
     height: 100%;
+    padding: 0 12px;
     border: none;
     border-radius: 100px;
     background: rgba(250,251,248,.95);
     color: #747c78;
-    font-size: clamp(16px,3.5vw,25px);
-    font-weight: 800;
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(15px,3vw,20px);
+    font-weight: 500;
+    letter-spacing: .2px;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* Three-dot menu */
+.oc-search-btn:active,
+.oc-unmute-btn:active {
+    transform: scale(.97);
+}
 
-.oc-menu-popover,
+/* Search panel */
+
 .oc-search-panel {
     position: absolute;
     z-index: 5;
     display: none;
+    left: 94px;
+    right: 14px;
+    bottom: 115px;
+    padding: 10px 12px;
+    align-items: center;
+    gap: 8px;
     background: #f8f9f2;
     color: #26312c;
     box-shadow: 0 8px 30px rgba(0,0,0,.15);
     border-radius: 18px;
-}
-
-.oc-menu-popover.open {
-    display: flex;
-}
-
-.oc-menu-popover {
-    top: 100px;
-    right: 16px;
-    width: min(270px,calc(100vw - 32px));
-    padding: 16px;
-    flex-direction: column;
-    gap: 7px;
-}
-
-.oc-menu-popover strong {
-    font-size: 14px;
-}
-
-.oc-menu-popover small {
-    color: #78817a;
-    font-size: 12px;
-}
-
-.oc-menu-popover button {
-    margin-top: 8px;
-    padding: 10px;
-    border: none;
-    border-radius: 12px;
-    background: #dcebdc;
-    color: #234d38;
-    font-family: inherit;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-/* Search field */
-
-.oc-search-panel {
-    left: 95px;
-    right: 14px;
-    bottom: 125px;
-    padding: 8px 12px;
-    align-items: center;
-    gap: 8px;
 }
 
 .oc-search-panel.open {
@@ -823,6 +901,7 @@ body {
     color: #26312c;
     font-family: inherit;
     font-size: 14px;
+    font-weight: 400;
     user-select: text;
     -webkit-user-select: text;
 }
@@ -835,7 +914,7 @@ body {
     cursor: pointer;
 }
 
-/* Mobile system navigation bar */
+/* Mobile system bar */
 
 .oc-system-bar {
     position: absolute;
@@ -849,9 +928,13 @@ body {
     background: rgba(115,115,115,.5);
 }
 
-/* Responsive layout */
+/* ================= RESPONSIVE ================= */
 
 @media(max-width:380px) {
+    #dashboardWrapper {
+        padding: 22px 12px 100px;
+    }
+
     .profile-card {
         padding: 10px 13px;
     }
@@ -862,6 +945,14 @@ body {
 
     .user-details h3 {
         font-size: 12px;
+    }
+
+    .live-badge-container {
+        padding: 5px 9px;
+    }
+
+    .live-text {
+        font-size: 10px;
     }
 
     .oc-channel-header {
@@ -885,13 +976,21 @@ body {
         font-size: 12px;
     }
 
+    .oc-channel-title-text p {
+        font-size: 11px;
+    }
+
     .oc-channel-timeline {
         gap: 9px;
-        bottom: 145px;
+        bottom: 140px;
     }
 
     .oc-bottom-actions {
         gap: 10px;
+    }
+
+    .oc-search-panel {
+        left: 80px;
     }
 }
 
@@ -906,20 +1005,23 @@ body {
 
 <body>
 
-<!-- Initial dashboard loader -->
+<!-- INITIAL DASHBOARD LOADER -->
+
 <div id="bgLoader">
     <div class="spinner-box"></div>
     <div class="loader-text">Loading Background...</div>
 </div>
 
-<!-- Dashboard background -->
+<!-- BACKGROUND -->
+
 <div class="bg-container" id="bgContainer">
     <div class="bg-shade"></div>
 </div>
 
 <div id="dashboardWrapper">
 
-    <!-- Header -->
+    <!-- REFRESH -->
+
     <div class="header-nav">
         <button id="refreshBtn"
                 onclick="triggerRefresh(this)"
@@ -929,17 +1031,20 @@ body {
     </div>
 
     <!-- HOME VIEW -->
+
     <div id="homeView" class="view-section active-view">
 
-        <!-- Naughty NonStop -->
+        <!-- NAUGHTY NONSTOP -->
+
         <div class="profile-card blink-glow"
              onclick="openNaughtyWithLandAnimation()">
 
             <div class="user-info-wrapper">
+
                 <div class="avatar-container">
                     <img
                         src="https://carder.top/imagens/1792065172414-739661966.jpg"
-                        alt="Avatar"
+                        alt="Naughty NonStop"
                         class="avatar">
                     <div class="image-shield"></div>
                 </div>
@@ -948,20 +1053,23 @@ body {
                     <h3>⛔Naughty NonStop🚫</h3>
                     <p>Open Media 💋</p>
                 </div>
+
             </div>
 
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
+
         </div>
 
-        <!-- OC Collection Universe -->
-        <!-- Click opens the popup instantly -->
-        <div class="profile-card"
+        <!-- OC COLLECTION UNIVERSE -->
+
+        <div class="profile-card blink-glow oc-collection-card"
              onclick="openOCChannel()">
 
             <div class="user-info-wrapper">
+
                 <div class="avatar-container">
                     <img
                         src="https://carder.top/imagens/1792065174675-662575987.jpg"
@@ -972,21 +1080,25 @@ body {
 
                 <div class="user-details">
                     <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
-                    <p>Lock Media</p>
+                    <p>Open Channel</p>
                 </div>
+
             </div>
 
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
+
         </div>
 
-        <!-- Desi Magi Premium -->
+        <!-- DESI MAGI PREMIUM -->
+
         <div class="profile-card"
              onclick="openProfile('Desi Magi Premium','Lock Media')">
 
             <div class="user-info-wrapper">
+
                 <div class="avatar-container">
                     <img
                         src="https://carder.top/imagens/1792065179592-849568981.jpg"
@@ -999,19 +1111,23 @@ body {
                     <h3>Desi Magi Premium</h3>
                     <p>Lock Media</p>
                 </div>
+
             </div>
 
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
+
         </div>
 
-        <!-- BD Sensual -->
+        <!-- BD SENSUAL -->
+
         <div class="profile-card"
              onclick="openProfile('BD Sensual','Lock Media')">
 
             <div class="user-info-wrapper">
+
                 <div class="avatar-container">
                     <img
                         src="https://carder.top/imagens/1792065182673-804452797.jpg"
@@ -1024,19 +1140,23 @@ body {
                     <h3>BD Sensual</h3>
                     <p>Lock Media</p>
                 </div>
+
             </div>
 
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
+
         </div>
 
-        <!-- Bangladeshi Non Stop -->
+        <!-- BANGLADESHI NON STOP -->
+
         <div class="profile-card"
              onclick="openProfile('Bangladeshi Non Stop 🫦','Lock Media')">
 
             <div class="user-info-wrapper">
+
                 <div class="avatar-container">
                     <img
                         src="https://carder.top/imagens/1792065176794-158050465.jpg"
@@ -1049,17 +1169,20 @@ body {
                     <h3>Bangladeshi Non Stop 🫦</h3>
                     <p>Lock Media</p>
                 </div>
+
             </div>
 
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
+
         </div>
 
     </div>
 
     <!-- PROFILE VIEW -->
+
     <div id="profileView" class="view-section">
 
         <div class="profile-card-modern">
@@ -1100,6 +1223,7 @@ body {
                     </div>
 
                 </div>
+
             </div>
         </div>
 
@@ -1108,54 +1232,65 @@ body {
                 Log Out Account 🚪
             </button>
         </div>
+
     </div>
 
-    <!-- Bottom navigation -->
+    <!-- BOTTOM NAVIGATION -->
+
     <div class="bottom-glass-nav" id="bottomNav">
 
         <button onclick="handleNavAction('group')"
                 class="nav-item"
                 aria-label="Group">
+
             <svg viewBox="0 0 24 24">
                 <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
             </svg>
+
         </button>
 
         <button onclick="switchView('home',this)"
                 class="nav-item active"
                 aria-label="Home">
+
             <svg viewBox="0 0 24 24">
                 <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
             </svg>
+
         </button>
 
         <button onclick="switchView('profile',this)"
                 class="nav-item"
                 aria-label="Profile">
+
             <svg viewBox="0 0 24 24">
                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
             </svg>
+
         </button>
 
     </div>
 
-    <!-- Naughty NonStop window -->
+    <!-- NAUGHTY NONSTOP FULL-SCREEN WINDOW -->
+
     <div class="naughty-window" id="naughtyWindow">
+
         <iframe
             src="naughty.html"
             title="Naughty NonStop"
             loading="eager">
         </iframe>
+
     </div>
 
-    <!-- =================================
-         OC COLLECTION UNIVERSE POPUP
-         ================================= -->
+    <!-- OC COLLECTION UNIVERSE POPUP -->
+
     <div class="oc-channel-window"
          id="ocChannelWindow"
          aria-hidden="true">
 
-        <!-- Decorative wallpaper -->
+        <!-- Wallpaper -->
+
         <div class="oc-doodle-wallpaper" aria-hidden="true">
             ☆ ♡ ✧ ♧ ◇ ☆ ♡ ✿ ♬ ☆ ♡
             <br>
@@ -1172,7 +1307,8 @@ body {
             ☆ ♡ ✿ ♧ ◇ ✧ ♬ ☆ ♡ ☆
         </div>
 
-        <!-- Telegram-style header -->
+        <!-- TOP HEADER -->
+
         <div class="oc-channel-header">
 
             <button class="oc-back-btn"
@@ -1188,7 +1324,13 @@ body {
 
             <div class="oc-channel-title-pill">
 
-                <div class="oc-channel-avatar">OC</div>
+                <!-- Same image as OC dashboard card -->
+
+                <div class="oc-channel-avatar">
+                    <img
+                        src="https://carder.top/imagens/1792065174675-662575987.jpg"
+                        alt="OC Collection Universe">
+                </div>
 
                 <div class="oc-channel-title-text">
                     <h2>OC Collection Universe 🍒</h2>
@@ -1212,9 +1354,11 @@ body {
                 </svg>
 
             </button>
+
         </div>
 
-        <!-- Three-dot menu -->
+        <!-- THREE-DOT MENU -->
+
         <div class="oc-menu-popover" id="ocMenuPopover">
 
             <strong>OC Collection Universe 🍒</strong>
@@ -1226,7 +1370,8 @@ body {
 
         </div>
 
-        <!-- Channel timeline -->
+        <!-- CHANNEL TIMELINE -->
+
         <div class="oc-channel-timeline">
 
             <div class="oc-date-pill">
@@ -1248,7 +1393,8 @@ body {
 
         </div>
 
-        <!-- Search panel -->
+        <!-- SEARCH PANEL -->
+
         <div class="oc-search-panel" id="ocSearchPanel">
 
             <input
@@ -1257,13 +1403,15 @@ body {
                 placeholder="Search in channel..."
                 aria-label="Search in channel">
 
-            <button type="button"
-                    aria-label="Close search"
-                    onclick="toggleOCSearch()">×</button>
+            <button
+                type="button"
+                aria-label="Close search"
+                onclick="toggleOCSearch()">×</button>
 
         </div>
 
-        <!-- Bottom buttons -->
+        <!-- BOTTOM CONTROLS -->
+
         <div class="oc-bottom-actions">
 
             <button class="oc-search-btn"
@@ -1286,12 +1434,12 @@ body {
 
         </div>
 
-        <!-- Mobile system bar -->
         <div class="oc-system-bar"></div>
 
     </div>
 
-    <!-- Existing profile modal -->
+    <!-- PROFILE MODAL -->
+
     <div class="modal-overlay" id="profileModal">
 
         <div class="modal-box">
@@ -1305,14 +1453,15 @@ body {
             </button>
 
         </div>
+
     </div>
 
 </div>
 
 <script>
-/* =====================================
-   BACKGROUND IMAGE COLLECTION
-   ===================================== */
+/* ========================================
+   RANDOM BACKGROUND IMAGE COLLECTION
+   ======================================== */
 
 const backgroundImages = [
     "https://carder.top/imagens/1792211356900-71480222.jpg",
@@ -1389,10 +1538,6 @@ const backgroundImages = [
     "https://carder.top/imagens/1792211586554-328495854.jpg"
 ];
 
-/* =====================================
-   RANDOM BACKGROUND
-   ===================================== */
-
 function shuffled(items) {
     const array = [...items];
 
@@ -1456,7 +1601,9 @@ function initRandomBackground() {
             container.querySelector('.bg-shade')
         );
 
-        requestAnimationFrame(() => img.classList.add('visible'));
+        requestAnimationFrame(() => {
+            img.classList.add('visible');
+        });
 
         try {
             localStorage.setItem(previousKey, selected);
@@ -1489,9 +1636,9 @@ function initRandomBackground() {
     img.src = selected;
 }
 
-/* =====================================
-   LOGIN VERIFICATION / INITIALIZATION
-   ===================================== */
+/* ========================================
+   LOGIN AND INITIALIZATION
+   ======================================== */
 
 if (localStorage.getItem('isLoggedIn') !== 'true') {
     window.location.replace('verify.html');
@@ -1505,7 +1652,9 @@ if (localStorage.getItem('isLoggedIn') !== 'true') {
         }
 
         if (bottomNav) {
-            setTimeout(() => bottomNav.classList.add('slide-up'), 100);
+            setTimeout(() => {
+                bottomNav.classList.add('slide-up');
+            }, 100);
         }
 
         initRandomBackground();
@@ -1513,9 +1662,9 @@ if (localStorage.getItem('isLoggedIn') !== 'true') {
     });
 }
 
-/* =====================================
+/* ========================================
    DASHBOARD NAVIGATION
-   ===================================== */
+   ======================================== */
 
 function switchView(viewName, element) {
     document.querySelectorAll('.view-section').forEach(section => {
@@ -1545,9 +1694,9 @@ function handleNavAction(type) {
     }
 }
 
-/* =====================================
-   TELEGRAM PROFILE
-   ===================================== */
+/* ========================================
+   TELEGRAM PROFILE FETCH
+   ======================================== */
 
 function fetchTelegramProfile() {
     const userPhone = localStorage.getItem('userPhone');
@@ -1609,11 +1758,9 @@ function fetchTelegramProfile() {
     });
 }
 
-/* =====================================
-   REFRESH DASHBOARD
-   Note: the Refresh button retains its
-   original reload behavior.
-   ===================================== */
+/* ========================================
+   REFRESH
+   ======================================== */
 
 function triggerRefresh(button) {
     button.classList.add('loading');
@@ -1630,9 +1777,9 @@ function triggerRefresh(button) {
     }, 300);
 }
 
-/* =====================================
+/* ========================================
    PROFILE MODAL
-   ===================================== */
+   ======================================== */
 
 function openProfile(name, subtitle) {
     document.getElementById('modalName').textContent = name;
@@ -1659,9 +1806,9 @@ function closeModal() {
     document.getElementById('profileModal').style.display = 'none';
 }
 
-/* =====================================
+/* ========================================
    NAUGHTY NONSTOP WINDOW
-   ===================================== */
+   ======================================== */
 
 function openNaughtyWithLandAnimation() {
     const modal = document.getElementById('naughtyWindow');
@@ -1679,24 +1826,22 @@ function closeNaughtyWindow() {
     }
 }
 
-/* =====================================
-   OC COLLECTION UNIVERSE POPUP
-   No loader, no reload, no page redirect
-   ===================================== */
+/* ========================================
+   OC COLLECTION UNIVERSE
+   Instant popup; no loader or reload
+   ======================================== */
 
 function openOCChannel() {
     const popup = document.getElementById('ocChannelWindow');
 
     if (!popup) return;
 
-    // Reset any previously opened menu/search panel.
     document.getElementById('ocMenuPopover')
         .classList.remove('open');
 
     document.getElementById('ocSearchPanel')
         .classList.remove('open');
 
-    // Open the popup immediately.
     popup.classList.add('open');
     popup.setAttribute('aria-hidden', 'false');
 }
@@ -1706,7 +1851,6 @@ function closeOCChannel() {
 
     if (!popup) return;
 
-    // Hide the popup immediately without reloading.
     popup.classList.remove('open');
     popup.setAttribute('aria-hidden', 'true');
 
@@ -1741,18 +1885,17 @@ function toggleOCSearch() {
     }
 }
 
-/* Visual mute/unmute toggle.
-   This demo button does not control actual audio. */
+/* Visual Unmute/Mute button */
 
 function toggleOCMute(button) {
-    const isUnmuted = button.textContent.trim() === 'Unmute';
+    const isUnmute = button.textContent.trim() === 'Unmute';
 
-    button.textContent = isUnmuted ? 'Mute' : 'Unmute';
+    button.textContent = isUnmute ? 'Mute' : 'Unmute';
 }
 
-/* =====================================
+/* ========================================
    KEYBOARD CONTROLS
-   ===================================== */
+   ======================================== */
 
 document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
@@ -1762,8 +1905,7 @@ document.addEventListener('keydown', event => {
     }
 });
 
-/* Prevent the browser context menu, as in
-   the original dashboard. */
+/* Existing context-menu and drag prevention */
 
 document.addEventListener('contextmenu', event => {
     event.preventDefault();
@@ -1776,18 +1918,23 @@ document.addEventListener('dragstart', event => {
 document.addEventListener('keydown', event => {
     if (
         event.key === 'F12' ||
-        (event.ctrlKey && event.shiftKey &&
-            ['I', 'J', 'C'].includes(event.key)) ||
-        (event.ctrlKey &&
-            ['u', 's', 'p'].includes(event.key.toLowerCase()))
+        (
+            event.ctrlKey &&
+            event.shiftKey &&
+            ['I', 'J', 'C'].includes(event.key.toUpperCase())
+        ) ||
+        (
+            event.ctrlKey &&
+            ['U', 'S', 'P'].includes(event.key.toUpperCase())
+        )
     ) {
         event.preventDefault();
     }
 });
 
-/* =====================================
+/* ========================================
    LOGOUT
-   ===================================== */
+   ======================================== */
 
 function logoutUser() {
     localStorage.removeItem('isLoggedIn');
