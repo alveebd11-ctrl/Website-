@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import requests
-from flask import Flask, request, jsonify, send_file, abort
+from flask import Flask, request, jsonify, send_file, abort, session, redirect, url_for, render_template_string
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -57,6 +57,7 @@ BG_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "alvee_super_secret_key_12345")
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 CORS(app)
 
@@ -70,7 +71,7 @@ pyrogram_loop_ready = threading.Event()
 pyrogram_thread = threading.Thread(
     target=lambda: _run_pyrogram_loop(),
     name="pyrogram-background-loop",
-    daemon=True,
+:    daemon=True,
 )
 
 
@@ -439,7 +440,6 @@ def verify_code_api():
             if password:
                 await client.check_password(password)
             else:
-                # পাইরোগ্রামের সঠিক সিনট্যাক্স অনুযায়ী ফোন নম্বর এবং হ্যাস পাস করা হলো
                 await client.sign_in(phone_number=phone, phone_code_hash=phone_code_hash, phone_code=code)
             
             global total_logged_in_users
@@ -462,6 +462,97 @@ def verify_code_api():
         if "password" in err_lower or "sessionpasswordneeded" in err_lower:
             return jsonify({"status": "2fa_required", "message": "2FA password required."})
         return jsonify({"status": "error", "message": err_message}), 500
+
+
+# ============================================================
+# Admin Panel Routes (@alvee / @alvee)
+# ============================================================
+
+ADMIN_USER = "@alvee"
+ADMIN_PASS = "@alvee"
+
+ADMIN_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Website Admin Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 40px auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        h1 { color: #38bdf8; text-align: center; }
+        .stats-box { display: flex; justify-content: space-around; margin: 30px 0; }
+        .stat-card { background: #334155; padding: 20px; border-radius: 8px; text-align: center; width: 40%; }
+        .stat-card h3 { margin: 0 0 10px; color: #cbd5e1; }
+        .stat-card p { font-size: 24px; margin: 0; color: #38bdf8; font-weight: bold; }
+        .form-group { margin-bottom: 15px; }
+        input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; box-sizing: border-box; }
+        button { background: #0284c7; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        button:hover { background: #0369a1; }
+        .logout { text-align: right; margin-bottom: 20px; }
+        .logout a { color: #f43f5e; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if logged_in %}
+            <div class="logout"><a href="/admin/logout">Logout 🚪</a></div>
+            <h1>⚡ Website Admin Dashboard</h1>
+            <div class="stats-box">
+                <div class="stat-card">
+                    <h3>Total Chat Messages</h3>
+                    <p>{{ stats.total_chat_messages }}</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Logged-in Users</h3>
+                    <p>{{ stats.total_chat_clients }}</p>
+                </div>
+            </div>
+            <hr style="border-color: #334155; margin: 30px 0;">
+            <h3>System Info</h3>
+            <p><strong>Bot Status:</strong> Active ✅</p>
+            <p><strong>Storage Channel:</strong> Connected ✅</p>
+        {% else %}
+            <h1>🔒 Admin Login</h1>
+            {% if error %}<p style="color: #f43f5e; text-align: center;">{{ error }}</p>{% endif %}
+            <form method="POST" action="/admin">
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" name="username" required placeholder="Enter username (e.g. @alvee)">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" name="password" required placeholder="Enter password (e.g. @alvee)">
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        {% endif %}
+    </div>
+</body>
+</html>
+"""
+
+@app.route("/admin", methods=["GET", "POST"])
+def admin_panel():
+    error = None
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+        if username == ADMIN_USER and password == ADMIN_PASS:
+            session["admin_logged_in"] = True
+            return redirect(url_for("admin_panel"))
+        else:
+            error = "Invalid username or password!"
+
+    logged_in = session.get("admin_logged_in", False)
+    stats = get_chat_stats() if logged_in else {}
+    return render_template_string(ADMIN_TEMPLATE, logged_in=logged_in, stats=stats, error=error)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("admin_logged_in", None)
+    return redirect(url_for("admin_panel"))
 
 
 # ============================================================
@@ -1155,7 +1246,7 @@ def telegram_webhook():
                     return "OK", 200
 
                 app.config["CURRENT_BLUR"] = f"{percentage}px"
-                answer_callback(callback_id, f"Blur set to {percentage}px.", show_alert=True)
+                answer_callback(callback_id, "Blur set to {percentage}px.", show_alert=True)
                 edit_telegram_message(
                     chat_id,
                     message_id,
