@@ -1288,7 +1288,7 @@ def start_background_services():
 
     try:
         run_async(start_pyrogram_monitor(), timeout=45)
-    exceptException:
+    except Exception:
         print("Could not start Pyrogram monitor:", traceback.format_exc())
 
 
