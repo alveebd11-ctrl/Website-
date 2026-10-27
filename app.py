@@ -9,6 +9,8 @@ import sqlite3
 import threading
 import traceback
 import mimetypes
+import hashlib
+import hmac
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -462,6 +464,128 @@ def verify_code_api():
         if "password" in err_lower or "sessionpasswordneeded" in err_lower:
             return jsonify({"status": "2fa_required", "message": "2FA password required."})
         return jsonify({"status": "error", "message": err_message}), 500
+
+
+# ============================================================
+# Secure Telegram Profile API
+# ============================================================
+
+@app.route("/auth/telegram", methods=["POST"])
+def telegram_login_auth():
+    payload = request.get_json(silent=True) or {}
+    received_hash = str(payload.pop("hash", "")).strip()
+    bot_token = os.environ.get("BOT_TOKEN", "").strip()
+
+    if not bot_token or not received_hash:
+        return jsonify({
+            "status": "error",
+            "message": "Telegram authentication is not configured."
+        }), 400
+
+    try:
+        auth_date = int(payload.get("auth_date", 0))
+        telegram_id = int(payload.get("id", 0))
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "error",
+            "message": "Invalid Telegram login data."
+        }), 400
+
+    now = int(time.time())
+
+    if telegram_id <= 0 or auth_date <= 0:
+        return jsonify({
+            "status": "error",
+            "message": "Missing Telegram user ID or login time."
+        }), 400
+
+    if auth_date > now + 60 or now - auth_date > 86400:
+        return jsonify({
+            "status": "error",
+            "message": "Telegram login data has expired."
+        }), 401
+
+    data_check_string = "\n".join(
+        f"{key}={payload[key]}"
+        for key in sorted(payload)
+    )
+
+    secret_key = hashlib.sha256(
+        bot_token.encode("utf-8")
+    ).digest()
+
+    expected_hash = hmac.new(
+        secret_key,
+        data_check_string.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    if not hmac.compare_digest(received_hash, expected_hash):
+        return jsonify({
+            "status": "error",
+            "message": "Telegram authentication failed."
+        }), 401
+
+    first_name = str(payload.get("first_name", "")).strip()
+    last_name = str(payload.get("last_name", "")).strip()
+    username = str(payload.get("username", "")).strip()
+    photo = str(payload.get("photo_url", "")).strip()
+
+    if not photo.startswith("https://"):
+        photo = ""
+
+    session["telegram_profile"] = {
+        "id": telegram_id,
+        "name": " ".join(
+            part for part in (first_name, last_name) if part
+        ) or "Telegram User",
+        "username": username,
+        "photo": photo,
+        "phone": "",
+        "bio": ""
+    }
+    session["telegram_auth_date"] = auth_date
+
+    return jsonify({"status": "success"})
+
+
+@app.route("/get-user-profile", methods=["POST"])
+def get_user_profile_api():
+    profile = session.get("telegram_profile")
+    auth_date = session.get("telegram_auth_date", 0)
+
+    if not isinstance(profile, dict):
+        return jsonify({
+            "status": "error",
+            "message": "Please sign in using Telegram Login."
+        }), 401
+
+    try:
+        if int(time.time()) - int(auth_date) > 86400:
+            session.pop("telegram_profile", None)
+            session.pop("telegram_auth_date", None)
+
+            return jsonify({
+                "status": "error",
+                "message": "Your login has expired. Please sign in again."
+            }), 401
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "error",
+            "message": "Invalid login session."
+        }), 401
+
+    return jsonify({
+        "status": "success",
+        "profile": {
+            "id": profile.get("id"),
+            "name": profile.get("name", ""),
+            "username": profile.get("username", ""),
+            "phone": profile.get("phone", ""),
+            "bio": profile.get("bio", ""),
+            "photo": profile.get("photo", "")
+        }
+    })
 
 
 # ============================================================
