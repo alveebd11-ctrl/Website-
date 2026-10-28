@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -233,8 +232,6 @@ body {
 .profile-card:hover {
     border-color: #ffffff4d;
 }
-
-/* OC card: Naughty NonStop-style animation + zoom-out */
 
 .oc-collection-card {
     -webkit-tap-highlight-color: transparent;
@@ -663,8 +660,6 @@ body {
     -webkit-backdrop-filter: blur(12px);
 }
 
-/* Same profile image as the dashboard OC card */
-
 .oc-channel-avatar {
     flex: 0 0 clamp(42px,11vw,80px);
     width: clamp(42px,11vw,80px);
@@ -751,19 +746,25 @@ body {
     cursor: pointer;
 }
 
-/* Center timeline */
+/* Channel Content Body / Timeline */
+
+.oc-channel-body {
+    position: absolute;
+    inset: 90px 10px 90px 10px;
+    z-index: 2;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px;
+}
 
 .oc-channel-timeline {
-    position: absolute;
-    z-index: 2;
-    left: 10px;
-    right: 10px;
-    bottom: clamp(130px,18vh,190px);
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
-    pointer-events: none;
+    width: 100%;
 }
 
 .oc-date-pill,
@@ -806,9 +807,29 @@ body {
     padding: 10px 18px;
 }
 
-/* ================= REDUCED BOTTOM BOX ================= */
+/* Channel Posts Styles */
 
-/* Lower height prevents the buttons from looking too thick. */
+.oc-post-bubble {
+    background: #ffffff;
+    color: #17211d;
+    padding: 12px 16px;
+    border-radius: 12px;
+    max-width: 85%;
+    align-self: flex-start;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    word-break: break-word;
+    font-size: 14px;
+}
+
+.oc-post-bubble img, .oc-post-bubble video {
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 8px;
+    max-height: 250px;
+    object-fit: cover;
+}
+
+/* ================= REDUCED BOTTOM BOX ================= */
 
 .oc-bottom-actions {
     position: absolute;
@@ -821,8 +842,6 @@ body {
     align-items: center;
     gap: 12px;
 }
-
-/* Search circle */
 
 .oc-search-btn {
     flex: 0 0 clamp(56px,9vw,68px);
@@ -846,8 +865,6 @@ body {
     stroke-width: 2.2;
 }
 
-/* Unmute text: English, lighter font and slimmer button */
-
 .oc-unmute-btn {
     flex: 1;
     min-width: 0;
@@ -869,8 +886,6 @@ body {
 .oc-unmute-btn:active {
     transform: scale(.97);
 }
-
-/* Search panel */
 
 .oc-search-panel {
     position: absolute;
@@ -914,8 +929,6 @@ body {
     cursor: pointer;
 }
 
-/* Mobile system bar */
-
 .oc-system-bar {
     position: absolute;
     z-index: 3;
@@ -927,8 +940,6 @@ body {
     border-radius: 100px;
     background: rgba(115,115,115,.5);
 }
-
-/* ================= RESPONSIVE ================= */
 
 @media(max-width:380px) {
     #dashboardWrapper {
@@ -978,11 +989,6 @@ body {
 
     .oc-channel-title-text p {
         font-size: 11px;
-    }
-
-    .oc-channel-timeline {
-        gap: 9px;
-        bottom: 140px;
     }
 
     .oc-bottom-actions {
@@ -1324,8 +1330,6 @@ body {
 
             <div class="oc-channel-title-pill">
 
-                <!-- Same image as OC dashboard card -->
-
                 <div class="oc-channel-avatar">
                     <img
                         src="https://carder.top/imagens/1792065174675-662575987.jpg"
@@ -1370,27 +1374,32 @@ body {
 
         </div>
 
-        <!-- CHANNEL TIMELINE -->
+        <!-- CHANNEL BODY & TIMELINE -->
 
-        <div class="oc-channel-timeline">
+        <div class="oc-channel-body">
+            <div class="oc-channel-timeline">
 
-            <div class="oc-date-pill">
-                July 7
+                <div class="oc-date-pill">
+                    July 7
+                </div>
+
+                <div class="oc-created-pill">
+                    <span>Channel created</span>
+                    <small>12:02 AM</small>
+                </div>
+
+                <div class="oc-today-pill">
+                    Today
+                </div>
+
+                <div class="oc-joined-pill">
+                    You joined this channel
+                </div>
+
             </div>
 
-            <div class="oc-created-pill">
-                <span>Channel created</span>
-                <small>12:02 AM</small>
-            </div>
-
-            <div class="oc-today-pill">
-                Today
-            </div>
-
-            <div class="oc-joined-pill">
-                You joined this channel
-            </div>
-
+            <!-- Telegram Channel Posts Container -->
+            <div id="channelPostsContainer" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
         </div>
 
         <!-- SEARCH PANEL -->
@@ -1827,8 +1836,7 @@ function closeNaughtyWindow() {
 }
 
 /* ========================================
-   OC COLLECTION UNIVERSE
-   Instant popup; no loader or reload
+   OC COLLECTION UNIVERSE (CHANNEL & POSTS)
    ======================================== */
 
 function openOCChannel() {
@@ -1844,6 +1852,9 @@ function openOCChannel() {
 
     popup.classList.add('open');
     popup.setAttribute('aria-hidden', 'false');
+
+    // টেলিগ্রাম চ্যানেল থেকে পোস্ট ফেচ করা শুরু
+    fetchChannelPosts();
 }
 
 function closeOCChannel() {
@@ -1859,6 +1870,48 @@ function closeOCChannel() {
 
     document.getElementById('ocSearchPanel')
         .classList.remove('open');
+}
+
+function fetchChannelPosts() {
+    fetch('/api/channel/posts')
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok && data.posts) {
+                renderChannelPosts(data.posts);
+            }
+        })
+        .catch(err => console.error("Error fetching channel posts:", err));
+}
+
+function renderChannelPosts(posts) {
+    const container = document.getElementById('channelPostsContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    posts.forEach(post => {
+        const bubble = document.createElement('div');
+        bubble.className = 'oc-post-bubble';
+
+        if (post.text) {
+            const textEl = document.createElement('div');
+            textEl.textContent = post.text;
+            bubble.appendChild(textEl);
+        }
+
+        if (post.media_type === 'photo') {
+            const img = document.createElement('img');
+            img.src = `/api/chat/media/${post.id}`; // অথবা চ্যানেল মিডিয়া ফেচ করার লিংক
+            bubble.appendChild(img);
+        } else if (post.media_type === 'video') {
+            const video = document.createElement('video');
+            video.src = `/api/chat/media/${post.id}`;
+            video.controls = true;
+            bubble.appendChild(video);
+        }
+
+        container.appendChild(bubble);
+    });
 }
 
 /* Three-dot menu */
