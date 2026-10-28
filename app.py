@@ -1422,3 +1422,64 @@ start_background_services()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "8080"))
     app.run(host="0.0.0.0", port=port, threaded=True, debug=False)
+# ============================================================
+# Telegram Channel Posts API (For OC Collection Universe)
+# ============================================================
+
+@app.route("/api/channel/posts", methods=["GET"])
+def get_channel_posts_api():
+    """
+    টেলিগ্রাম চ্যানেল থেকে লেটেস্ট পোস্ট বা ভিডিও ফেচ করার এন্ডপয়েন্ট।
+    এটি pyrogram_client ব্যবহার করে STORAGE_CHANNEL_ID থেকে মেসেজ রিড করে।
+    """
+    if pyrogram_client is None:
+        return jsonify({
+            "ok": False,
+            "error": "Pyrogram client is not running or channel sync is disabled."
+        }), 503
+
+    async def fetch_posts():
+        posts = []
+        try:
+            # চ্যানেল থেকে সর্বশেষ ৩০টি মেসেজ ফেচ করা হচ্ছে
+            async for message in pyrogram_client.get_chat_history(STORAGE_CHANNEL_ID, limit=30):
+                # চ্যাট ব্যাকআপ বা ব্যাকগ্রাউন্ড মিডিয়া ফিল্টার করার অপশন (প্রয়োজন অনুযায়ী রাখতে বা সরাতে পারেন)
+                if is_chat_backup_message(message):
+                    continue
+
+                media_info = None
+                media_type = "text"
+                
+                if message.photo:
+                    media_type = "photo"
+                elif message.video:
+                    media_type = "video"
+                elif message.animation:
+                    media_type = "animation"
+                elif message.document:
+                    mime = (getattr(message.document, "mime_type", None) or "").lower()
+                    if mime.startswith("image/"):
+                        media_type = "photo"
+                    elif mime.startswith("video/"):
+                        media_type = "video"
+                    else:
+                        media_type = "document"
+
+                # যদি মিডিয়া থাকে, তবে তার লোকাল পাথ বা টেলিগ্রাম ফাইল আইডি জেনারেট করা
+                posts.append({
+                    "id": message.id,
+                    "text": message.caption or message.text or "",
+                    "media_type": media_type,
+                    "date": message.date.isoformat() if message.date else "",
+                    "has_media": message_is_background_media(message)
+                })
+            return posts
+        except Exception as e:
+            print("Error fetching channel posts:", traceback.format_exc())
+            return []
+
+    try:
+        posts = run_async(fetch_posts(), timeout=30)
+        return jsonify({"ok": True, "posts": posts})
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
