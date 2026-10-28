@@ -40,10 +40,16 @@ API_ID = int(os.environ.get("API_ID", "33511945") or "33511945")
 API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700").strip()
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
 
-# আপনার টেলিগ্রাম চ্যানেল আইডি এখানে আপডেট করা হয়েছে (-1004322205565)
-STORAGE_CHANNEL_ID = int(
-    os.environ.get("STORAGE_CHANNEL_ID", "-1004322205565")
-)
+# টেলিগ্রাম চ্যানেল আইডি সঠিক ফরম্যাটে (যেমন: -1004322205565) সেট করা হলো যাতে ValueError না আসে
+_raw_channel_id = os.environ.get("STORAGE_CHANNEL_ID", "4322205565").strip()
+if not _raw_channel_id.startswith("-"):
+    if _raw_channel_id.startswith("100"):
+        STORAGE_CHANNEL_ID = int(f"-{_raw_channel_id}")
+    else:
+        STORAGE_CHANNEL_ID = int(f"-100{_raw_channel_id}")
+else:
+    STORAGE_CHANNEL_ID = int(_raw_channel_id)
+
 WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "my_secure_webhook_secret_123").strip()
 
 MAX_UPLOAD_MB = max(1, int(os.environ.get("MAX_UPLOAD_MB", "20")))
@@ -596,9 +602,6 @@ def get_user_profile_api():
 
 @app.route("/api/channel/posts", methods=["GET"])
 def get_channel_posts_api():
-    """
-    টেলিগ্রাম চ্যানেল থেকে রিয়েল-টাইমে পোস্ট বা ভিডিও ফেচ করার এন্ডপয়েন্ট।
-    """
     if pyrogram_client is None:
         return jsonify({
             "ok": False,
