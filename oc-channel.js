@@ -1,221 +1,249 @@
 
-/* =========================================
-   OC COLLECTION UNIVERSE CHANNEL MODULE
-   ========================================= */
+/* ==========================================
+   OC COLLECTION UNIVERSE
+   All channel interactions in this file
+   ========================================== */
 
 (function () {
     'use strict';
 
-    function getElement(id) {
+    function get(id) {
         return document.getElementById(id);
     }
 
-    /* =========================================
-       OPEN OC CHANNEL
-       ========================================= */
+    /* OPEN CHANNEL */
     window.openOCChannel = function () {
-        const channel = getElement('ocChannelWindow');
+        const channel = get('ocChannelWindow');
 
         if (!channel) {
             console.error(
-                'OC Channel window was not found in the HTML.'
+                'OC Collection Universe: channel HTML not found.'
             );
             return;
         }
 
-        const menu = getElement('ocMenuPopover');
-        const searchPanel = getElement('ocSearchPanel');
+        // Close other dashboard overlays.
+        const naughty = get('naughtyWindow');
+        const profileModal = get('profileModal');
 
-        if (menu) {
-            menu.classList.remove('open');
+        if (naughty) naughty.classList.remove('open');
+
+        if (profileModal) {
+            profileModal.style.display = 'none';
         }
 
-        if (searchPanel) {
-            searchPanel.classList.remove('open');
-        }
+        // Close menu and search before opening.
+        const menu = get('ocMenuPopover');
+        const search = get('ocSearchPanel');
+
+        if (menu) menu.classList.remove('open');
+        if (search) search.classList.remove('open');
 
         channel.classList.add('open');
         channel.setAttribute('aria-hidden', 'false');
 
         document.body.style.overflow = 'hidden';
 
-        const channelBody = channel.querySelector(
-            '.oc-channel-body'
-        );
+        const body = channel.querySelector('.oc-channel-body');
 
-        if (channelBody) {
+        if (body) {
             requestAnimationFrame(function () {
-                channelBody.scrollTop =
-                    channelBody.scrollHeight;
+                body.scrollTop = body.scrollHeight;
             });
         }
     };
 
-    /* =========================================
-       CLOSE OC CHANNEL / BACK BUTTON
-       ========================================= */
+    /* CLOSE CHANNEL / BACK BUTTON */
     window.closeOCChannel = function () {
-        const channel = getElement('ocChannelWindow');
+        const channel = get('ocChannelWindow');
 
-        if (!channel) {
-            return;
-        }
+        if (!channel) return;
 
         channel.classList.remove('open');
         channel.setAttribute('aria-hidden', 'true');
 
-        const menu = getElement('ocMenuPopover');
-        const searchPanel = getElement('ocSearchPanel');
-        const searchInput = getElement('ocSearchInput');
+        const menu = get('ocMenuPopover');
+        const search = get('ocSearchPanel');
+        const input = get('ocSearchInput');
 
-        if (menu) {
-            menu.classList.remove('open');
-        }
+        if (menu) menu.classList.remove('open');
+        if (search) search.classList.remove('open');
 
-        if (searchPanel) {
-            searchPanel.classList.remove('open');
-        }
-
-        if (searchInput) {
-            searchInput.value = '';
-            filterOCPosts('');
+        if (input) {
+            input.value = '';
+            filterPosts('');
         }
 
         document.body.style.overflow = '';
     };
 
-    /* =========================================
-       THREE-DOT MENU
-       ========================================= */
+    /* THREE-DOT MENU */
     window.toggleOCMenu = function () {
-        const menu = getElement('ocMenuPopover');
+        const menu = get('ocMenuPopover');
 
-        if (!menu) {
-            return;
+        if (!menu) return;
+
+        const opening = !menu.classList.contains('open');
+
+        menu.classList.toggle('open', opening);
+
+        if (opening) {
+            const search = get('ocSearchPanel');
+
+            if (search) search.classList.remove('open');
         }
-
-        menu.classList.toggle('open');
     };
 
-    /* =========================================
-       CHANNEL SEARCH PANEL
-       ========================================= */
+    /* OPEN / CLOSE SEARCH */
     window.toggleOCSearch = function () {
-        const panel = getElement('ocSearchPanel');
+        const panel = get('ocSearchPanel');
 
-        if (!panel) {
-            return;
+        if (!panel) return;
+
+        const opening = !panel.classList.contains('open');
+
+        panel.classList.toggle('open', opening);
+
+        const menu = get('ocMenuPopover');
+
+        if (opening && menu) {
+            menu.classList.remove('open');
         }
 
-        const willOpen = !panel.classList.contains('open');
+        const input = get('ocSearchInput');
 
-        panel.classList.toggle('open', willOpen);
+        if (!input) return;
 
-        const input = getElement('ocSearchInput');
-
-        if (!input) {
-            return;
-        }
-
-        if (willOpen) {
+        if (opening) {
             setTimeout(function () {
                 input.focus();
-            }, 0);
+            }, 50);
         } else {
             input.value = '';
-            filterOCPosts('');
+            filterPosts('');
         }
     };
 
-    /* =========================================
-       SEARCH CHANNEL POSTS
-       ========================================= */
-    function filterOCPosts(query) {
-        const container = getElement(
-            'channelPostsContainer'
-        );
+    /* SEARCH CHANNEL POSTS */
+    function filterPosts(query) {
+        const container = get('channelPostsContainer');
 
-        if (!container) {
-            return;
-        }
+        if (!container) return;
 
-        const searchText = String(query || '')
+        const term = String(query || '')
             .trim()
-            .toLowerCase();
+            .toLocaleLowerCase();
 
-        const posts = container.querySelectorAll(
-            '.oc-post-bubble'
-        );
+        container.querySelectorAll('.oc-post-bubble')
+            .forEach(function (post) {
+                const content = (
+                    post.textContent || ''
+                ).toLocaleLowerCase();
 
-        posts.forEach(function (post) {
-            const postText = (
-                post.textContent || ''
-            ).toLowerCase();
-
-            post.style.display =
-                !searchText || postText.includes(searchText)
-                    ? ''
-                    : 'none';
-        });
+                post.style.display =
+                    !term || content.includes(term)
+                        ? ''
+                        : 'none';
+            });
     }
 
-    const searchInput = getElement('ocSearchInput');
+    /* INITIALIZE CHANNEL EVENTS */
+    function initializeOCChannel() {
+        const input = get('ocSearchInput');
 
-    if (searchInput) {
-        searchInput.addEventListener('input', function () {
-            filterOCPosts(this.value);
-        });
-    }
+        if (input && input.dataset.ocInitialized !== 'true') {
+            input.dataset.ocInitialized = 'true';
 
-    /* =========================================
-       UNMUTE / MUTE CHANNEL MEDIA
-       ========================================= */
-    window.toggleOCMute = function (button) {
-        const channel = getElement('ocChannelWindow');
-
-        if (!channel || !button) {
-            return;
+            input.addEventListener('input', function () {
+                filterPosts(this.value);
+            });
         }
 
-        const media = channel.querySelectorAll(
-            'video, audio'
-        );
+        const channel = get('ocChannelWindow');
+
+        if (
+            channel &&
+            channel.dataset.ocInitialized !== 'true'
+        ) {
+            channel.dataset.ocInitialized = 'true';
+
+            // Close the menu when clicking outside it.
+            document.addEventListener('click', function (event) {
+                const menu = get('ocMenuPopover');
+                const menuButton = channel.querySelector('.oc-menu-btn');
+
+                if (
+                    menu &&
+                    menu.classList.contains('open') &&
+                    !menu.contains(event.target) &&
+                    !menuButton.contains(event.target)
+                ) {
+                    menu.classList.remove('open');
+                }
+            });
+
+            // Escape closes search, menu, or channel.
+            document.addEventListener('keydown', function (event) {
+                if (event.key !== 'Escape') return;
+
+                if (!channel.classList.contains('open')) return;
+
+                const search = get('ocSearchPanel');
+                const menu = get('ocMenuPopover');
+
+                if (search && search.classList.contains('open')) {
+                    window.toggleOCSearch();
+                } else if (menu && menu.classList.contains('open')) {
+                    menu.classList.remove('open');
+                } else {
+                    window.closeOCChannel();
+                }
+            });
+        }
+    }
+
+    /* MUTE / UNMUTE CHANNEL MEDIA */
+    window.toggleOCMute = function (button) {
+        const channel = get('ocChannelWindow');
+
+        if (!channel || !button) return;
+
+        const media = channel.querySelectorAll('video, audio');
 
         if (!media.length) {
+            button.textContent = 'No media available';
             return;
         }
 
-        // Initially the media is assumed to be muted.
-        const shouldUnmute =
-            button.dataset.muted !== 'false';
+        const currentlyMuted = button.dataset.muted !== 'false';
+        const shouldUnmute = currentlyMuted;
 
         media.forEach(function (item) {
             item.muted = !shouldUnmute;
 
-            if (
-                shouldUnmute &&
-                item.tagName === 'VIDEO'
-            ) {
-                const playResult = item.play();
+            if (shouldUnmute && item.tagName === 'VIDEO') {
+                const result = item.play();
 
-                if (
-                    playResult &&
-                    typeof playResult.catch === 'function'
-                ) {
-                    playResult.catch(function () {
+                if (result && typeof result.catch === 'function') {
+                    result.catch(function () {
                         // Playback may require another user action.
                     });
                 }
             }
         });
 
-        button.dataset.muted = shouldUnmute
-            ? 'false'
-            : 'true';
-
-        button.textContent = shouldUnmute
-            ? 'Mute'
-            : 'Unmute';
+        button.dataset.muted = shouldUnmute ? 'false' : 'true';
+        button.textContent = shouldUnmute ? 'Mute' : 'Unmute';
     };
+
+    // Initialize after the HTML is available.
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            initializeOCChannel
+        );
+    } else {
+        initializeOCChannel();
+    }
 
 })();
