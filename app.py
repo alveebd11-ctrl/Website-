@@ -1158,6 +1158,15 @@ def download_background_file_by_id(file_id, file_name_prefix):
         print("Background download error:", traceback.format_exc())
         return False, None
 
+# ============================================================
+# Added Route for oc-channel.js
+# ============================================================
+@app.route("/oc-channel.js", methods=["GET"])
+def oc_channel_script():
+    page_path = BASE_DIR / "oc-channel.js"
+    if page_path.is_file():
+        return send_file(page_path, mimetype="text/javascript")
+    return "oc-channel.js not found", 404
 
 # ============================================================
 # Pyrogram channel monitor & Bot Uploader
