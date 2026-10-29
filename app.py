@@ -36,8 +36,8 @@ except ImportError:
 BASE_DIR = Path(__file__).resolve().parent
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8613982412:AAGEdvZdzjK3Eli_vIYoEtXnsxZgwodqnVE").strip()
-API_ID = int(os.environ.get("API_ID", "33511945") or "33511945")
-API_HASH = os.environ.get("API_HASH", "d044392a17690c14ee5b4a23651a0700").strip()
+API_ID = int(os.environ.get("API_ID", "32875278") or "32875278")
+API_HASH = os.environ.get("API_HASH", "55d7b29aa48e8e160abe9e3cb91ba347").strip()
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
 
 # টেলিগ্রাম চ্যানেল আইডি সঠিক ফরম্যাটে (যেমন: -1004322205565) সেট করা হলো যাতে ValueError না আসে
