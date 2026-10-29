@@ -24,9 +24,12 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 try:
     from pyrogram import Client, filters
+    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 except ImportError:
     Client = None
     filters = None
+    InlineKeyboardMarkup = None
+    InlineKeyboardButton = None
 
 
 # ============================================================
@@ -46,13 +49,13 @@ if not _raw_channel_id.startswith("-"):
     if _raw_channel_id.startswith("100"):
         STORAGE_CHANNEL_ID = int(f"-{_raw_channel_id}")
     else:
-        STORAGE_CHANNEL_ID = int(f"-100{_raw_channel_id}")
+        STORAGE_CHANNEL_ID = int(f"-{_raw_channel_id}")
 else:
     STORAGE_CHANNEL_ID = int(_raw_channel_id)
 
 WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "my_secure_webhook_secret_123").strip()
 
-MAX_UPLOAD_MB = max(1, int(os.environ.get("MAX_UPLOAD_MB", "20")))
+MAX_UPLOAD_MB = max(1, int(os.environ.get("MAX_UPLOAD_MB", "50")))
 MAX_CHAT_TEXT_CHARS = 3000
 CHAT_HISTORY_LIMIT_DEFAULT = 100
 CHAT_BACKUP_MARKER = "[CHAT_BACKUP]"
@@ -83,6 +86,9 @@ pyrogram_thread = threading.Thread(
     name="pyrogram-background-loop",
     daemon=True,
 )
+
+# সাময়িকভাবে ইউজারের আপলোড করা ফাইল স্টোর করার মেমোরি
+pending_uploads = {}
 
 
 # ============================================================
@@ -1109,6 +1115,7 @@ def download_background_file_by_id(file_id, file_name_prefix):
         payload = response.json()
 
         if not response.ok or not payload.get("ok"):
+            print("Background getFile error:", payload)
             return False, None
 
         telegram_path = payload["result"]["file_path"]
@@ -1138,11 +1145,12 @@ def download_background_file_by_id(file_id, file_name_prefix):
         return True, unique_name
 
     except Exception:
+        print("Background download error:", traceback.format_exc())
         return False, None
 
 
 # ============================================================
-# Pyrogram channel monitor
+# Pyrogram channel monitor & Bot Uploader
 # ============================================================
 
 def _run_pyrogram_loop():
@@ -1231,22 +1239,28 @@ async def download_background_message(client, message, prefix="channel"):
 
 async def scan_storage_channel(client, limit=100):
     synced_count = 0
+
     async for message in client.get_chat_history(STORAGE_CHANNEL_ID, limit=limit):
         try:
             if await download_background_message(client, message, "channel"):
                 synced_count += 1
         except Exception:
-            pass
+            print("Channel scan item error:", traceback.format_exc())
+
     return synced_count
 
+
+pending_uploads = {}
 
 async def start_pyrogram_monitor():
     global pyrogram_client
 
     if Client is None or filters is None:
+        print("Pyrogram is not installed; background channel sync is disabled.")
         return False
 
     if not BOT_TOKEN or not API_ID or not API_HASH:
+        print("API_ID/API_HASH/BOT_TOKEN missing; Pyrogram background sync is disabled.")
         return False
 
     client = Client(
@@ -1264,23 +1278,118 @@ async def start_pyrogram_monitor():
                 return
             await download_background_message(_client, message, "channel")
         except Exception:
-            pass
+            print("Channel monitor error:", traceback.format_exc())
+
+    # --- নতুন বট আপলোড ফিচার (Admin-only) ---
+    @client.on_message(filters.command("start") & filters.private)
+    async def start_cmd(client, message):
+        if message.from_user.id != ADMIN_ID:
+            await message.reply("⛔ You are not authorized to use this bot.")
+            return
+        
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📤 Upload Media / Video", callback_data="start_upload")]
+        ])
+        await message.reply(
+            "👋 Welcome Admin!\n\nClick the button below to upload media to your storage channel and website.",
+            reply_markup=keyboard
+        )
+
+    @client.on_callback_query(filters.regex("start_upload"))
+    async def start_upload_callback(client, callback_query):
+        if callback_query.from_user.id != ADMIN_ID:
+            await callback_query.answer("Unauthorized!", show_alert=True)
+            return
+        
+        pending_uploads[ADMIN_ID] = {"waiting_for_media": True}
+        await callback_query.message.edit_text(
+            "📥 Please send the photo or video now that you want to upload."
+        )
+        await callback_query.answer()
+
+    @client.on_message(filters.private & (filters.photo | filters.video | filters.document))
+    async def handle_media_upload(client, message):
+        if message.from_user.id != ADMIN_ID:
+            return
+        
+        user_state = pending_uploads.get(ADMIN_ID, {})
+        if not user_state.get("waiting_for_media"):
+            return
+
+        pending_uploads[ADMIN_ID] = {
+            "waiting_for_media": False,
+            "message_to_forward": message
+        }
+
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("✅ Confirm & Upload (/uploadDone)", callback_data="confirm_upload")]
+        ])
+        await message.reply(
+            "👍 Media received! Click below or type /uploadDone to publish it to the channel and website.",
+            reply_markup=keyboard
+        )
+
+    @client.on_callback_query(filters.regex("confirm_upload"))
+    async def confirm_upload_callback(client, callback_query):
+        if callback_query.from_user.id != ADMIN_ID:
+            return
+        
+        state = pending_uploads.get(ADMIN_ID, {})
+        msg = state.get("message_to_forward")
+
+        if not msg:
+            await callback_query.answer("No media found to upload!", show_alert=True)
+            return
+
+        try:
+            await msg.copy(STORAGE_CHANNEL_ID)
+            pending_uploads.pop(ADMIN_ID, None)
+            
+            await callback_query.message.edit_text(
+                "🎉 Successfully published to the Telegram channel and synced with the website!"
+            )
+        except Exception as e:
+            await callback_query.message.edit_text(f"❌ Upload failed: {str(e)}")
+        
+        await callback_query.answer()
+
+    @client.on_message(filters.command("uploadDone") & filters.private)
+    async def upload_done_cmd(client, message):
+        if message.from_user.id != ADMIN_ID:
+            return
+        
+        state = pending_uploads.get(ADMIN_ID, {})
+        msg = state.get("message_to_forward")
+
+        if not msg:
+            await message.reply("⚠️ No pending media found. Please send media first by typing /start")
+            return
+
+        try:
+            await msg.copy(STORAGE_CHANNEL_ID)
+            pending_uploads.pop(ADMIN_ID, None)
+            await message.reply("🎉 Successfully published to the Telegram channel and website!")
+        except Exception as e:
+            await message.reply(f"❌ Upload failed: {str(e)}")
+    # ----------------------------------------
 
     try:
         await client.start()
         pyrogram_client = client
-        print("Pyrogram storage-channel monitor started.")
+        print("Pyrogram storage-channel monitor & bot uploader started.")
 
         async def initial_scan():
             try:
-                await scan_storage_channel(client, limit=100)
+                count = await scan_storage_channel(client, limit=100)
+                print(f"Initial background sync completed: {count} new files.")
             except Exception:
-                pass
+                print("Initial channel scan error:", traceback.format_exc())
 
         asyncio.create_task(initial_scan())
         return True
 
     except Exception:
+        print("Pyrogram startup error:", traceback.format_exc())
         pyrogram_client = None
         return False
 
@@ -1288,30 +1397,37 @@ async def start_pyrogram_monitor():
 def pyrogram_scan_channel_sync():
     if pyrogram_client is None:
         return 0
+
     try:
         return int(run_async(scan_storage_channel(pyrogram_client, limit=100), timeout=300))
     except Exception:
+        print("Pyrogram scan error:", traceback.format_exc())
         return 0
 
 
 # ============================================================
-# Telegram Webhook & Start
+# Start optional Pyrogram monitor
 # ============================================================
 
 def start_background_services():
     if Client is None or not BOT_TOKEN or not API_ID or not API_HASH:
+        print(
+            "Pyrogram monitor not started. Chat-to-Telegram storage uses the Bot API; "
+            "set API_ID and API_HASH only if background channel sync is needed."
+        )
         return
 
     if not pyrogram_thread.is_alive():
         pyrogram_thread.start()
 
     if not pyrogram_loop_ready.wait(timeout=5):
+        print("Pyrogram loop did not become ready.")
         return
 
     try:
         run_async(start_pyrogram_monitor(), timeout=45)
     except Exception:
-        pass
+        print("Could not start Pyrogram monitor:", traceback.format_exc())
 
 
 start_background_services()
