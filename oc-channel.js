@@ -1,6 +1,6 @@
 /* ==========================================
    OC COLLECTION UNIVERSE
-   Separate JavaScript Module - Premium Carousel with Telegram API
+   Separate JavaScript Module - Premium Carousel with Telegram API (Updated for Photo & Video)
    ========================================== */
 
 (function () {
@@ -11,7 +11,7 @@
     }
 
     /* CAROUSEL & POPUP STATE */
-    let videoCards = [];
+    let mediaCards = [];
     const containerId = 'channelPostsContainer';
     const paginationId = 'ocPagination';
     
@@ -20,13 +20,11 @@
         const channel = getElement('ocChannelWindow');
         if (!channel) return;
 
-        // Close other overlays
         const naughtyWindow = getElement('naughtyWindow');
         const profileModal = getElement('profileModal');
         if (naughtyWindow) naughtyWindow.classList.remove('open');
         if (profileModal) profileModal.style.display = 'none';
 
-        // Reset menu and search
         const menu = getElement('ocMenuPopover');
         const searchPanel = getElement('ocSearchPanel');
         const searchInput = getElement('ocSearchInput');
@@ -41,11 +39,8 @@
         channel.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
 
-        // Initialize carousel processing if not done
         initCarouselProcessing();
-        
-        // Fetch videos from Telegram Backend API
-        fetchTelegramVideos();
+        fetchTelegramMedia();
     };
 
     /* CLOSE CHANNEL */
@@ -65,11 +60,10 @@
             filterOCPosts('');
         }
 
-        closePopupPlayer(); // Close video if playing
+        closePopupPlayer();
         document.body.style.overflow = '';
     };
 
-    /* THREE-DOT MENU */
     window.toggleOCMenu = function () {
         const menu = getElement('ocMenuPopover');
         if (!menu) return;
@@ -79,7 +73,6 @@
         if (opening) getElement('ocSearchPanel')?.classList.remove('open');
     };
 
-    /* SEARCH PANEL */
     window.toggleOCSearch = function () {
         const searchPanel = getElement('ocSearchPanel');
         if (!searchPanel) return;
@@ -100,12 +93,10 @@
         }
     };
 
-    /* SEARCH POSTS (Using hidden metadata or dataset) */
     function filterOCPosts(query) {
         const searchText = String(query || '').trim().toLowerCase();
         
-        videoCards.forEach(card => {
-            // Check metadata stored in dataset during processing
+        mediaCards.forEach(card => {
             const metadata = (card.dataset.metadata || '').toLowerCase();
             card.style.display = !searchText || metadata.includes(searchText) ? '' : 'none';
         });
@@ -113,42 +104,49 @@
         setTimeout(updateActiveDot, 100);
     }
 
-    /* TELEGRAM VIDEO FETCHING LOGIC */
-    async function fetchTelegramVideos() {
+    /* TELEGRAM MEDIA FETCHING LOGIC (Photos & Videos) */
+    async function fetchTelegramMedia() {
         const container = getElement(containerId);
         if (!container) return;
 
-        // Prevent fetching again if videos are already loaded for this session
-        if (container.dataset.videosLoaded === 'true') return;
+        if (container.dataset.mediaLoaded === 'true') return;
 
         try {
-            // REPLACE THIS URL with your actual Python/Flask/FastAPI backend endpoint
             const response = await fetch('/api/get_videos'); 
             
-            if (!response.ok) {
-                throw new Error('API Response was not ok');
-            }
+            if (!response.ok) throw new Error('API Response was not ok');
 
             const data = await response.json();
 
-            if (data.status === 'success' && data.videos && data.videos.length > 0) {
-                data.videos.forEach(videoUrl => {
-                    const videoElement = document.createElement('video');
-                    videoElement.src = videoUrl;
-                    videoElement.controls = true; 
+            if (data.status === 'success' && data.posts && data.posts.length > 0) {
+                // Reverse the posts so the newest comes first (or change backend order)
+                const posts = data.posts.reverse();
+                
+                posts.forEach(post => {
+                    if (!post.media_url) return;
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'temp-media-wrapper';
+                    wrapper.dataset.type = post.media_type;
+                    wrapper.dataset.text = post.text || '';
+
+                    if (post.media_type === 'photo') {
+                        const img = document.createElement('img');
+                        img.src = post.media_url;
+                        wrapper.appendChild(img);
+                    } else if (post.media_type === 'video' || post.media_type === 'animation') {
+                        const vid = document.createElement('video');
+                        vid.src = post.media_url;
+                        wrapper.appendChild(vid);
+                    }
                     
-                    // Appending this will trigger the MutationObserver
-                    // which automatically converts it into a premium carousel card
-                    container.appendChild(videoElement);
+                    container.appendChild(wrapper);
                 });
                 
-                // Mark as loaded so it doesn't fetch repeatedly
-                container.dataset.videosLoaded = 'true';
-            } else {
-                console.log("No videos found in the Telegram channel.");
+                container.dataset.mediaLoaded = 'true';
             }
         } catch (error) {
-            console.error("Error fetching videos from backend API:", error);
+            console.error("Error fetching media from backend:", error);
         }
     }
 
@@ -160,15 +158,15 @@
         if (!postsContainer || isCarouselObserved) return;
 
         const observer = new MutationObserver((mutations) => {
-            let hasNewVideo = false;
+            let hasNewMedia = false;
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(node => {
                     if (node.nodeType === 1) {
-                        if (processPostElement(node)) hasNewVideo = true;
+                        if (processPostElement(node)) hasNewMedia = true;
                     }
                 });
             });
-            if (hasNewVideo) updatePagination();
+            if (hasNewMedia) updatePagination();
         });
 
         observer.observe(postsContainer, { childList: true, subtree: true });
@@ -186,31 +184,42 @@
     function processPostElement(element) {
         if (element.classList && element.classList.contains('oc-video-card')) return false;
 
+        const img = element.querySelector('img') || (element.tagName === 'IMG' ? element : null);
         const video = element.querySelector('video') || (element.tagName === 'VIDEO' ? element : null);
         const postsContainer = getElement(containerId);
 
-        if (video) {
+        if (img || video) {
             const card = document.createElement('div');
             card.className = 'oc-video-card';
             
-            // Extract text content for search metadata before wiping it
-            const originalText = element.textContent || '';
-            card.dataset.metadata = originalText; 
+            card.dataset.metadata = element.dataset.text || element.textContent || ''; 
 
-            const clonedVideo = document.createElement('video');
-            clonedVideo.src = video.src || video.querySelector('source')?.src;
-            clonedVideo.muted = true;
-            clonedVideo.loop = true;
-            clonedVideo.playsInline = true;
-            clonedVideo.preload = "metadata";
+            if (video) {
+                const clonedVideo = document.createElement('video');
+                clonedVideo.src = video.src || video.querySelector('source')?.src;
+                clonedVideo.muted = true;
+                clonedVideo.loop = true;
+                clonedVideo.playsInline = true;
+                clonedVideo.preload = "metadata";
 
-            const playIcon = document.createElement('div');
-            playIcon.className = 'oc-play-icon';
-            playIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+                const playIcon = document.createElement('div');
+                playIcon.className = 'oc-play-icon';
+                playIcon.innerHTML = `<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
 
-            card.appendChild(clonedVideo);
-            card.appendChild(playIcon);
-            card.addEventListener('click', () => openPopupPlayer(clonedVideo.src));
+                card.appendChild(clonedVideo);
+                card.appendChild(playIcon);
+                card.addEventListener('click', () => openPopupPlayer(clonedVideo.src, 'video'));
+            } else if (img) {
+                const clonedImg = document.createElement('img');
+                clonedImg.src = img.src;
+                clonedImg.style.width = '100%';
+                clonedImg.style.height = '100%';
+                clonedImg.style.objectFit = 'cover';
+                clonedImg.style.pointerEvents = 'none';
+
+                card.appendChild(clonedImg);
+                card.addEventListener('click', () => openPopupPlayer(clonedImg.src, 'photo'));
+            }
 
             if (element.parentNode === postsContainer) {
                 postsContainer.replaceChild(card, element);
@@ -219,10 +228,9 @@
                 if (element.parentNode) element.parentNode.remove();
             }
 
-            videoCards.push(card);
+            mediaCards.push(card);
             return true;
         } else {
-            // Hide non-video elements to keep carousel clean
             element.style.display = 'none';
             return false;
         }
@@ -235,8 +243,7 @@
         if (!paginationContainer || !postsContainer) return;
         
         paginationContainer.innerHTML = '';
-        // Only get visible cards (in case search is active)
-        const visibleCards = videoCards.filter(c => c.style.display !== 'none');
+        const visibleCards = mediaCards.filter(c => c.style.display !== 'none');
 
         visibleCards.forEach((card, index) => {
             const dot = document.createElement('div');
@@ -254,7 +261,7 @@
         const paginationContainer = getElement(paginationId);
         if (!postsContainer || !paginationContainer) return;
 
-        const visibleCards = videoCards.filter(c => c.style.display !== 'none');
+        const visibleCards = mediaCards.filter(c => c.style.display !== 'none');
         if (visibleCards.length === 0) return;
 
         const scrollLeft = postsContainer.scrollLeft;
@@ -273,28 +280,49 @@
         });
     }
 
-    /* POPUP PLAYER */
-    function openPopupPlayer(videoSrc) {
+    /* POPUP PLAYER (Handles both Photo & Video) */
+    function openPopupPlayer(src, type) {
         const popup = getElement('ocVideoPopup');
-        const popupVideo = getElement('ocPopupVideoPlayer');
-        if (!popup || !popupVideo) return;
+        const wrapper = popup.querySelector('.oc-popup-video-wrapper');
+        if (!popup || !wrapper) return;
         
-        popupVideo.src = videoSrc;
-        popup.classList.add('open');
-        
-        const playPromise = popupVideo.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(() => console.log("Auto-play prevented"));
+        wrapper.innerHTML = ''; // Clear previous media
+
+        if (type === 'video') {
+            const vid = document.createElement('video');
+            vid.src = src;
+            vid.controls = true;
+            vid.playsInline = true;
+            vid.id = 'ocPopupVideoPlayer';
+            wrapper.appendChild(vid);
+            
+            const playPromise = vid.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => console.log("Auto-play prevented"));
+            }
+        } else if (type === 'photo') {
+            const img = document.createElement('img');
+            img.src = src;
+            img.style.width = '100%';
+            img.style.maxHeight = '100vh';
+            img.style.objectFit = 'contain';
+            wrapper.appendChild(img);
         }
+
+        popup.classList.add('open');
     }
 
     function closePopupPlayer() {
         const popup = getElement('ocVideoPopup');
-        const popupVideo = getElement('ocPopupVideoPlayer');
-        if (!popup || !popupVideo) return;
+        const wrapper = popup?.querySelector('.oc-popup-video-wrapper');
+        if (!popup || !wrapper) return;
         
-        popupVideo.pause();
-        popupVideo.src = '';
+        const vid = wrapper.querySelector('video');
+        if (vid) {
+            vid.pause();
+            vid.src = '';
+        }
+        wrapper.innerHTML = '';
         popup.classList.remove('open');
     }
 
@@ -313,7 +341,6 @@
         if (!channel || channel.dataset.ocEventsInitialized === 'true') return;
         channel.dataset.ocEventsInitialized = 'true';
 
-        // Outside click for menu
         document.addEventListener('click', function (event) {
             const menu = getElement('ocMenuPopover');
             const menuButton = channel.querySelector('.oc-header-action-btn[aria-label="Menu"]');
@@ -323,7 +350,6 @@
             }
         });
 
-        // Global Escape key
         document.addEventListener('keydown', function (event) {
             if (event.key !== 'Escape') return;
             
@@ -346,7 +372,6 @@
             }
         });
 
-        // Popup close button & backdrop
         const popupCloseBtn = getElement('ocPopupCloseBtn');
         if (popupCloseBtn) popupCloseBtn.addEventListener('click', closePopupPlayer);
         
