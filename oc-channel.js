@@ -1,14 +1,13 @@
 /* ========================================
    OC COLLECTION UNIVERSE - CHANNEL MODULE
    File: oc-channel.js
-   Winter Smooth Open Version
    ======================================== */
 
 /**
  * Winter Snow Effect তৈরি
  */
-function createWinterSnow() {
-    // আগে থেকে থাকা স্নো সরিয়ে ফেলা
+function createWinterSnow(popup) {
+    // পুরনো স্নো সরিয়ে ফেলা
     const oldSnow = document.getElementById('oc-winter-snow');
     if (oldSnow) oldSnow.remove();
 
@@ -22,8 +21,8 @@ function createWinterSnow() {
         overflow: hidden;
     `;
 
-    // ৩৫টা স্নোফ্লেক
-    for (let i = 0; i < 35; i++) {
+    // ৩০টা স্নোফ্লেক
+    for (let i = 0; i < 30; i++) {
         const flake = document.createElement('div');
         const size = Math.random() * 5 + 3;
         const left = Math.random() * 100;
@@ -36,16 +35,16 @@ function createWinterSnow() {
             left: ${left}%;
             width: ${size}px;
             height: ${size}px;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.9);
             border-radius: 50%;
-            box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
             animation: ocSnowFall ${duration}s linear ${delay}s infinite;
-            opacity: ${Math.random() * 0.6 + 0.4};
+            opacity: ${Math.random() * 0.7 + 0.3};
         `;
         snowContainer.appendChild(flake);
     }
 
-    // অ্যানিমেশন কীফ্রেম একবারই যোগ করা
+    // Animation CSS একবারই যোগ করা
     if (!document.getElementById('oc-winter-style')) {
         const style = document.createElement('style');
         style.id = 'oc-winter-style';
@@ -53,69 +52,66 @@ function createWinterSnow() {
             @keyframes ocSnowFall {
                 0% {
                     transform: translateY(0) translateX(0) rotate(0deg);
-                    opacity: 0.8;
+                    opacity: 0.9;
                 }
                 100% {
-                    transform: translateY(110vh) translateX(30px) rotate(360deg);
-                    opacity: 0.2;
+                    transform: translateY(110vh) translateX(40px) rotate(360deg);
+                    opacity: 0.15;
                 }
             }
 
             @keyframes ocWinterOpen {
                 0% {
                     opacity: 0;
-                    transform: scale(0.92) translateY(40px);
-                    filter: blur(8px) brightness(1.1);
-                }
-                60% {
-                    opacity: 1;
-                    transform: scale(1.02) translateY(-8px);
-                    filter: blur(0) brightness(1.05);
+                    transform: scale(0.94) translateY(30px);
+                    filter: blur(6px);
                 }
                 100% {
                     opacity: 1;
                     transform: scale(1) translateY(0);
-                    filter: blur(0) brightness(1);
+                    filter: blur(0);
                 }
             }
 
             .oc-channel-window.winter-open {
-                animation: ocWinterOpen 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+                animation: ocWinterOpen 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
             }
         `;
         document.head.appendChild(style);
     }
 
-    return snowContainer;
+    popup.appendChild(snowContainer);
 }
 
 /**
- * OC Channel Window খোলা (Winter Smooth)
+ * OC Channel Window খোলা
  */
 function openOCChannel() {
     const popup = document.getElementById('ocChannelWindow');
-    if (!popup) return;
+    if (!popup) {
+        console.error('ocChannelWindow element not found');
+        return;
+    }
 
-    // Menu এবং Search বন্ধ
+    // Menu ও Search বন্ধ রাখা
     const menu = document.getElementById('ocMenuPopover');
     const search = document.getElementById('ocSearchPanel');
     if (menu) menu.classList.remove('open');
     if (search) search.classList.remove('open');
 
     // Winter Snow যোগ করা
-    const snow = createWinterSnow();
-    popup.appendChild(snow);
+    createWinterSnow(popup);
 
-    // Smooth Winter Open
+    // Window Open + Animation
     popup.classList.add('open', 'winter-open');
     popup.setAttribute('aria-hidden', 'false');
 
-    // অ্যানিমেশন শেষ হলে ক্লাস পরিষ্কার
+    // Animation শেষ হলে ক্লাস পরিষ্কার
     setTimeout(() => {
         popup.classList.remove('winter-open');
-    }, 800);
+    }, 700);
 
-    // পোস্ট ফেচ ব্যাকগ্রাউন্ডে (UI ব্লক করবে না)
+    // পোস্ট ফেচ (নন-ব্লকিং)
     fetchChannelPosts();
 }
 
@@ -126,7 +122,7 @@ function closeOCChannel() {
     const popup = document.getElementById('ocChannelWindow');
     if (!popup) return;
 
-    // স্নো সরিয়ে ফেলা
+    // Snow সরিয়ে ফেলা
     const snow = document.getElementById('oc-winter-snow');
     if (snow) snow.remove();
 
@@ -140,13 +136,13 @@ function closeOCChannel() {
 }
 
 /**
- * সার্ভার থেকে চ্যানেল পোস্ট ফেচ (নন-ব্লকিং)
+ * চ্যানেল পোস্ট ফেচ
  */
 function fetchChannelPosts() {
     fetch('/api/channel/posts')
         .then(res => res.json())
         .then(data => {
-            if (data.ok && Array.isArray(data.posts)) {
+            if (data && data.ok && Array.isArray(data.posts)) {
                 renderChannelPosts(data.posts);
             }
         })
@@ -236,3 +232,6 @@ document.addEventListener('keydown', function (event) {
         closeOCChannel();
     }
 });
+
+// কনসোলে কনফার্মেশন
+console.log('OC Channel Module (oc-channel.js) loaded successfully');
