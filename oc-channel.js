@@ -1,13 +1,14 @@
 /* ========================================
    OC COLLECTION UNIVERSE - CHANNEL MODULE
    File: oc-channel.js
+   Version: Final Working
    ======================================== */
 
 /**
  * Winter Snow Effect তৈরি
  */
 function createWinterSnow(popup) {
-    // পুরনো স্নো সরিয়ে ফেলা
+    // পুরনো স্নো থাকলে সরিয়ে ফেলা
     const oldSnow = document.getElementById('oc-winter-snow');
     if (oldSnow) oldSnow.remove();
 
@@ -21,8 +22,8 @@ function createWinterSnow(popup) {
         overflow: hidden;
     `;
 
-    // ৩০টা স্নোফ্লেক
-    for (let i = 0; i < 30; i++) {
+    // ২৮টা স্নোফ্লেক
+    for (let i = 0; i < 28; i++) {
         const flake = document.createElement('div');
         const size = Math.random() * 5 + 3;
         const left = Math.random() * 100;
@@ -88,18 +89,20 @@ function createWinterSnow(popup) {
  */
 function openOCChannel() {
     const popup = document.getElementById('ocChannelWindow');
+    
     if (!popup) {
         console.error('ocChannelWindow element not found');
         return;
     }
 
-    // Menu ও Search বন্ধ রাখা
+    // Menu এবং Search বন্ধ রাখা
     const menu = document.getElementById('ocMenuPopover');
     const search = document.getElementById('ocSearchPanel');
+    
     if (menu) menu.classList.remove('open');
     if (search) search.classList.remove('open');
 
-    // Winter Snow যোগ করা
+    // Winter Snow Effect যোগ করা
     createWinterSnow(popup);
 
     // Window Open + Animation
@@ -131,6 +134,7 @@ function closeOCChannel() {
 
     const menu = document.getElementById('ocMenuPopover');
     const search = document.getElementById('ocSearchPanel');
+    
     if (menu) menu.classList.remove('open');
     if (search) search.classList.remove('open');
 }
@@ -164,12 +168,14 @@ function renderChannelPosts(posts) {
         const bubble = document.createElement('div');
         bubble.className = 'oc-post-bubble';
 
+        // টেক্সট
         if (post.text) {
             const textEl = document.createElement('div');
             textEl.textContent = post.text;
             bubble.appendChild(textEl);
         }
 
+        // মিডিয়া
         if (post.media_type === 'photo') {
             const img = document.createElement('img');
             img.src = `/api/chat/media/${post.id}`;
@@ -194,6 +200,7 @@ function renderChannelPosts(posts) {
 function toggleOCMenu() {
     const menu = document.getElementById('ocMenuPopover');
     const search = document.getElementById('ocSearchPanel');
+    
     if (!menu) return;
 
     if (search) search.classList.remove('open');
@@ -206,6 +213,7 @@ function toggleOCMenu() {
 function toggleOCSearch() {
     const panel = document.getElementById('ocSearchPanel');
     const menu = document.getElementById('ocMenuPopover');
+    
     if (!panel) return;
 
     if (menu) menu.classList.remove('open');
@@ -222,16 +230,17 @@ function toggleOCSearch() {
  */
 function toggleOCMute(button) {
     if (!button) return;
+    
     const isUnmute = button.textContent.trim() === 'Unmute';
     button.textContent = isUnmute ? 'Mute' : 'Unmute';
 }
 
-/* Escape দিয়ে বন্ধ */
+/* Escape কী দিয়ে বন্ধ */
 document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
         closeOCChannel();
     }
 });
 
-// কনসোলে কনফার্মেশন
-console.log('OC Channel Module (oc-channel.js) loaded successfully');
+// কনসোলে সফল মেসেজ
+console.log('%c✅ OC Channel Module (oc-channel.js) Loaded Successfully', 'background: #4CAF50; color: white; padding: 6px 12px; border-radius: 4px; font-weight: bold;');
