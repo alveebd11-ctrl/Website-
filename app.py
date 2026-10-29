@@ -621,8 +621,11 @@ def get_channel_posts_api():
         posts = []
         video_urls = []
         try:
+            # সঠিক চ্যানেলের সাথে সংযোগ ও পিয়ার ক্যাশ ঠিক রাখতে
+            target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
+            
             # সর্বশেষ ৫০টি মেসেজ চেক করবে
-            async for message in pyrogram_client.get_chat_history(STORAGE_CHANNEL_ID, limit=50):
+            async for message in pyrogram_client.get_chat_history(target_chat.id, limit=50):
                 if is_chat_backup_message(message):
                     continue
 
@@ -660,7 +663,6 @@ def get_channel_posts_api():
 
     try:
         posts, video_urls = run_async(fetch_posts(), timeout=30)
-        # JavaScript API এর জন্য success এবং videos ফিল্ড অ্যাড করা হলো
         return jsonify({"ok": True, "status": "success", "posts": posts, "videos": video_urls})
     except Exception as exc:
         return jsonify({"ok": False, "status": "error", "error": str(exc)}), 500
@@ -673,7 +675,8 @@ def get_channel_media(message_id):
 
     async def fetch_media():
         try:
-            message = await pyrogram_client.get_messages(STORAGE_CHANNEL_ID, message_id)
+            target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
+            message = await pyrogram_client.get_messages(target_chat.id, message_id)
             if not message:
                 return None, None, "Message not found"
             
@@ -1257,16 +1260,21 @@ async def download_background_message(client, message, prefix="channel"):
 
 
 async def scan_storage_channel(client, limit=100):
-    synced_count = 0
+    try:
+        target_chat = await client.get_chat(STORAGE_CHANNEL_ID)
+        synced_count = 0
 
-    async for message in client.get_chat_history(STORAGE_CHANNEL_ID, limit=limit):
-        try:
-            if await download_background_message(client, message, "channel"):
-                synced_count += 1
-        except Exception:
-            print("Channel scan item error:", traceback.format_exc())
+        async for message in client.get_chat_history(target_chat.id, limit=limit):
+            try:
+                if await download_background_message(client, message, "channel"):
+                    synced_count += 1
+            except Exception:
+                print("Channel scan item error:", traceback.format_exc())
 
-    return synced_count
+        return synced_count
+    except Exception as e:
+        print(f"Scan storage channel error: {e}")
+        return 0
 
 
 async def start_pyrogram_monitor():
@@ -1285,7 +1293,6 @@ async def start_pyrogram_monitor():
         api_id=API_ID,
         api_hash=API_HASH,
         bot_token=BOT_TOKEN,
-        # in_memory=True,  <-- এই লাইনটি মুছে ফেলা হয়েছে যাতে সেশন পারমানেন্টলি সেভ হয়।
     )
 
     @client.on_message(filters.chat(STORAGE_CHANNEL_ID))
@@ -1318,7 +1325,6 @@ async def start_pyrogram_monitor():
             await callback_query.answer("Unauthorized!", show_alert=True)
             return
         
-        # পূর্বের কোনো আপলোড স্টেট থাকলে ক্লিয়ার করে নতুন করে শুরু করা
         pending_uploads[ADMIN_ID] = {"waiting_for_media": True, "media_group": []}
         
         await callback_query.message.edit_text(
@@ -1336,20 +1342,15 @@ async def start_pyrogram_monitor():
         if not user_state.get("waiting_for_media"):
             return
 
-        # যদি অ্যালবামের অংশ হয়, তাহলে media_group_id ব্যবহার করে সব মেসেজ লিস্টে রাখব
         if message.media_group_id:
             if "media_group" not in user_state:
                 user_state["media_group"] = []
             
-            # মেসেজটি গ্রুপে যোগ করা হচ্ছে
             user_state["media_group"].append(message)
             pending_uploads[ADMIN_ID] = user_state
             
-            # অ্যালবামের অন্যান্য মেসেজ রিসিভ করার জন্য একটু অপেক্ষা করা যেতে পারে (ঐচ্ছিক)
-            # এখানে আমরা প্রতিটি মেসেজ রিসিভ হওয়ার পর কনফার্মেশন বাটনের আপডেট দিব
             text = f"👍 Grouped media received ({len(user_state['media_group'])} items). Send more or click confirm."
         else:
-            # সিঙ্গল মেসেজ হলে সরাসরি লিস্টে রাখা
             user_state["media_group"] = [message]
             pending_uploads[ADMIN_ID] = user_state
             text = "👍 Media received! Send more files or click below to publish."
@@ -1358,7 +1359,6 @@ async def start_pyrogram_monitor():
             [InlineKeyboardButton("✅ Confirm & Upload", callback_data="confirm_upload")]
         ])
         
-        # ইউজারকে জানানো হচ্ছে যে ফাইল পাওয়া গেছে
         await message.reply(text, reply_markup=keyboard)
 
     @client.on_callback_query(filters.regex("confirm_upload"))
@@ -1376,7 +1376,7 @@ async def start_pyrogram_monitor():
         await callback_query.message.edit_text("⏳ Uploading to channel... Please wait.")
 
         try:
-            # যদি একাধিক মিডিয়া থাকে তবে MediaGroup হিসেবে পাঠাবো, যাতে তারা একসাথে পাশাপাশি থাকে
+            target_chat = await client.get_chat(STORAGE_CHANNEL_ID)
             if len(media_list) > 1:
                 media_group = []
                 for msg in media_list:
@@ -1384,17 +1384,12 @@ async def start_pyrogram_monitor():
                         media_group.append(InputMediaPhoto(msg.photo.file_id, caption=msg.caption))
                     elif msg.video:
                         media_group.append(InputMediaVideo(msg.video.file_id, caption=msg.caption))
-                    elif msg.document:
-                        # ডকুমেন্ট হ্যান্ডলিং (প্রয়োজন হলে)
-                        pass
                 
                 if media_group:
-                    await client.send_media_group(chat_id=STORAGE_CHANNEL_ID, media=media_group)
+                    await client.send_media_group(chat_id=target_chat.id, media=media_group)
             else:
-                # সিঙ্গল মিডিয়া হলে সরাসরি ফরোয়ার্ড/কপি
-                await media_list[0].copy(STORAGE_CHANNEL_ID)
+                await media_list[0].copy(target_chat.id)
 
-            # আপলোড সম্পন্ন হলে মেমোরি থেকে ক্লিয়ার করা
             pending_uploads.pop(ADMIN_ID, None)
             
             await callback_query.message.edit_text(
@@ -1418,6 +1413,7 @@ async def start_pyrogram_monitor():
             return
 
         try:
+            target_chat = await client.get_chat(STORAGE_CHANNEL_ID)
             if len(media_list) > 1:
                 media_group = []
                 for msg in media_list:
@@ -1427,20 +1423,26 @@ async def start_pyrogram_monitor():
                         media_group.append(InputMediaVideo(msg.video.file_id, caption=msg.caption))
                 
                 if media_group:
-                    await client.send_media_group(chat_id=STORAGE_CHANNEL_ID, media=media_group)
+                    await client.send_media_group(chat_id=target_chat.id, media=media_group)
             else:
-                await media_list[0].copy(STORAGE_CHANNEL_ID)
+                await media_list[0].copy(target_chat.id)
 
             pending_uploads.pop(ADMIN_ID, None)
             await message.reply(f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and website!")
         except Exception as e:
             await message.reply(f"❌ Upload failed: {str(e)}")
-    # ----------------------------------------
 
     try:
         await client.start()
         pyrogram_client = client
         print("Pyrogram storage-channel monitor & bot uploader started.")
+
+        # চ্যানেল পিয়ার ক্যাশ করার জন্য গেট চ্যাট কল করা হলো
+        try:
+            await client.get_chat(STORAGE_CHANNEL_ID)
+            print("Storage channel resolved and cached successfully.")
+        except Exception as ce:
+            print(f"Warning: Could not pre-resolve channel peer: {ce}")
 
         async def initial_scan():
             try:
