@@ -24,12 +24,14 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 try:
     from pyrogram import Client, filters
-    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo
 except ImportError:
     Client = None
     filters = None
     InlineKeyboardMarkup = None
     InlineKeyboardButton = None
+    InputMediaPhoto = None
+    InputMediaVideo = None
 
 
 # ============================================================
@@ -87,7 +89,7 @@ pyrogram_thread = threading.Thread(
     daemon=True,
 )
 
-# সাময়িকভাবে ইউজারের আপলোড করা ফাইল স্টোর করার মেমোরি
+# সাময়িকভাবে ইউজারের আপলোড করা ফাইল (ফটো এবং ভিডিও) স্টোর করার মেমোরি
 pending_uploads = {}
 
 
@@ -607,17 +609,20 @@ def get_user_profile_api():
 # ============================================================
 
 @app.route("/api/channel/posts", methods=["GET"])
+@app.route("/api/get_videos", methods=["GET"]) # oc-channel.js এর জন্য এন্ডপয়েন্ট
 def get_channel_posts_api():
     if pyrogram_client is None:
         return jsonify({
-            "ok": False,
+            "status": "error",
             "error": "Pyrogram client is not running or channel sync is disabled."
         }), 503
 
     async def fetch_posts():
         posts = []
+        video_urls = []
         try:
-            async for message in pyrogram_client.get_chat_history(STORAGE_CHANNEL_ID, limit=30):
+            # সর্বশেষ ৫০টি মেসেজ চেক করবে
+            async for message in pyrogram_client.get_chat_history(STORAGE_CHANNEL_ID, limit=50):
                 if is_chat_backup_message(message):
                     continue
 
@@ -626,14 +631,17 @@ def get_channel_posts_api():
                     media_type = "photo"
                 elif message.video:
                     media_type = "video"
+                    video_urls.append(f"/api/channel/media/{message.id}")
                 elif message.animation:
                     media_type = "animation"
+                    video_urls.append(f"/api/channel/media/{message.id}")
                 elif message.document:
                     mime = (getattr(message.document, "mime_type", None) or "").lower()
                     if mime.startswith("image/"):
                         media_type = "photo"
                     elif mime.startswith("video/"):
                         media_type = "video"
+                        video_urls.append(f"/api/channel/media/{message.id}")
                     else:
                         media_type = "document"
 
@@ -641,19 +649,21 @@ def get_channel_posts_api():
                     "id": message.id,
                     "text": message.caption or message.text or "",
                     "media_type": media_type,
+                    "media_url": f"/api/channel/media/{message.id}" if media_type in ["photo", "video", "animation"] else None,
                     "date": message.date.isoformat() if message.date else "",
                     "has_media": message_is_background_media(message)
                 })
-            return posts
+            return posts, video_urls
         except Exception:
             print("Error fetching channel posts:", traceback.format_exc())
-            return []
+            return [], []
 
     try:
-        posts = run_async(fetch_posts(), timeout=30)
-        return jsonify({"ok": True, "posts": posts})
+        posts, video_urls = run_async(fetch_posts(), timeout=30)
+        # JavaScript API এর জন্য success এবং videos ফিল্ড অ্যাড করা হলো
+        return jsonify({"ok": True, "status": "success", "posts": posts, "videos": video_urls})
     except Exception as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 500
+        return jsonify({"ok": False, "status": "error", "error": str(exc)}), 500
 
 
 @app.route("/api/channel/media/<int:message_id>", methods=["GET"])
@@ -1250,8 +1260,6 @@ async def scan_storage_channel(client, limit=100):
     return synced_count
 
 
-pending_uploads = {}
-
 async def start_pyrogram_monitor():
     global pyrogram_client
 
@@ -1280,7 +1288,7 @@ async def start_pyrogram_monitor():
         except Exception:
             print("Channel monitor error:", traceback.format_exc())
 
-    # --- নতুন বট আপলোড ফিচার (Admin-only) ---
+    # --- নতুন বট আপলোড ফিচার (ফটো এবং ভিডিও একসাথে, Admin-only) ---
     @client.on_message(filters.command("start") & filters.private)
     async def start_cmd(client, message):
         if message.from_user.id != ADMIN_ID:
@@ -1288,10 +1296,10 @@ async def start_pyrogram_monitor():
             return
         
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📤 Upload Media / Video", callback_data="start_upload")]
+            [InlineKeyboardButton("📤 Upload Media (Photo/Video)", callback_data="start_upload")]
         ])
         await message.reply(
-            "👋 Welcome Admin!\n\nClick the button below to upload media to your storage channel and website.",
+            "👋 Welcome Admin!\n\nClick the button below to upload media. You can send a photo, a video, or multiple media files grouped together to upload them to your storage channel and website.",
             reply_markup=keyboard
         )
 
@@ -1301,9 +1309,12 @@ async def start_pyrogram_monitor():
             await callback_query.answer("Unauthorized!", show_alert=True)
             return
         
-        pending_uploads[ADMIN_ID] = {"waiting_for_media": True}
+        # পূর্বের কোনো আপলোড স্টেট থাকলে ক্লিয়ার করে নতুন করে শুরু করা
+        pending_uploads[ADMIN_ID] = {"waiting_for_media": True, "media_group": []}
+        
         await callback_query.message.edit_text(
-            "📥 Please send the photo or video now that you want to upload."
+            "📥 Please send the photo(s) and/or video(s) now.\n\n"
+            "You can send a single file or an album (multiple files at once)."
         )
         await callback_query.answer()
 
@@ -1316,18 +1327,30 @@ async def start_pyrogram_monitor():
         if not user_state.get("waiting_for_media"):
             return
 
-        pending_uploads[ADMIN_ID] = {
-            "waiting_for_media": False,
-            "message_to_forward": message
-        }
+        # যদি অ্যালবামের অংশ হয়, তাহলে media_group_id ব্যবহার করে সব মেসেজ লিস্টে রাখব
+        if message.media_group_id:
+            if "media_group" not in user_state:
+                user_state["media_group"] = []
+            
+            # মেসেজটি গ্রুপে যোগ করা হচ্ছে
+            user_state["media_group"].append(message)
+            pending_uploads[ADMIN_ID] = user_state
+            
+            # অ্যালবামের অন্যান্য মেসেজ রিসিভ করার জন্য একটু অপেক্ষা করা যেতে পারে (ঐচ্ছিক)
+            # এখানে আমরা প্রতিটি মেসেজ রিসিভ হওয়ার পর কনফার্মেশন বাটনের আপডেট দিব
+            text = f"👍 Grouped media received ({len(user_state['media_group'])} items). Send more or click confirm."
+        else:
+            # সিঙ্গল মেসেজ হলে সরাসরি লিস্টে রাখা
+            user_state["media_group"] = [message]
+            pending_uploads[ADMIN_ID] = user_state
+            text = "👍 Media received! Send more files or click below to publish."
 
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("✅ Confirm & Upload (/uploadDone)", callback_data="confirm_upload")]
+            [InlineKeyboardButton("✅ Confirm & Upload", callback_data="confirm_upload")]
         ])
-        await message.reply(
-            "👍 Media received! Click below or type /uploadDone to publish it to the channel and website.",
-            reply_markup=keyboard
-        )
+        
+        # ইউজারকে জানানো হচ্ছে যে ফাইল পাওয়া গেছে
+        await message.reply(text, reply_markup=keyboard)
 
     @client.on_callback_query(filters.regex("confirm_upload"))
     async def confirm_upload_callback(client, callback_query):
@@ -1335,18 +1358,38 @@ async def start_pyrogram_monitor():
             return
         
         state = pending_uploads.get(ADMIN_ID, {})
-        msg = state.get("message_to_forward")
+        media_list = state.get("media_group", [])
 
-        if not msg:
+        if not media_list:
             await callback_query.answer("No media found to upload!", show_alert=True)
             return
 
+        await callback_query.message.edit_text("⏳ Uploading to channel... Please wait.")
+
         try:
-            await msg.copy(STORAGE_CHANNEL_ID)
+            # যদি একাধিক মিডিয়া থাকে তবে MediaGroup হিসেবে পাঠাবো, যাতে তারা একসাথে পাশাপাশি থাকে
+            if len(media_list) > 1:
+                media_group = []
+                for msg in media_list:
+                    if msg.photo:
+                        media_group.append(InputMediaPhoto(msg.photo.file_id, caption=msg.caption))
+                    elif msg.video:
+                        media_group.append(InputMediaVideo(msg.video.file_id, caption=msg.caption))
+                    elif msg.document:
+                        # ডকুমেন্ট হ্যান্ডলিং (প্রয়োজন হলে)
+                        pass
+                
+                if media_group:
+                    await client.send_media_group(chat_id=STORAGE_CHANNEL_ID, media=media_group)
+            else:
+                # সিঙ্গল মিডিয়া হলে সরাসরি ফরোয়ার্ড/কপি
+                await media_list[0].copy(STORAGE_CHANNEL_ID)
+
+            # আপলোড সম্পন্ন হলে মেমোরি থেকে ক্লিয়ার করা
             pending_uploads.pop(ADMIN_ID, None)
             
             await callback_query.message.edit_text(
-                "🎉 Successfully published to the Telegram channel and synced with the website!"
+                f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and synced with the website!"
             )
         except Exception as e:
             await callback_query.message.edit_text(f"❌ Upload failed: {str(e)}")
@@ -1359,16 +1402,28 @@ async def start_pyrogram_monitor():
             return
         
         state = pending_uploads.get(ADMIN_ID, {})
-        msg = state.get("message_to_forward")
+        media_list = state.get("media_group", [])
 
-        if not msg:
+        if not media_list:
             await message.reply("⚠️ No pending media found. Please send media first by typing /start")
             return
 
         try:
-            await msg.copy(STORAGE_CHANNEL_ID)
+            if len(media_list) > 1:
+                media_group = []
+                for msg in media_list:
+                    if msg.photo:
+                        media_group.append(InputMediaPhoto(msg.photo.file_id, caption=msg.caption))
+                    elif msg.video:
+                        media_group.append(InputMediaVideo(msg.video.file_id, caption=msg.caption))
+                
+                if media_group:
+                    await client.send_media_group(chat_id=STORAGE_CHANNEL_ID, media=media_group)
+            else:
+                await media_list[0].copy(STORAGE_CHANNEL_ID)
+
             pending_uploads.pop(ADMIN_ID, None)
-            await message.reply("🎉 Successfully published to the Telegram channel and website!")
+            await message.reply(f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and website!")
         except Exception as e:
             await message.reply(f"❌ Upload failed: {str(e)}")
     # ----------------------------------------
