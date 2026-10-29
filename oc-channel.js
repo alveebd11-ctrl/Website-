@@ -1,6 +1,6 @@
 /* ==========================================
    OC COLLECTION UNIVERSE
-   Separate JavaScript Module - Premium Carousel
+   Separate JavaScript Module - Premium Carousel with Telegram API
    ========================================== */
 
 (function () {
@@ -43,6 +43,9 @@
 
         // Initialize carousel processing if not done
         initCarouselProcessing();
+        
+        // Fetch videos from Telegram Backend API
+        fetchTelegramVideos();
     };
 
     /* CLOSE CHANNEL */
@@ -108,6 +111,45 @@
         });
         
         setTimeout(updateActiveDot, 100);
+    }
+
+    /* TELEGRAM VIDEO FETCHING LOGIC */
+    async function fetchTelegramVideos() {
+        const container = getElement(containerId);
+        if (!container) return;
+
+        // Prevent fetching again if videos are already loaded for this session
+        if (container.dataset.videosLoaded === 'true') return;
+
+        try {
+            // REPLACE THIS URL with your actual Python/Flask/FastAPI backend endpoint
+            const response = await fetch('/api/get_videos'); 
+            
+            if (!response.ok) {
+                throw new Error('API Response was not ok');
+            }
+
+            const data = await response.json();
+
+            if (data.status === 'success' && data.videos && data.videos.length > 0) {
+                data.videos.forEach(videoUrl => {
+                    const videoElement = document.createElement('video');
+                    videoElement.src = videoUrl;
+                    videoElement.controls = true; 
+                    
+                    // Appending this will trigger the MutationObserver
+                    // which automatically converts it into a premium carousel card
+                    container.appendChild(videoElement);
+                });
+                
+                // Mark as loaded so it doesn't fetch repeatedly
+                container.dataset.videosLoaded = 'true';
+            } else {
+                console.log("No videos found in the Telegram channel.");
+            }
+        } catch (error) {
+            console.error("Error fetching videos from backend API:", error);
+        }
     }
 
     /* CAROUSEL PROCESSING */
