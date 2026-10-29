@@ -1285,7 +1285,7 @@ async def start_pyrogram_monitor():
         api_id=API_ID,
         api_hash=API_HASH,
         bot_token=BOT_TOKEN,
-        in_memory=True,
+        # in_memory=True,  <-- এই লাইনটি মুছে ফেলা হয়েছে যাতে সেশন পারমানেন্টলি সেভ হয়।
     )
 
     @client.on_message(filters.chat(STORAGE_CHANNEL_ID))
