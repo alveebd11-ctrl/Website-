@@ -1,246 +1,221 @@
-/* ========================================
-   OC COLLECTION UNIVERSE - CHANNEL MODULE
-   File: oc-channel.js
-   Version: Final Working
-   ======================================== */
 
-/**
- * Winter Snow Effect তৈরি
- */
-function createWinterSnow(popup) {
-    // পুরনো স্নো থাকলে সরিয়ে ফেলা
-    const oldSnow = document.getElementById('oc-winter-snow');
-    if (oldSnow) oldSnow.remove();
+/* =========================================
+   OC COLLECTION UNIVERSE CHANNEL MODULE
+   ========================================= */
 
-    const snowContainer = document.createElement('div');
-    snowContainer.id = 'oc-winter-snow';
-    snowContainer.style.cssText = `
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-        z-index: 1;
-        overflow: hidden;
-    `;
+(function () {
+    'use strict';
 
-    // ২৮টা স্নোফ্লেক
-    for (let i = 0; i < 28; i++) {
-        const flake = document.createElement('div');
-        const size = Math.random() * 5 + 3;
-        const left = Math.random() * 100;
-        const delay = Math.random() * 5;
-        const duration = Math.random() * 8 + 6;
-
-        flake.style.cssText = `
-            position: absolute;
-            top: -20px;
-            left: ${left}%;
-            width: ${size}px;
-            height: ${size}px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
-            animation: ocSnowFall ${duration}s linear ${delay}s infinite;
-            opacity: ${Math.random() * 0.7 + 0.3};
-        `;
-        snowContainer.appendChild(flake);
+    function getElement(id) {
+        return document.getElementById(id);
     }
 
-    // Animation CSS একবারই যোগ করা
-    if (!document.getElementById('oc-winter-style')) {
-        const style = document.createElement('style');
-        style.id = 'oc-winter-style';
-        style.textContent = `
-            @keyframes ocSnowFall {
-                0% {
-                    transform: translateY(0) translateX(0) rotate(0deg);
-                    opacity: 0.9;
-                }
-                100% {
-                    transform: translateY(110vh) translateX(40px) rotate(360deg);
-                    opacity: 0.15;
-                }
-            }
+    /* =========================================
+       OPEN OC CHANNEL
+       ========================================= */
+    window.openOCChannel = function () {
+        const channel = getElement('ocChannelWindow');
 
-            @keyframes ocWinterOpen {
-                0% {
-                    opacity: 0;
-                    transform: scale(0.94) translateY(30px);
-                    filter: blur(6px);
-                }
-                100% {
-                    opacity: 1;
-                    transform: scale(1) translateY(0);
-                    filter: blur(0);
-                }
-            }
+        if (!channel) {
+            console.error(
+                'OC Channel window was not found in the HTML.'
+            );
+            return;
+        }
 
-            .oc-channel-window.winter-open {
-                animation: ocWinterOpen 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-            }
-        `;
-        document.head.appendChild(style);
-    }
+        const menu = getElement('ocMenuPopover');
+        const searchPanel = getElement('ocSearchPanel');
 
-    popup.appendChild(snowContainer);
-}
+        if (menu) {
+            menu.classList.remove('open');
+        }
 
-/**
- * OC Channel Window খোলা
- */
-function openOCChannel() {
-    const popup = document.getElementById('ocChannelWindow');
-    
-    if (!popup) {
-        console.error('ocChannelWindow element not found');
-        return;
-    }
+        if (searchPanel) {
+            searchPanel.classList.remove('open');
+        }
 
-    // Menu এবং Search বন্ধ রাখা
-    const menu = document.getElementById('ocMenuPopover');
-    const search = document.getElementById('ocSearchPanel');
-    
-    if (menu) menu.classList.remove('open');
-    if (search) search.classList.remove('open');
+        channel.classList.add('open');
+        channel.setAttribute('aria-hidden', 'false');
 
-    // Winter Snow Effect যোগ করা
-    createWinterSnow(popup);
+        document.body.style.overflow = 'hidden';
 
-    // Window Open + Animation
-    popup.classList.add('open', 'winter-open');
-    popup.setAttribute('aria-hidden', 'false');
+        const channelBody = channel.querySelector(
+            '.oc-channel-body'
+        );
 
-    // Animation শেষ হলে ক্লাস পরিষ্কার
-    setTimeout(() => {
-        popup.classList.remove('winter-open');
-    }, 700);
+        if (channelBody) {
+            requestAnimationFrame(function () {
+                channelBody.scrollTop =
+                    channelBody.scrollHeight;
+            });
+        }
+    };
 
-    // পোস্ট ফেচ (নন-ব্লকিং)
-    fetchChannelPosts();
-}
+    /* =========================================
+       CLOSE OC CHANNEL / BACK BUTTON
+       ========================================= */
+    window.closeOCChannel = function () {
+        const channel = getElement('ocChannelWindow');
 
-/**
- * OC Channel Window বন্ধ করা
- */
-function closeOCChannel() {
-    const popup = document.getElementById('ocChannelWindow');
-    if (!popup) return;
+        if (!channel) {
+            return;
+        }
 
-    // Snow সরিয়ে ফেলা
-    const snow = document.getElementById('oc-winter-snow');
-    if (snow) snow.remove();
+        channel.classList.remove('open');
+        channel.setAttribute('aria-hidden', 'true');
 
-    popup.classList.remove('open', 'winter-open');
-    popup.setAttribute('aria-hidden', 'true');
+        const menu = getElement('ocMenuPopover');
+        const searchPanel = getElement('ocSearchPanel');
+        const searchInput = getElement('ocSearchInput');
 
-    const menu = document.getElementById('ocMenuPopover');
-    const search = document.getElementById('ocSearchPanel');
-    
-    if (menu) menu.classList.remove('open');
-    if (search) search.classList.remove('open');
-}
+        if (menu) {
+            menu.classList.remove('open');
+        }
 
-/**
- * চ্যানেল পোস্ট ফেচ
- */
-function fetchChannelPosts() {
-    fetch('/api/channel/posts')
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.ok && Array.isArray(data.posts)) {
-                renderChannelPosts(data.posts);
-            }
-        })
-        .catch(err => {
-            console.error("Error fetching channel posts:", err);
+        if (searchPanel) {
+            searchPanel.classList.remove('open');
+        }
+
+        if (searchInput) {
+            searchInput.value = '';
+            filterOCPosts('');
+        }
+
+        document.body.style.overflow = '';
+    };
+
+    /* =========================================
+       THREE-DOT MENU
+       ========================================= */
+    window.toggleOCMenu = function () {
+        const menu = getElement('ocMenuPopover');
+
+        if (!menu) {
+            return;
+        }
+
+        menu.classList.toggle('open');
+    };
+
+    /* =========================================
+       CHANNEL SEARCH PANEL
+       ========================================= */
+    window.toggleOCSearch = function () {
+        const panel = getElement('ocSearchPanel');
+
+        if (!panel) {
+            return;
+        }
+
+        const willOpen = !panel.classList.contains('open');
+
+        panel.classList.toggle('open', willOpen);
+
+        const input = getElement('ocSearchInput');
+
+        if (!input) {
+            return;
+        }
+
+        if (willOpen) {
+            setTimeout(function () {
+                input.focus();
+            }, 0);
+        } else {
+            input.value = '';
+            filterOCPosts('');
+        }
+    };
+
+    /* =========================================
+       SEARCH CHANNEL POSTS
+       ========================================= */
+    function filterOCPosts(query) {
+        const container = getElement(
+            'channelPostsContainer'
+        );
+
+        if (!container) {
+            return;
+        }
+
+        const searchText = String(query || '')
+            .trim()
+            .toLowerCase();
+
+        const posts = container.querySelectorAll(
+            '.oc-post-bubble'
+        );
+
+        posts.forEach(function (post) {
+            const postText = (
+                post.textContent || ''
+            ).toLowerCase();
+
+            post.style.display =
+                !searchText || postText.includes(searchText)
+                    ? ''
+                    : 'none';
         });
-}
+    }
 
-/**
- * পোস্ট রেন্ডার
- */
-function renderChannelPosts(posts) {
-    const container = document.getElementById('channelPostsContainer');
-    if (!container) return;
+    const searchInput = getElement('ocSearchInput');
 
-    container.innerHTML = '';
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            filterOCPosts(this.value);
+        });
+    }
 
-    posts.forEach(post => {
-        const bubble = document.createElement('div');
-        bubble.className = 'oc-post-bubble';
+    /* =========================================
+       UNMUTE / MUTE CHANNEL MEDIA
+       ========================================= */
+    window.toggleOCMute = function (button) {
+        const channel = getElement('ocChannelWindow');
 
-        // টেক্সট
-        if (post.text) {
-            const textEl = document.createElement('div');
-            textEl.textContent = post.text;
-            bubble.appendChild(textEl);
+        if (!channel || !button) {
+            return;
         }
 
-        // মিডিয়া
-        if (post.media_type === 'photo') {
-            const img = document.createElement('img');
-            img.src = `/api/chat/media/${post.id}`;
-            img.alt = 'Channel photo';
-            img.loading = 'lazy';
-            bubble.appendChild(img);
-        } else if (post.media_type === 'video') {
-            const video = document.createElement('video');
-            video.src = `/api/chat/media/${post.id}`;
-            video.controls = true;
-            video.preload = 'metadata';
-            bubble.appendChild(video);
+        const media = channel.querySelectorAll(
+            'video, audio'
+        );
+
+        if (!media.length) {
+            return;
         }
 
-        container.appendChild(bubble);
-    });
-}
+        // Initially the media is assumed to be muted.
+        const shouldUnmute =
+            button.dataset.muted !== 'false';
 
-/**
- * Three-dot মেনু টগল
- */
-function toggleOCMenu() {
-    const menu = document.getElementById('ocMenuPopover');
-    const search = document.getElementById('ocSearchPanel');
-    
-    if (!menu) return;
+        media.forEach(function (item) {
+            item.muted = !shouldUnmute;
 
-    if (search) search.classList.remove('open');
-    menu.classList.toggle('open');
-}
+            if (
+                shouldUnmute &&
+                item.tagName === 'VIDEO'
+            ) {
+                const playResult = item.play();
 
-/**
- * সার্চ প্যানেল টগল
- */
-function toggleOCSearch() {
-    const panel = document.getElementById('ocSearchPanel');
-    const menu = document.getElementById('ocMenuPopover');
-    
-    if (!panel) return;
+                if (
+                    playResult &&
+                    typeof playResult.catch === 'function'
+                ) {
+                    playResult.catch(function () {
+                        // Playback may require another user action.
+                    });
+                }
+            }
+        });
 
-    if (menu) menu.classList.remove('open');
-    panel.classList.toggle('open');
+        button.dataset.muted = shouldUnmute
+            ? 'false'
+            : 'true';
 
-    if (panel.classList.contains('open')) {
-        const input = document.getElementById('ocSearchInput');
-        if (input) input.focus();
-    }
-}
+        button.textContent = shouldUnmute
+            ? 'Mute'
+            : 'Unmute';
+    };
 
-/**
- * Mute / Unmute বাটন
- */
-function toggleOCMute(button) {
-    if (!button) return;
-    
-    const isUnmute = button.textContent.trim() === 'Unmute';
-    button.textContent = isUnmute ? 'Mute' : 'Unmute';
-}
-
-/* Escape কী দিয়ে বন্ধ */
-document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') {
-        closeOCChannel();
-    }
-});
-
-// কনসোলে সফল মেসেজ
-console.log('%c✅ OC Channel Module (oc-channel.js) Loaded Successfully', 'background: #4CAF50; color: white; padding: 6px 12px; border-radius: 4px; font-weight: bold;');
+})();
