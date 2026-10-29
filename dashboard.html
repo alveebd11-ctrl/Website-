@@ -71,49 +71,16 @@ body {
     background: transparent;
 }
 
-/* ================= INITIAL LOADER ================= */
+/* ================= LOADER COMPLETELY HIDDEN ================= */
 
 #bgLoader {
-    position: fixed;
-    inset: 0;
-    background: rgba(10,17,40,.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    transition: opacity .5s ease;
-}
-
-.spinner-box {
-    width: 55px;
-    height: 55px;
-    border: 3px solid rgba(255,255,255,.1);
-    border-top: 3px solid #ff708f;
-    border-radius: 50%;
-    animation: spinLoader .8s linear infinite;
-    margin-bottom: 12px;
-}
-
-.loader-text {
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-}
-
-@keyframes spinLoader {
-    to { transform: rotate(360deg); }
+    display: none !important;
 }
 
 /* ================= DASHBOARD ================= */
 
 #dashboardWrapper {
-    opacity: 0;
-    transition: opacity .4s ease;
+    opacity: 1;
     width: 100%;
     min-height: 100vh;
     display: flex;
@@ -175,6 +142,10 @@ body {
     animation: spinLoader .6s linear infinite;
 }
 
+@keyframes spinLoader {
+    to { transform: rotate(360deg); }
+}
+
 .view-section {
     width: 100%;
     max-width: 440px;
@@ -222,7 +193,6 @@ body {
         box-shadow: 0 0 10px #ff708f66;
         border-color: #ff708f80;
     }
-
     50% {
         box-shadow: 0 0 25px #ff708fe6;
         border-color: #ff708f;
@@ -582,8 +552,6 @@ body {
     display: flex;
 }
 
-/* Decorative wallpaper */
-
 .oc-doodle-wallpaper {
     position: absolute;
     inset: -10%;
@@ -597,8 +565,6 @@ body {
     word-spacing: 10px;
     transform: rotate(-10deg) scale(1.1);
 }
-
-/* Popup header */
 
 .oc-channel-header {
     position: relative;
@@ -642,8 +608,6 @@ body {
     stroke-linecap: round;
     stroke-linejoin: round;
 }
-
-/* Header title capsule */
 
 .oc-channel-title-pill {
     flex: 1;
@@ -702,8 +666,6 @@ body {
     font-weight: 500;
 }
 
-/* Three-dot menu */
-
 .oc-menu-popover {
     position: absolute;
     top: 100px;
@@ -745,8 +707,6 @@ body {
     font-weight: 600;
     cursor: pointer;
 }
-
-/* Channel Content Body / Timeline */
 
 .oc-channel-body {
     position: absolute;
@@ -807,8 +767,6 @@ body {
     padding: 10px 18px;
 }
 
-/* Channel Posts Styles */
-
 .oc-post-bubble {
     background: #ffffff;
     color: #17211d;
@@ -828,8 +786,6 @@ body {
     max-height: 250px;
     object-fit: cover;
 }
-
-/* ================= REDUCED BOTTOM BOX ================= */
 
 .oc-bottom-actions {
     position: absolute;
@@ -945,56 +901,44 @@ body {
     #dashboardWrapper {
         padding: 22px 12px 100px;
     }
-
     .profile-card {
         padding: 10px 13px;
     }
-
     .user-info-wrapper {
         gap: 10px;
     }
-
     .user-details h3 {
         font-size: 12px;
     }
-
     .live-badge-container {
         padding: 5px 9px;
     }
-
     .live-text {
         font-size: 10px;
     }
-
     .oc-channel-header {
         gap: 7px;
         padding: 10px 8px 0;
     }
-
     .oc-back-btn,
     .oc-menu-btn {
         flex-basis: 48px;
         width: 48px;
         height: 48px;
     }
-
     .oc-channel-title-pill {
         gap: 7px;
         padding-right: 7px;
     }
-
     .oc-channel-title-text h2 {
         font-size: 12px;
     }
-
     .oc-channel-title-text p {
         font-size: 11px;
     }
-
     .oc-bottom-actions {
         gap: 10px;
     }
-
     .oc-search-panel {
         left: 80px;
     }
@@ -1011,15 +955,10 @@ body {
 
 <body>
 
-<!-- INITIAL DASHBOARD LOADER -->
-
-<div id="bgLoader">
-    <div class="spinner-box"></div>
-    <div class="loader-text">Loading Background...</div>
-</div>
+<!-- LOADER COMPLETELY REMOVED -->
+<div id="bgLoader" style="display:none !important;"></div>
 
 <!-- BACKGROUND -->
-
 <div class="bg-container" id="bgContainer">
     <div class="bg-shade"></div>
 </div>
@@ -1027,7 +966,6 @@ body {
 <div id="dashboardWrapper">
 
     <!-- REFRESH -->
-
     <div class="header-nav">
         <button id="refreshBtn"
                 onclick="triggerRefresh(this)"
@@ -1037,432 +975,240 @@ body {
     </div>
 
     <!-- HOME VIEW -->
-
     <div id="homeView" class="view-section active-view">
 
         <!-- NAUGHTY NONSTOP -->
-
         <div class="profile-card blink-glow"
              onclick="openNaughtyWithLandAnimation()">
-
             <div class="user-info-wrapper">
-
                 <div class="avatar-container">
-                    <img
-                        src="https://carder.top/imagens/1792065172414-739661966.jpg"
-                        alt="Naughty NonStop"
-                        class="avatar">
+                    <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Naughty NonStop" class="avatar">
                     <div class="image-shield"></div>
                 </div>
-
                 <div class="user-details">
                     <h3>⛔Naughty NonStop🚫</h3>
                     <p>Open Media 💋</p>
                 </div>
-
             </div>
-
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
-
         </div>
 
         <!-- OC COLLECTION UNIVERSE -->
-
         <div class="profile-card blink-glow oc-collection-card"
              onclick="openOCChannel()">
-
             <div class="user-info-wrapper">
-
                 <div class="avatar-container">
-                    <img
-                        src="https://carder.top/imagens/1792065174675-662575987.jpg"
-                        alt="OC Collection Universe"
-                        class="avatar">
+                    <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="OC Collection Universe" class="avatar">
                     <div class="image-shield"></div>
                 </div>
-
                 <div class="user-details">
                     <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
                     <p>Open Channel</p>
                 </div>
-
             </div>
-
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
-
         </div>
 
         <!-- DESI MAGI PREMIUM -->
-
         <div class="profile-card"
              onclick="openProfile('Desi Magi Premium','Lock Media')">
-
             <div class="user-info-wrapper">
-
                 <div class="avatar-container">
-                    <img
-                        src="https://carder.top/imagens/1792065179592-849568981.jpg"
-                        alt="Desi Magi Premium"
-                        class="avatar">
+                    <img src="https://carder.top/imagens/1792065179592-849568981.jpg" alt="Desi Magi Premium" class="avatar">
                     <div class="image-shield"></div>
                 </div>
-
                 <div class="user-details">
                     <h3>Desi Magi Premium</h3>
                     <p>Lock Media</p>
                 </div>
-
             </div>
-
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
-
         </div>
 
         <!-- BD SENSUAL -->
-
         <div class="profile-card"
              onclick="openProfile('BD Sensual','Lock Media')">
-
             <div class="user-info-wrapper">
-
                 <div class="avatar-container">
-                    <img
-                        src="https://carder.top/imagens/1792065182673-804452797.jpg"
-                        alt="BD Sensual"
-                        class="avatar">
+                    <img src="https://carder.top/imagens/1792065182673-804452797.jpg" alt="BD Sensual" class="avatar">
                     <div class="image-shield"></div>
                 </div>
-
                 <div class="user-details">
                     <h3>BD Sensual</h3>
                     <p>Lock Media</p>
                 </div>
-
             </div>
-
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
-
         </div>
 
         <!-- BANGLADESHI NON STOP -->
-
         <div class="profile-card"
              onclick="openProfile('Bangladeshi Non Stop 🫦','Lock Media')">
-
             <div class="user-info-wrapper">
-
                 <div class="avatar-container">
-                    <img
-                        src="https://carder.top/imagens/1792065176794-158050465.jpg"
-                        alt="Bangladeshi Non Stop"
-                        class="avatar">
+                    <img src="https://carder.top/imagens/1792065176794-158050465.jpg" alt="Bangladeshi Non Stop" class="avatar">
                     <div class="image-shield"></div>
                 </div>
-
                 <div class="user-details">
                     <h3>Bangladeshi Non Stop 🫦</h3>
                     <p>Lock Media</p>
                 </div>
-
             </div>
-
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
-
         </div>
 
     </div>
 
     <!-- PROFILE VIEW -->
-
     <div id="profileView" class="view-section">
-
         <div class="profile-card-modern">
-
             <div class="card-image-wrapper">
                 <img id="profileImage" src="" alt="Profile Picture">
                 <div class="image-shield"></div>
             </div>
-
             <div class="card-user-info">
-
                 <div class="name-row">
                     <h2 id="profileName">Loading...</h2>
                 </div>
-
-                <div id="profileUsername" class="username-text">
-                    @username
-                </div>
-
-                <div id="profileBio" class="card-bio">
-                    Loading bio...
-                </div>
-
+                <div id="profileUsername" class="username-text">@username</div>
+                <div id="profileBio" class="card-bio">Loading bio...</div>
                 <div class="telegram-meta-details">
-
                     <div class="meta-row">
                         <span class="meta-label">Phone Number</span>
-                        <span id="profilePhone" class="meta-value">
-                            +880 XXXXXXXXXX
-                        </span>
+                        <span id="profilePhone" class="meta-value">+880 XXXXXXXXXX</span>
                     </div>
-
                     <div class="meta-row">
                         <span class="meta-label">Telegram ID</span>
-                        <span id="profileId" class="meta-value">
-                            000000000
-                        </span>
+                        <span id="profileId" class="meta-value">000000000</span>
                     </div>
-
                 </div>
-
             </div>
         </div>
-
         <div class="logout-box">
             <button onclick="logoutUser()" class="logout-action-btn">
                 Log Out Account 🚪
             </button>
         </div>
-
     </div>
 
     <!-- BOTTOM NAVIGATION -->
-
     <div class="bottom-glass-nav" id="bottomNav">
-
-        <button onclick="handleNavAction('group')"
-                class="nav-item"
-                aria-label="Group">
-
+        <button onclick="handleNavAction('group')" class="nav-item" aria-label="Group">
             <svg viewBox="0 0 24 24">
                 <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
             </svg>
-
         </button>
-
-        <button onclick="switchView('home',this)"
-                class="nav-item active"
-                aria-label="Home">
-
+        <button onclick="switchView('home',this)" class="nav-item active" aria-label="Home">
             <svg viewBox="0 0 24 24">
                 <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
             </svg>
-
         </button>
-
-        <button onclick="switchView('profile',this)"
-                class="nav-item"
-                aria-label="Profile">
-
+        <button onclick="switchView('profile',this)" class="nav-item" aria-label="Profile">
             <svg viewBox="0 0 24 24">
                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
             </svg>
-
         </button>
-
     </div>
 
     <!-- NAUGHTY NONSTOP FULL-SCREEN WINDOW -->
-
     <div class="naughty-window" id="naughtyWindow">
-
-        <iframe
-            src="naughty.html"
-            title="Naughty NonStop"
-            loading="eager">
-        </iframe>
-
+        <iframe src="naughty.html" title="Naughty NonStop" loading="eager"></iframe>
     </div>
 
     <!-- OC COLLECTION UNIVERSE POPUP -->
-
-    <div class="oc-channel-window"
-         id="ocChannelWindow"
-         aria-hidden="true">
-
-        <!-- Wallpaper -->
-
+    <div class="oc-channel-window" id="ocChannelWindow" aria-hidden="true">
         <div class="oc-doodle-wallpaper" aria-hidden="true">
-            ☆ ♡ ✧ ♧ ◇ ☆ ♡ ✿ ♬ ☆ ♡
-            <br>
-            ♡ ☆ ♧ ✧ ◇ ♡ ☆ ✿ ♬ ♡ ☆
-            <br>
-            ✿ ♡ ☆ ◇ ♧ ✧ ☆ ♡ ♬ ✿
-            <br>
-            ☆ ♬ ♡ ✿ ◇ ☆ ♧ ♡ ✧ ☆
-            <br>
-            ◇ ♡ ✧ ☆ ♬ ♧ ♡ ☆ ✿ ◇
-            <br>
-            ♧ ☆ ♡ ✧ ♬ ◇ ☆ ♡ ✿ ♧
-            <br>
+            ☆ ♡ ✧ ♧ ◇ ☆ ♡ ✿ ♬ ☆ ♡<br>
+            ♡ ☆ ♧ ✧ ◇ ♡ ☆ ✿ ♬ ♡ ☆<br>
+            ✿ ♡ ☆ ◇ ♧ ✧ ☆ ♡ ♬ ✿<br>
+            ☆ ♬ ♡ ✿ ◇ ☆ ♧ ♡ ✧ ☆<br>
+            ◇ ♡ ✧ ☆ ♬ ♧ ♡ ☆ ✿ ◇<br>
+            ♧ ☆ ♡ ✧ ♬ ◇ ☆ ♡ ✿ ♧<br>
             ☆ ♡ ✿ ♧ ◇ ✧ ♬ ☆ ♡ ☆
         </div>
 
-        <!-- TOP HEADER -->
-
         <div class="oc-channel-header">
-
-            <button class="oc-back-btn"
-                    type="button"
-                    aria-label="Back to dashboard"
-                    onclick="closeOCChannel()">
-
+            <button class="oc-back-btn" type="button" aria-label="Back to dashboard" onclick="closeOCChannel()">
                 <svg viewBox="0 0 24 24">
                     <path d="M19 12H5M12 19l-7-7 7-7"></path>
                 </svg>
-
             </button>
-
             <div class="oc-channel-title-pill">
-
                 <div class="oc-channel-avatar">
-                    <img
-                        src="https://carder.top/imagens/1792065174675-662575987.jpg"
-                        alt="OC Collection Universe">
+                    <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="OC Collection Universe">
                 </div>
-
                 <div class="oc-channel-title-text">
                     <h2>OC Collection Universe 🍒</h2>
                     <p>public channel</p>
                 </div>
-
             </div>
-
-            <button class="oc-menu-btn"
-                    type="button"
-                    aria-label="More options"
-                    onclick="toggleOCMenu()">
-
-                <svg viewBox="0 0 24 24"
-                     style="width:28px;height:28px;fill:currentColor;stroke:none">
-
+            <button class="oc-menu-btn" type="button" aria-label="More options" onclick="toggleOCMenu()">
+                <svg viewBox="0 0 24 24" style="width:28px;height:28px;fill:currentColor;stroke:none">
                     <circle cx="12" cy="5" r="2"></circle>
                     <circle cx="12" cy="12" r="2"></circle>
                     <circle cx="12" cy="19" r="2"></circle>
-
                 </svg>
-
             </button>
-
         </div>
-
-        <!-- THREE-DOT MENU -->
 
         <div class="oc-menu-popover" id="ocMenuPopover">
-
             <strong>OC Collection Universe 🍒</strong>
             <small>Public channel</small>
-
-            <button type="button" onclick="closeOCChannel()">
-                Back to dashboard
-            </button>
-
+            <button type="button" onclick="closeOCChannel()">Back to dashboard</button>
         </div>
-
-        <!-- CHANNEL BODY & TIMELINE -->
 
         <div class="oc-channel-body">
             <div class="oc-channel-timeline">
-
-                <div class="oc-date-pill">
-                    July 7
-                </div>
-
+                <div class="oc-date-pill">July 7</div>
                 <div class="oc-created-pill">
                     <span>Channel created</span>
                     <small>12:02 AM</small>
                 </div>
-
-                <div class="oc-today-pill">
-                    Today
-                </div>
-
-                <div class="oc-joined-pill">
-                    You joined this channel
-                </div>
-
+                <div class="oc-today-pill">Today</div>
+                <div class="oc-joined-pill">You joined this channel</div>
             </div>
-
-            <!-- Telegram Channel Posts Container -->
             <div id="channelPostsContainer" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
         </div>
 
-        <!-- SEARCH PANEL -->
-
         <div class="oc-search-panel" id="ocSearchPanel">
-
-            <input
-                type="search"
-                id="ocSearchInput"
-                placeholder="Search in channel..."
-                aria-label="Search in channel">
-
-            <button
-                type="button"
-                aria-label="Close search"
-                onclick="toggleOCSearch()">×</button>
-
+            <input type="search" id="ocSearchInput" placeholder="Search in channel..." aria-label="Search in channel">
+            <button type="button" aria-label="Close search" onclick="toggleOCSearch()">×</button>
         </div>
 
-        <!-- BOTTOM CONTROLS -->
-
         <div class="oc-bottom-actions">
-
-            <button class="oc-search-btn"
-                    type="button"
-                    aria-label="Search"
-                    onclick="toggleOCSearch()">
-
+            <button class="oc-search-btn" type="button" aria-label="Search" onclick="toggleOCSearch()">
                 <svg viewBox="0 0 24 24">
                     <circle cx="10.8" cy="10.8" r="7.2"></circle>
                     <path d="m16.2 16.2 4.5 4.5"></path>
                 </svg>
-
             </button>
-
-            <button class="oc-unmute-btn"
-                    type="button"
-                    onclick="toggleOCMute(this)">
-                Unmute
-            </button>
-
+            <button class="oc-unmute-btn" type="button" onclick="toggleOCMute(this)">Unmute</button>
         </div>
-
         <div class="oc-system-bar"></div>
-
     </div>
 
     <!-- PROFILE MODAL -->
-
     <div class="modal-overlay" id="profileModal">
-
         <div class="modal-box">
-
             <h3 id="modalName">User Profile</h3>
-
             <div id="modalInfo">Details...</div>
-
-            <button class="close-btn" onclick="closeModal()">
-                Close
-            </button>
-
+            <button class="close-btn" onclick="closeModal()">Close</button>
         </div>
-
     </div>
 
 </div>
@@ -1472,8 +1218,7 @@ body {
 
 <script>
 /* ========================================
-   RANDOM BACKGROUND IMAGE COLLECTION
-   (No-stuck Loading Version)
+   BACKGROUND IMAGE (Silent Load - No Loader)
    ======================================== */
 
 const backgroundImages = [
@@ -1560,29 +1305,9 @@ function shuffled(items) {
     return array;
 }
 
-function hideLoader() {
-    const loader = document.getElementById('bgLoader');
-    if (!loader) return;
-
-    loader.style.opacity = '0';
-    setTimeout(() => {
-        loader.style.display = 'none';
-    }, 400);
-}
-
 function initRandomBackground() {
     const container = document.getElementById('bgContainer');
-    const loader = document.getElementById('bgLoader');
-
-    if (!container) {
-        hideLoader();
-        return;
-    }
-
-    // ৪ সেকেন্ড পর জোর করে লোডার হাইড
-    const forceHideTimer = setTimeout(() => {
-        hideLoader();
-    }, 4000);
+    if (!container) return;
 
     const queueKey = 'dashboardBackgroundImageQueueV1';
     const previousKey = 'dashboardLastBackgroundImageV1';
@@ -1621,19 +1346,13 @@ function initRandomBackground() {
     img.draggable = false;
 
     img.onload = () => {
-        clearTimeout(forceHideTimer);
-
         container.insertBefore(img, container.querySelector('.bg-shade'));
-
         requestAnimationFrame(() => {
             img.classList.add('visible');
         });
-
         try {
             localStorage.setItem(previousKey, selected);
         } catch (e) {}
-
-        hideLoader();
     };
 
     img.onerror = () => {
@@ -1643,9 +1362,6 @@ function initRandomBackground() {
                 localStorage.setItem(queueKey, JSON.stringify(queue));
             } catch (e) {}
             img.src = next;
-        } else {
-            clearTimeout(forceHideTimer);
-            hideLoader();
         }
     };
 
@@ -1660,19 +1376,12 @@ if (localStorage.getItem('isLoggedIn') !== 'true') {
     window.location.replace('verify.html');
 } else {
     document.addEventListener('DOMContentLoaded', () => {
-        const wrapper = document.getElementById('dashboardWrapper');
         const bottomNav = document.getElementById('bottomNav');
-
-        if (wrapper) {
-            wrapper.style.opacity = '1';
-        }
-
         if (bottomNav) {
             setTimeout(() => {
                 bottomNav.classList.add('slide-up');
             }, 100);
         }
-
         initRandomBackground();
         fetchTelegramProfile();
     });
@@ -1686,22 +1395,12 @@ function switchView(viewName, element) {
     document.querySelectorAll('.view-section').forEach(section => {
         section.classList.remove('active-view');
     });
-
     document.querySelectorAll('.nav-item').forEach(nav => {
         nav.classList.remove('active');
     });
-
-    const target = document.getElementById(
-        viewName === 'home' ? 'homeView' : 'profileView'
-    );
-
-    if (target) {
-        target.classList.add('active-view');
-    }
-
-    if (element) {
-        element.classList.add('active');
-    }
+    const target = document.getElementById(viewName === 'home' ? 'homeView' : 'profileView');
+    if (target) target.classList.add('active-view');
+    if (element) element.classList.add('active');
 }
 
 function handleNavAction(type) {
@@ -1716,55 +1415,29 @@ function handleNavAction(type) {
 
 function fetchTelegramProfile() {
     const userPhone = localStorage.getItem('userPhone');
-
     if (!userPhone) return;
 
     fetch('/get-user-profile', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            phone: userPhone
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: userPhone })
     })
     .then(response => {
-        if (!response.ok) {
-            throw new Error('Profile request failed');
-        }
+        if (!response.ok) throw new Error('Profile request failed');
         return response.json();
     })
     .then(data => {
         if (data.status !== 'success') return;
-
         const profile = data.profile || {};
-
-        document.getElementById('profileName').textContent =
-            profile.name || 'Unknown';
-
-        document.getElementById('profileUsername').textContent =
-            profile.username || '';
-
-        document.getElementById('profileId').textContent =
-            profile.id || '';
-
-        document.getElementById('profilePhone').textContent =
-            profile.phone || '';
-
-        document.getElementById('profileBio').textContent =
-            profile.bio || '';
-
+        document.getElementById('profileName').textContent = profile.name || 'Unknown';
+        document.getElementById('profileUsername').textContent = profile.username || '';
+        document.getElementById('profileId').textContent = profile.id || '';
+        document.getElementById('profilePhone').textContent = profile.phone || '';
+        document.getElementById('profileBio').textContent = profile.bio || '';
         if (profile.photo) {
             const image = document.getElementById('profileImage');
-
-            image.onload = () => {
-                image.style.opacity = '1';
-            };
-
-            image.onerror = () => {
-                image.style.opacity = '0';
-            };
-
+            image.onload = () => { image.style.opacity = '1'; };
+            image.onerror = () => { image.style.opacity = '0'; };
             image.src = profile.photo;
         }
     })
@@ -1779,14 +1452,6 @@ function fetchTelegramProfile() {
 
 function triggerRefresh(button) {
     button.classList.add('loading');
-
-    const loader = document.getElementById('bgLoader');
-
-    if (loader) {
-        loader.style.display = 'flex';
-        loader.style.opacity = '1';
-    }
-
     setTimeout(() => {
         window.location.reload();
     }, 300);
@@ -1798,12 +1463,9 @@ function triggerRefresh(button) {
 
 function openProfile(name, subtitle) {
     document.getElementById('modalName').textContent = name;
-
     const info = document.getElementById('modalInfo');
     info.textContent = '';
-
     const details = document.createElement('p');
-
     details.append(
         'Status: LIVE',
         document.createElement('br'),
@@ -1811,9 +1473,7 @@ function openProfile(name, subtitle) {
         document.createElement('br'),
         'Broadcasting Active'
     );
-
     info.appendChild(details);
-
     document.getElementById('profileModal').style.display = 'flex';
 }
 
@@ -1827,18 +1487,12 @@ function closeModal() {
 
 function openNaughtyWithLandAnimation() {
     const modal = document.getElementById('naughtyWindow');
-
-    if (modal) {
-        modal.classList.add('open');
-    }
+    if (modal) modal.classList.add('open');
 }
 
 function closeNaughtyWindow() {
     const modal = document.getElementById('naughtyWindow');
-
-    if (modal) {
-        modal.classList.remove('open');
-    }
+    if (modal) modal.classList.remove('open');
 }
 
 /* ========================================
@@ -1849,11 +1503,8 @@ document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
         closeNaughtyWindow();
         closeModal();
-        // closeOCChannel() will be handled by oc-channel.js
     }
 });
-
-/* Existing context-menu and drag prevention */
 
 document.addEventListener('contextmenu', event => {
     event.preventDefault();
@@ -1866,15 +1517,8 @@ document.addEventListener('dragstart', event => {
 document.addEventListener('keydown', event => {
     if (
         event.key === 'F12' ||
-        (
-            event.ctrlKey &&
-            event.shiftKey &&
-            ['I', 'J', 'C'].includes(event.key.toUpperCase())
-        ) ||
-        (
-            event.ctrlKey &&
-            ['U', 'S', 'P'].includes(event.key.toUpperCase())
-        )
+        (event.ctrlKey && event.shiftKey && ['I', 'J', 'C'].includes(event.key.toUpperCase())) ||
+        (event.ctrlKey && ['U', 'S', 'P'].includes(event.key.toUpperCase()))
     ) {
         event.preventDefault();
     }
@@ -1887,7 +1531,6 @@ document.addEventListener('keydown', event => {
 function logoutUser() {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userPhone');
-
     window.location.href = 'verify.html';
 }
 </script>
