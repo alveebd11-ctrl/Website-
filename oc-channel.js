@@ -1,77 +1,86 @@
 
 /* ==========================================
    OC COLLECTION UNIVERSE
-   All channel interactions in this file
+   Separate JavaScript Module
    ========================================== */
 
 (function () {
     'use strict';
 
-    function get(id) {
+    function getElement(id) {
         return document.getElementById(id);
     }
 
     /* OPEN CHANNEL */
     window.openOCChannel = function () {
-        const channel = get('ocChannelWindow');
+        const channel = getElement('ocChannelWindow');
 
         if (!channel) {
             console.error(
-                'OC Collection Universe: channel HTML not found.'
+                'OC Collection Universe: channel element not found.'
             );
             return;
         }
 
         // Close other dashboard overlays.
-        const naughty = get('naughtyWindow');
-        const profileModal = get('profileModal');
+        const naughtyWindow = getElement('naughtyWindow');
+        const profileModal = getElement('profileModal');
 
-        if (naughty) naughty.classList.remove('open');
+        if (naughtyWindow) {
+            naughtyWindow.classList.remove('open');
+        }
 
         if (profileModal) {
             profileModal.style.display = 'none';
         }
 
-        // Close menu and search before opening.
-        const menu = get('ocMenuPopover');
-        const search = get('ocSearchPanel');
+        // Reset menu and search.
+        const menu = getElement('ocMenuPopover');
+        const searchPanel = getElement('ocSearchPanel');
+        const searchInput = getElement('ocSearchInput');
 
         if (menu) menu.classList.remove('open');
-        if (search) search.classList.remove('open');
+        if (searchPanel) searchPanel.classList.remove('open');
 
+        if (searchInput) {
+            searchInput.value = '';
+            filterOCPosts('');
+        }
+
+        // Open channel popup.
         channel.classList.add('open');
         channel.setAttribute('aria-hidden', 'false');
 
         document.body.style.overflow = 'hidden';
 
-        const body = channel.querySelector('.oc-channel-body');
+        const channelBody = channel.querySelector('.oc-channel-body');
 
-        if (body) {
+        if (channelBody) {
             requestAnimationFrame(function () {
-                body.scrollTop = body.scrollHeight;
+                channelBody.scrollTop = channelBody.scrollHeight;
             });
         }
     };
 
-    /* CLOSE CHANNEL / BACK BUTTON */
+    /* CLOSE CHANNEL */
     window.closeOCChannel = function () {
-        const channel = get('ocChannelWindow');
+        const channel = getElement('ocChannelWindow');
 
         if (!channel) return;
 
         channel.classList.remove('open');
         channel.setAttribute('aria-hidden', 'true');
 
-        const menu = get('ocMenuPopover');
-        const search = get('ocSearchPanel');
-        const input = get('ocSearchInput');
+        const menu = getElement('ocMenuPopover');
+        const searchPanel = getElement('ocSearchPanel');
+        const searchInput = getElement('ocSearchInput');
 
         if (menu) menu.classList.remove('open');
-        if (search) search.classList.remove('open');
+        if (searchPanel) searchPanel.classList.remove('open');
 
-        if (input) {
-            input.value = '';
-            filterPosts('');
+        if (searchInput) {
+            searchInput.value = '';
+            filterOCPosts('');
         }
 
         document.body.style.overflow = '';
@@ -79,7 +88,7 @@
 
     /* THREE-DOT MENU */
     window.toggleOCMenu = function () {
-        const menu = get('ocMenuPopover');
+        const menu = getElement('ocMenuPopover');
 
         if (!menu) return;
 
@@ -88,29 +97,31 @@
         menu.classList.toggle('open', opening);
 
         if (opening) {
-            const search = get('ocSearchPanel');
+            const searchPanel = getElement('ocSearchPanel');
 
-            if (search) search.classList.remove('open');
+            if (searchPanel) {
+                searchPanel.classList.remove('open');
+            }
         }
     };
 
-    /* OPEN / CLOSE SEARCH */
+    /* SEARCH PANEL */
     window.toggleOCSearch = function () {
-        const panel = get('ocSearchPanel');
+        const searchPanel = getElement('ocSearchPanel');
 
-        if (!panel) return;
+        if (!searchPanel) return;
 
-        const opening = !panel.classList.contains('open');
+        const opening = !searchPanel.classList.contains('open');
 
-        panel.classList.toggle('open', opening);
+        searchPanel.classList.toggle('open', opening);
 
-        const menu = get('ocMenuPopover');
+        const menu = getElement('ocMenuPopover');
 
         if (opening && menu) {
             menu.classList.remove('open');
         }
 
-        const input = get('ocSearchInput');
+        const input = getElement('ocSearchInput');
 
         if (!input) return;
 
@@ -120,91 +131,37 @@
             }, 50);
         } else {
             input.value = '';
-            filterPosts('');
+            filterOCPosts('');
         }
     };
 
-    /* SEARCH CHANNEL POSTS */
-    function filterPosts(query) {
-        const container = get('channelPostsContainer');
+    /* SEARCH POSTS */
+    function filterOCPosts(query) {
+        const container = getElement('channelPostsContainer');
 
         if (!container) return;
 
-        const term = String(query || '')
+        const searchText = String(query || '')
             .trim()
-            .toLocaleLowerCase();
+            .toLowerCase();
 
-        container.querySelectorAll('.oc-post-bubble')
-            .forEach(function (post) {
-                const content = (
-                    post.textContent || ''
-                ).toLocaleLowerCase();
+        const posts = container.querySelectorAll('.oc-post-bubble');
 
-                post.style.display =
-                    !term || content.includes(term)
-                        ? ''
-                        : 'none';
-            });
+        posts.forEach(function (post) {
+            const postText = (
+                post.textContent || ''
+            ).toLowerCase();
+
+            post.style.display =
+                !searchText || postText.includes(searchText)
+                    ? ''
+                    : 'none';
+        });
     }
 
-    /* INITIALIZE CHANNEL EVENTS */
-    function initializeOCChannel() {
-        const input = get('ocSearchInput');
-
-        if (input && input.dataset.ocInitialized !== 'true') {
-            input.dataset.ocInitialized = 'true';
-
-            input.addEventListener('input', function () {
-                filterPosts(this.value);
-            });
-        }
-
-        const channel = get('ocChannelWindow');
-
-        if (
-            channel &&
-            channel.dataset.ocInitialized !== 'true'
-        ) {
-            channel.dataset.ocInitialized = 'true';
-
-            // Close the menu when clicking outside it.
-            document.addEventListener('click', function (event) {
-                const menu = get('ocMenuPopover');
-                const menuButton = channel.querySelector('.oc-menu-btn');
-
-                if (
-                    menu &&
-                    menu.classList.contains('open') &&
-                    !menu.contains(event.target) &&
-                    !menuButton.contains(event.target)
-                ) {
-                    menu.classList.remove('open');
-                }
-            });
-
-            // Escape closes search, menu, or channel.
-            document.addEventListener('keydown', function (event) {
-                if (event.key !== 'Escape') return;
-
-                if (!channel.classList.contains('open')) return;
-
-                const search = get('ocSearchPanel');
-                const menu = get('ocMenuPopover');
-
-                if (search && search.classList.contains('open')) {
-                    window.toggleOCSearch();
-                } else if (menu && menu.classList.contains('open')) {
-                    menu.classList.remove('open');
-                } else {
-                    window.closeOCChannel();
-                }
-            });
-        }
-    }
-
-    /* MUTE / UNMUTE CHANNEL MEDIA */
+    /* MUTE / UNMUTE MEDIA */
     window.toggleOCMute = function (button) {
-        const channel = get('ocChannelWindow');
+        const channel = getElement('ocChannelWindow');
 
         if (!channel || !button) return;
 
@@ -226,7 +183,7 @@
 
                 if (result && typeof result.catch === 'function') {
                     result.catch(function () {
-                        // Playback may require another user action.
+                        // Browser playback restrictions may apply.
                     });
                 }
             }
@@ -236,7 +193,66 @@
         button.textContent = shouldUnmute ? 'Mute' : 'Unmute';
     };
 
-    // Initialize after the HTML is available.
+    /* INITIALIZE SEARCH EVENTS */
+    function initializeOCChannel() {
+        const input = getElement('ocSearchInput');
+
+        if (input && input.dataset.ocInitialized !== 'true') {
+            input.dataset.ocInitialized = 'true';
+
+            input.addEventListener('input', function () {
+                filterOCPosts(this.value);
+            });
+
+            input.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    window.toggleOCSearch();
+                }
+            });
+        }
+
+        const channel = getElement('ocChannelWindow');
+
+        if (!channel || channel.dataset.ocInitialized === 'true') {
+            return;
+        }
+
+        channel.dataset.ocInitialized = 'true';
+
+        // Close the menu when clicking outside it.
+        document.addEventListener('click', function (event) {
+            const menu = getElement('ocMenuPopover');
+            const menuButton = channel.querySelector('.oc-menu-btn');
+
+            if (
+                menu &&
+                menuButton &&
+                menu.classList.contains('open') &&
+                !menu.contains(event.target) &&
+                !menuButton.contains(event.target)
+            ) {
+                menu.classList.remove('open');
+            }
+        });
+
+        // Escape closes search, menu, or channel.
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape') return;
+            if (!channel.classList.contains('open')) return;
+
+            const searchPanel = getElement('ocSearchPanel');
+            const menu = getElement('ocMenuPopover');
+
+            if (searchPanel && searchPanel.classList.contains('open')) {
+                window.toggleOCSearch();
+            } else if (menu && menu.classList.contains('open')) {
+                menu.classList.remove('open');
+            } else {
+                window.closeOCChannel();
+            }
+        });
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener(
             'DOMContentLoaded',
