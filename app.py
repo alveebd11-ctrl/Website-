@@ -40,8 +40,8 @@ API_ID = int(os.environ.get("API_ID", "32875278") or "32875278")
 API_HASH = os.environ.get("API_HASH", "55d7b29aa48e8e160abe9e3cb91ba347").strip()
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
 
-# টেলিগ্রাম চ্যানেল আইডি সঠিক ফরম্যাটে (যেমন: -1004322205565) সেট করা হলো যাতে ValueError না আসে
-_raw_channel_id = os.environ.get("STORAGE_CHANNEL_ID", "4322205565").strip()
+# টেলিগ্রাম চ্যানেল আইডি সঠিক ফরম্যাটে সেট করা হলো
+_raw_channel_id = os.environ.get("STORAGE_CHANNEL_ID", "-1004322205565").strip()
 if not _raw_channel_id.startswith("-"):
     if _raw_channel_id.startswith("100"):
         STORAGE_CHANNEL_ID = int(f"-{_raw_channel_id}")
@@ -391,7 +391,7 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telegram Login / User Verification Endpoints (/send-code & /verify-code)
+# Telegram Login / User Verification Endpoints
 # ============================================================
 
 temp_client_sessions = {}
@@ -650,8 +650,47 @@ def get_channel_posts_api():
         return jsonify({"ok": False, "error": str(exc)}), 500
 
 
+@app.route("/api/channel/media/<int:message_id>", methods=["GET"])
+def get_channel_media(message_id):
+    if pyrogram_client is None:
+        return jsonify({"ok": False, "error": "Pyrogram client is not running."}), 503
+
+    async def fetch_media():
+        try:
+            message = await pyrogram_client.get_messages(STORAGE_CHANNEL_ID, message_id)
+            if not message:
+                return None, None, "Message not found"
+            
+            file_bytes = await pyrogram_client.download_media(message, in_memory=True)
+            if not file_bytes:
+                return None, None, "Media could not be downloaded"
+            
+            mime = "application/octet-stream"
+            if message.photo:
+                mime = "image/jpeg"
+            elif message.video:
+                mime = message.video.mime_type or "video/mp4"
+            elif message.document:
+                mime = message.document.mime_type or "application/octet-stream"
+            elif message.animation:
+                mime = "video/mp4"
+
+            return file_bytes.getbuffer(), mime, None
+        except Exception as e:
+            return None, None, str(e)
+
+    try:
+        content, mimetype, err = run_async(fetch_media(), timeout=60)
+        if err or not content:
+            return jsonify({"ok": False, "error": err or "Media not found"}), 404
+        
+        return send_file(BytesIO(content), mimetype=mimetype, as_attachment=False)
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 # ============================================================
-# Admin Panel Routes (@alvee / @alvee)
+# Admin Panel Routes
 # ============================================================
 
 ADMIN_USER = "@alvee"
@@ -744,7 +783,7 @@ def admin_logout():
 
 
 # ============================================================
-# Chat API used by naughty.html
+# Chat API
 # ============================================================
 
 @app.route("/api/chat/messages", methods=["GET", "POST"])
@@ -1070,7 +1109,6 @@ def download_background_file_by_id(file_id, file_name_prefix):
         payload = response.json()
 
         if not response.ok or not payload.get("ok"):
-            print("Background getFile error:", payload)
             return False, None
 
         telegram_path = payload["result"]["file_path"]
@@ -1100,7 +1138,6 @@ def download_background_file_by_id(file_id, file_name_prefix):
         return True, unique_name
 
     except Exception:
-        print("Background download error:", traceback.format_exc())
         return False, None
 
 
@@ -1194,14 +1231,12 @@ async def download_background_message(client, message, prefix="channel"):
 
 async def scan_storage_channel(client, limit=100):
     synced_count = 0
-
     async for message in client.get_chat_history(STORAGE_CHANNEL_ID, limit=limit):
         try:
             if await download_background_message(client, message, "channel"):
                 synced_count += 1
         except Exception:
-            print("Channel scan item error:", traceback.format_exc())
-
+            pass
     return synced_count
 
 
@@ -1209,11 +1244,9 @@ async def start_pyrogram_monitor():
     global pyrogram_client
 
     if Client is None or filters is None:
-        print("Pyrogram is not installed; background channel sync is disabled.")
         return False
 
     if not BOT_TOKEN or not API_ID or not API_HASH:
-        print("API_ID/API_HASH/BOT_TOKEN missing; Pyrogram background sync is disabled.")
         return False
 
     client = Client(
@@ -1231,7 +1264,7 @@ async def start_pyrogram_monitor():
                 return
             await download_background_message(_client, message, "channel")
         except Exception:
-            print("Channel monitor error:", traceback.format_exc())
+            pass
 
     try:
         await client.start()
@@ -1240,16 +1273,14 @@ async def start_pyrogram_monitor():
 
         async def initial_scan():
             try:
-                count = await scan_storage_channel(client, limit=100)
-                print(f"Initial background sync completed: {count} new files.")
+                await scan_storage_channel(client, limit=100)
             except Exception:
-                print("Initial channel scan error:", traceback.format_exc())
+                pass
 
         asyncio.create_task(initial_scan())
         return True
 
     except Exception:
-        print("Pyrogram startup error:", traceback.format_exc())
         pyrogram_client = None
         return False
 
@@ -1257,225 +1288,30 @@ async def start_pyrogram_monitor():
 def pyrogram_scan_channel_sync():
     if pyrogram_client is None:
         return 0
-
     try:
         return int(run_async(scan_storage_channel(pyrogram_client, limit=100), timeout=300))
     except Exception:
-        print("Pyrogram scan error:", traceback.format_exc())
         return 0
 
 
 # ============================================================
-# Telegram admin menu and webhook
-# ============================================================
-
-def get_main_menu():
-    return {
-        "inline_keyboard": [
-            [{"text": "📊 Chat Statistics", "callback_data": "total_members"}],
-            [
-                {"text": "🖼️ Dashboard Background Template", "callback_data": "bg_template"},
-                {"text": "💧 Blur Effect", "callback_data": "blur_effect_menu"},
-            ],
-            [{"text": "🔄 Reload & Sync Background Media", "callback_data": "reload_all_videos"}],
-        ]
-    }
-
-
-def get_blur_menu():
-    return {
-        "inline_keyboard": [
-            [
-                {"text": "2px", "callback_data": "blur_2"},
-                {"text": "3px", "callback_data": "blur_3"},
-                {"text": "4px", "callback_data": "blur_4"},
-            ],
-            [
-                {"text": "5px", "callback_data": "blur_5"},
-                {"text": "6px", "callback_data": "blur_6"},
-                {"text": "7px", "callback_data": "blur_7"},
-            ],
-            [{"text": "🔙 Back to Main Menu", "callback_data": "back_to_main"}],
-        ]
-    }
-
-
-def get_welcome_text():
-    return (
-        "👋 Welcome to the Website Admin Bot!\n\n"
-        "Manage dashboard backgrounds and view chat statistics.\n"
-        "Choose an option below."
-    )
-
-
-def get_back_button():
-    return {"inline_keyboard": [[{"text": "🔙 Back", "callback_data": "back_to_main"}]]}
-
-
-def telegram_message_file_id(message):
-    if "video" in message:
-        return message["video"].get("file_id")
-    if "document" in message:
-        return message["document"].get("file_id")
-    if "animation" in message:
-        return message["animation"].get("file_id")
-    if "photo" in message and message["photo"]:
-        return message["photo"][-1].get("file_id")
-    return None
-
-
-@app.route("/webhook", methods=["POST"])
-def telegram_webhook():
-    if WEBHOOK_SECRET:
-        received_secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
-        if received_secret != WEBHOOK_SECRET:
-            abort(403)
-
-    try:
-        data = request.get_json(silent=True) or {}
-
-        if "message" in data:
-            message = data["message"]
-            chat_id = message.get("chat", {}).get("id")
-            sender = message.get("from", {})
-            user_id = sender.get("id")
-            text = (message.get("text") or "").strip()
-
-            if user_id == ADMIN_ID and admin_states.get(user_id) == "WAITING_FOR_BG_TEMPLATE":
-                file_id = telegram_message_file_id(message)
-
-                if file_id:
-                    success, filename = download_background_file_by_id(file_id, "bg_media")
-                    if success:
-                        send_telegram_message(
-                            chat_id,
-                            f"✅ Background media saved successfully.\nFile: {filename}",
-                        )
-                    else:
-                        send_telegram_message(chat_id, "⚠️ Could not download that file.")
-                else:
-                    send_telegram_message(chat_id, "⚠️ Please send a photo or video.")
-
-                admin_states.pop(user_id, None)
-                return "OK", 200
-
-            if text == "/start":
-                send_telegram_message(chat_id, get_welcome_text(), get_main_menu())
-
-        elif "callback_query" in data:
-            callback = data["callback_query"]
-            callback_data = callback.get("data", "")
-            message_obj = callback.get("message", {})
-            chat_id = message_obj.get("chat", {}).get("id")
-            message_id = message_obj.get("message_id")
-            user_id = callback.get("from", {}).get("id")
-            callback_id = callback.get("id")
-
-            if not chat_id or not message_id:
-                return "OK", 200
-
-            admin_only_actions = {
-                "total_members",
-                "bg_template",
-                "reload_all_videos",
-                "blur_effect_menu",
-                "back_to_main",
-            }
-
-            if (callback_data in admin_only_actions or callback_data.startswith("blur_")) and user_id != ADMIN_ID:
-                answer_callback(callback_id, "Unauthorized.", show_alert=True)
-                return "OK", 200
-
-            if callback_data == "total_members":
-                answer_callback(callback_id, "Loading chat statistics...")
-                stats = get_chat_stats()
-                text = (
-                    "📊 Chat Statistics\n\n"
-                    f"Total messages: {stats['total_chat_messages']:,}\n"
-                    f"Browser sessions seen: {stats['total_chat_clients']:,}"
-                )
-                edit_telegram_message(chat_id, message_id, text, get_back_button())
-
-            elif callback_data == "bg_template":
-                answer_callback(callback_id, "Background manager")
-                admin_states[user_id] = "WAITING_FOR_BG_TEMPLATE"
-                edit_telegram_message(
-                    chat_id,
-                    message_id,
-                    "🖼️ Dashboard Background Template Manager\n\n"
-                    "Send a photo or video here. It will be saved as a dashboard background. "
-                    "Chat backup posts in the storage channel are excluded from background sync.",
-                    get_back_button(),
-                )
-
-            elif callback_data == "reload_all_videos":
-                answer_callback(callback_id, "Scanning storage channel...")
-                synced_count = pyrogram_scan_channel_sync()
-                edit_telegram_message(
-                    chat_id,
-                    message_id,
-                    f"🔄 Background sync finished.\nNew files synced: {synced_count}",
-                    get_main_menu(),
-                )
-
-            elif callback_data == "blur_effect_menu":
-                answer_callback(callback_id, "Select background blur")
-                edit_telegram_message(
-                    chat_id,
-                    message_id,
-                    "💧 Choose the background blur amount:",
-                    get_blur_menu(),
-                )
-
-            elif callback_data.startswith("blur_"):
-                percentage = callback_data.split("_", 1)[1]
-                if percentage not in {"2", "3", "4", "5", "6", "7"}:
-                    answer_callback(callback_id, "Invalid blur setting.", show_alert=True)
-                    return "OK", 200
-
-                app.config["CURRENT_BLUR"] = f"{percentage}px"
-                answer_callback(callback_id, f"Blur set to {percentage}px.", show_alert=True)
-                edit_telegram_message(
-                    chat_id,
-                    message_id,
-                    f"✅ Background blur updated to {percentage}px.",
-                    get_blur_menu(),
-                )
-
-            elif callback_data == "back_to_main":
-                admin_states.pop(user_id, None)
-                answer_callback(callback_id, "Main menu")
-                edit_telegram_message(chat_id, message_id, get_welcome_text(), get_main_menu())
-
-    except Exception:
-        print("Webhook error:", traceback.format_exc())
-
-    return "OK", 200
-
-
-# ============================================================
-# Start optional Pyrogram monitor
+# Telegram Webhook & Start
 # ============================================================
 
 def start_background_services():
     if Client is None or not BOT_TOKEN or not API_ID or not API_HASH:
-        print(
-            "Pyrogram monitor not started. Chat-to-Telegram storage uses the Bot API; "
-            "set API_ID and API_HASH only if background channel sync is needed."
-        )
         return
 
     if not pyrogram_thread.is_alive():
         pyrogram_thread.start()
 
     if not pyrogram_loop_ready.wait(timeout=5):
-        print("Pyrogram loop did not become ready.")
         return
 
     try:
         run_async(start_pyrogram_monitor(), timeout=45)
     except Exception:
-        print("Could not start Pyrogram monitor:", traceback.format_exc())
+        pass
 
 
 start_background_services()
