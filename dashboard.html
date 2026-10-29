@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1610,11 +1609,65 @@ function closeNaughtyWindow() {
     document.body.style.overflow = '';
 }
 
+/* ========================================
+   OC COLLECTION UNIVERSE FUNCTIONS
+   ======================================== */
+function openOCChannel() {
+    const modal = document.getElementById('ocChannelWindow');
+    if (modal) {
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden'; // ব্যাকগ্রাউন্ড স্ক্রল বন্ধ করবে
+    }
+}
+
+function closeOCChannel() {
+    const modal = document.getElementById('ocChannelWindow');
+    if (modal) {
+        modal.classList.remove('open');
+        document.body.style.overflow = ''; // ব্যাকগ্রাউন্ড স্ক্রল চালু করবে
+    }
+    
+    // উইন্ডো ক্লোজ করার সময় ভেতরের মেনু বা সার্চ ওপেন থাকলে সেটাও ক্লোজ করবে
+    const menu = document.getElementById('ocMenuPopover');
+    if (menu) menu.classList.remove('open');
+    
+    const search = document.getElementById('ocSearchPanel');
+    if (search) search.classList.remove('open');
+}
+
+function toggleOCMenu() {
+    const menu = document.getElementById('ocMenuPopover');
+    if (menu) {
+        menu.classList.toggle('open');
+    }
+}
+
+function toggleOCSearch() {
+    const search = document.getElementById('ocSearchPanel');
+    if (search) {
+        search.classList.toggle('open');
+    }
+}
+
+function toggleOCMute(btn) {
+    if (btn) {
+        const isMuted = btn.getAttribute('data-muted') === 'true';
+        if (isMuted) {
+            btn.setAttribute('data-muted', 'false');
+            btn.textContent = 'Mute';
+        } else {
+            btn.setAttribute('data-muted', 'true');
+            btn.textContent = 'Unmute';
+        }
+    }
+}
+
 /* KEYBOARD / CONTEXT MENU */
 document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
         closeNaughtyWindow();
         closeModal();
+        closeOCChannel(); // Escape চাপলেও OC Channel উইন্ডো ক্লোজ হবে
     }
 
     if (
