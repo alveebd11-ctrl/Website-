@@ -34,6 +34,8 @@ body {
     overflow-x: hidden;
 }
 
+/* ================= BACKGROUND ================= */
+
 .bg-container {
     position: fixed;
     inset: 0;
@@ -68,6 +70,8 @@ body {
     inset: 0;
     background: transparent;
 }
+
+/* ================= INITIAL LOADER ================= */
 
 #bgLoader {
     position: fixed;
@@ -104,6 +108,8 @@ body {
 @keyframes spinLoader {
     to { transform: rotate(360deg); }
 }
+
+/* ================= DASHBOARD ================= */
 
 #dashboardWrapper {
     opacity: 0;
@@ -181,6 +187,8 @@ body {
     display: flex;
 }
 
+/* ================= PROFILE CARDS ================= */
+
 .profile-card {
     background: rgba(20,25,45,.75);
     backdrop-filter: blur(20px);
@@ -195,17 +203,48 @@ body {
     box-shadow: 0 10px 30px #0008;
     cursor: pointer;
     transition: transform .18s ease, border-color .3s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 .profile-card.blink-glow {
-    background: linear-gradient(135deg, #ff708f4d, rgba(20,25,45,.85));
+    background: linear-gradient(
+        135deg,
+        #ff708f4d,
+        rgba(20,25,45,.85)
+    );
     border: 1.5px solid #ff708f;
     animation: cardBlink 2s infinite ease-in-out;
 }
 
 @keyframes cardBlink {
-    0%, 100% { box-shadow: 0 0 10px #ff708f66; border-color: #ff708f80; }
-    50% { box-shadow: 0 0 25px #ff708fe6; border-color: #ff708f; }
+    0%, 100% {
+        box-shadow: 0 0 10px #ff708f66;
+        border-color: #ff708f80;
+    }
+
+    50% {
+        box-shadow: 0 0 25px #ff708fe6;
+        border-color: #ff708f;
+    }
+}
+
+.profile-card:hover {
+    border-color: #ffffff4d;
+}
+
+.oc-collection-card {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: transform .16s ease, border-color .3s ease;
+}
+
+.oc-collection-card:active {
+    transform: scale(.94);
+}
+
+.profile-card.blink-glow:active {
+    transform: scale(.94);
 }
 
 .user-info-wrapper {
@@ -238,6 +277,10 @@ body {
     inset: 0;
     z-index: 5;
     background: transparent;
+}
+
+.user-details {
+    min-width: 0;
 }
 
 .user-details h3 {
@@ -285,6 +328,8 @@ body {
     font-weight: 700;
     letter-spacing: 1.2px;
 }
+
+/* ================= PROFILE VIEW ================= */
 
 .profile-card-modern {
     width: 100%;
@@ -379,6 +424,8 @@ body {
     margin-top: 15px;
 }
 
+/* ================= BOTTOM NAVIGATION ================= */
+
 .bottom-glass-nav {
     position: fixed;
     bottom: 25px;
@@ -435,15 +482,62 @@ body {
     fill: #fff;
 }
 
+/* ================= PROFILE MODAL ================= */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: #000d;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.modal-box {
+    background: #141c3a;
+    border: 1.5px solid #ff708f66;
+    width: 90%;
+    max-width: 340px;
+    padding: 25px;
+    border-radius: 24px;
+    text-align: center;
+    color: #fff;
+    box-shadow: 0 15px 40px #000b;
+}
+
+.modal-box h3 {
+    margin-bottom: 15px;
+    color: #ff708f;
+    font-size: 20px;
+}
+
+.close-btn {
+    background: linear-gradient(135deg,#ff9bb0,#ff708f);
+    color: #fff;
+    border: 0;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+/* ================= NAUGHTY NONSTOP ================= */
+
 .naughty-window {
     position: fixed;
     inset: 0;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     background: #080d20;
     z-index: 2000;
     display: none;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .naughty-window.open {
@@ -454,26 +548,41 @@ body {
     display: block;
     width: 100%;
     height: 100%;
+    min-height: 0;
+    flex: 1;
     border: 0;
+    background: #080d20;
 }
 
-/* OC COLLECTION UNIVERSE POPUP */
+/* ==================================================
+   OC COLLECTION UNIVERSE - TELEGRAM STYLE POPUP
+   ================================================== */
+
 .oc-channel-window {
     position: fixed;
     inset: 0;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     display: none;
     flex-direction: column;
     overflow: hidden;
     z-index: 5000;
-    background: linear-gradient(125deg, #e5e8ad 0%, #9bc995 48%, #6ba88e 100%);
+    isolation: isolate;
+    background: linear-gradient(
+        125deg,
+        #e5e8ad 0%,
+        #9bc995 48%,
+        #6ba88e 100%
+    );
     color: #17211d;
 }
 
 .oc-channel-window.open {
     display: flex;
 }
+
+/* Decorative wallpaper */
 
 .oc-doodle-wallpaper {
     position: absolute;
@@ -485,8 +594,11 @@ body {
     font-size: clamp(22px,4vw,38px);
     line-height: 2.7;
     letter-spacing: 10px;
+    word-spacing: 10px;
     transform: rotate(-10deg) scale(1.1);
 }
+
+/* Popup header */
 
 .oc-channel-header {
     position: relative;
@@ -498,30 +610,45 @@ body {
     width: 100%;
 }
 
-.oc-back-btn, .oc-menu-btn {
-    flex: 0 0 54px;
-    width: 54px;
-    height: 54px;
+.oc-back-btn,
+.oc-menu-btn {
+    flex: 0 0 clamp(54px,13vw,92px);
+    width: clamp(54px,13vw,92px);
+    height: clamp(54px,13vw,92px);
+    padding: 0;
     border: none;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #1c2522;
     background: rgba(249,250,241,.94);
+    box-shadow: 0 3px 14px rgba(0,0,0,.06);
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.oc-back-btn:active,
+.oc-menu-btn:active {
+    transform: scale(.94);
 }
 
 .oc-back-btn svg {
-    width: 28px;
-    height: 28px;
-    stroke: #1c2522;
+    width: 32px;
+    height: 32px;
+    stroke: currentColor;
     fill: none;
     stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
+
+/* Header title capsule */
 
 .oc-channel-title-pill {
     flex: 1;
     min-width: 0;
+    min-height: clamp(60px,13vw,92px);
     padding: 5px 12px 5px 5px;
     display: flex;
     align-items: center;
@@ -529,67 +656,101 @@ body {
     border-radius: 100px;
     background: rgba(255,255,255,.80);
     border: 1px solid rgba(255,255,255,.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .oc-channel-avatar {
-    width: 42px;
-    height: 42px;
+    flex: 0 0 clamp(42px,11vw,80px);
+    width: clamp(42px,11vw,80px);
+    height: clamp(42px,11vw,80px);
+    border: 3px solid rgba(255,255,255,.9);
     border-radius: 50%;
     overflow: hidden;
+    background: #3485d0;
 }
 
 .oc-channel-avatar img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.oc-channel-title-text {
+    flex: 1;
+    min-width: 0;
 }
 
 .oc-channel-title-text h2 {
-    font-size: 14px;
-    font-weight: 700;
+    margin: 0;
     color: #171b1d;
+    font-size: clamp(14px,3.8vw,28px);
+    line-height: 1.25;
+    font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .oc-channel-title-text p {
-    font-size: 11px;
+    margin: 3px 0 0;
     color: #778078;
+    font-size: clamp(11px,2.6vw,18px);
+    font-weight: 500;
 }
+
+/* Three-dot menu */
 
 .oc-menu-popover {
     position: absolute;
-    top: 80px;
+    top: 100px;
     right: 16px;
     z-index: 5;
     display: none;
-    width: 220px;
-    padding: 14px;
+    width: min(270px,calc(100vw - 32px));
+    padding: 16px;
     flex-direction: column;
     gap: 8px;
     background: #f8f9f2;
-    border-radius: 14px;
-    box-shadow: 0 8px 25px rgba(0,0,0,.15);
+    color: #26312c;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
 }
 
 .oc-menu-popover.open {
     display: flex;
 }
 
+.oc-menu-popover strong {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.oc-menu-popover small {
+    color: #78817a;
+    font-size: 12px;
+}
+
 .oc-menu-popover button {
-    padding: 8px;
+    margin-top: 8px;
+    padding: 10px;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     background: #dcebdc;
     color: #234d38;
+    font-family: inherit;
     font-weight: 600;
     cursor: pointer;
 }
 
+/* Channel Content Body / Timeline */
+
 .oc-channel-body {
     position: absolute;
-    inset: 80px 10px 80px 10px;
+    inset: 90px 10px 90px 10px;
     z-index: 2;
     overflow-y: auto;
     display: flex;
@@ -606,14 +767,47 @@ body {
     width: 100%;
 }
 
-.oc-date-pill, .oc-today-pill, .oc-joined-pill {
-    padding: 6px 14px;
+.oc-date-pill,
+.oc-created-pill,
+.oc-today-pill,
+.oc-joined-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #fff;
     background: rgba(35,133,92,.84);
     border-radius: 100px;
-    font-size: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    font-size: clamp(13px,3vw,19px);
     font-weight: 700;
+    text-align: center;
 }
+
+.oc-date-pill,
+.oc-today-pill {
+    padding: 8px 19px;
+}
+
+.oc-created-pill {
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 9px 16px;
+}
+
+.oc-created-pill small {
+    padding: 5px 9px;
+    border-radius: 30px;
+    background: rgba(255,255,255,.13);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.oc-joined-pill {
+    max-width: 95%;
+    padding: 10px 18px;
+}
+
+/* Channel Posts Styles */
 
 .oc-post-bubble {
     background: #ffffff;
@@ -631,41 +825,200 @@ body {
     width: 100%;
     border-radius: 8px;
     margin-top: 8px;
-    max-height: 300px;
+    max-height: 250px;
     object-fit: cover;
 }
+
+/* ================= REDUCED BOTTOM BOX ================= */
 
 .oc-bottom-actions {
     position: absolute;
     z-index: 3;
     left: 14px;
     right: 14px;
-    bottom: 20px;
-    height: 56px;
+    bottom: clamp(30px,4vh,48px);
+    height: clamp(56px,9vw,68px);
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
+.oc-search-btn {
+    flex: 0 0 clamp(56px,9vw,68px);
+    width: clamp(56px,9vw,68px);
+    height: 100%;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #738078;
+    background: rgba(249,250,245,.95);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.oc-search-btn svg {
+    width: 27px;
+    height: 27px;
+    stroke-width: 2.2;
+}
+
 .oc-unmute-btn {
     flex: 1;
+    min-width: 0;
     height: 100%;
+    padding: 0 12px;
     border: none;
     border-radius: 100px;
     background: rgba(250,251,248,.95);
     color: #747c78;
-    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    font-size: clamp(15px,3vw,20px);
+    font-weight: 500;
+    letter-spacing: .2px;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.oc-search-btn:active,
+.oc-unmute-btn:active {
+    transform: scale(.97);
+}
+
+.oc-search-panel {
+    position: absolute;
+    z-index: 5;
+    display: none;
+    left: 94px;
+    right: 14px;
+    bottom: 115px;
+    padding: 10px 12px;
+    align-items: center;
+    gap: 8px;
+    background: #f8f9f2;
+    color: #26312c;
+    box-shadow: 0 8px 30px rgba(0,0,0,.15);
+    border-radius: 18px;
+}
+
+.oc-search-panel.open {
+    display: flex;
+}
+
+.oc-search-panel input {
+    width: 100%;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #26312c;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 400;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.oc-search-panel button {
+    border: none;
+    background: transparent;
+    color: #536158;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.oc-system-bar {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    bottom: 8px;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 5px;
+    border-radius: 100px;
+    background: rgba(115,115,115,.5);
+}
+
+@media(max-width:380px) {
+    #dashboardWrapper {
+        padding: 22px 12px 100px;
+    }
+
+    .profile-card {
+        padding: 10px 13px;
+    }
+
+    .user-info-wrapper {
+        gap: 10px;
+    }
+
+    .user-details h3 {
+        font-size: 12px;
+    }
+
+    .live-badge-container {
+        padding: 5px 9px;
+    }
+
+    .live-text {
+        font-size: 10px;
+    }
+
+    .oc-channel-header {
+        gap: 7px;
+        padding: 10px 8px 0;
+    }
+
+    .oc-back-btn,
+    .oc-menu-btn {
+        flex-basis: 48px;
+        width: 48px;
+        height: 48px;
+    }
+
+    .oc-channel-title-pill {
+        gap: 7px;
+        padding-right: 7px;
+    }
+
+    .oc-channel-title-text h2 {
+        font-size: 12px;
+    }
+
+    .oc-channel-title-text p {
+        font-size: 11px;
+    }
+
+    .oc-bottom-actions {
+        gap: 10px;
+    }
+
+    .oc-search-panel {
+        left: 80px;
+    }
+}
+
+@media(prefers-reduced-motion:reduce) {
+    .profile-card.blink-glow,
+    .live-dot {
+        animation: none;
+    }
 }
 </style>
 </head>
 
 <body>
 
+<!-- INITIAL DASHBOARD LOADER -->
+
 <div id="bgLoader">
     <div class="spinner-box"></div>
     <div class="loader-text">Loading Background...</div>
 </div>
+
+<!-- BACKGROUND -->
 
 <div class="bg-container" id="bgContainer">
     <div class="bg-shade"></div>
@@ -673,132 +1026,850 @@ body {
 
 <div id="dashboardWrapper">
 
+    <!-- REFRESH -->
+
     <div class="header-nav">
-        <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
+        <button id="refreshBtn"
+                onclick="triggerRefresh(this)"
+                class="header-btn refresh-btn">
+            REFRESH
+        </button>
     </div>
+
+    <!-- HOME VIEW -->
 
     <div id="homeView" class="view-section active-view">
 
-        <div class="profile-card blink-glow" onclick="openNaughtyWithLandAnimation()">
+        <!-- NAUGHTY NONSTOP -->
+
+        <div class="profile-card blink-glow"
+             onclick="openNaughtyWithLandAnimation()">
+
             <div class="user-info-wrapper">
+
                 <div class="avatar-container">
-                    <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Naughty NonStop" class="avatar">
+                    <img
+                        src="https://carder.top/imagens/1792065172414-739661966.jpg"
+                        alt="Naughty NonStop"
+                        class="avatar">
                     <div class="image-shield"></div>
                 </div>
+
                 <div class="user-details">
                     <h3>⛔Naughty NonStop🚫</h3>
                     <p>Open Media 💋</p>
                 </div>
+
             </div>
+
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
+
         </div>
 
-        <div class="profile-card blink-glow" onclick="openOCChannel()">
+        <!-- OC COLLECTION UNIVERSE -->
+
+        <div class="profile-card blink-glow oc-collection-card"
+             onclick="openOCChannel()">
+
             <div class="user-info-wrapper">
+
                 <div class="avatar-container">
-                    <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="OC Collection Universe" class="avatar">
+                    <img
+                        src="https://carder.top/imagens/1792065174675-662575987.jpg"
+                        alt="OC Collection Universe"
+                        class="avatar">
                     <div class="image-shield"></div>
                 </div>
+
                 <div class="user-details">
                     <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
                     <p>Open Channel</p>
                 </div>
+
             </div>
+
             <div class="live-badge-container">
                 <span class="live-dot"></span>
                 <span class="live-text">LIVE</span>
             </div>
+
         </div>
+
+        <!-- DESI MAGI PREMIUM -->
+
+        <div class="profile-card"
+             onclick="openProfile('Desi Magi Premium','Lock Media')">
+
+            <div class="user-info-wrapper">
+
+                <div class="avatar-container">
+                    <img
+                        src="https://carder.top/imagens/1792065179592-849568981.jpg"
+                        alt="Desi Magi Premium"
+                        class="avatar">
+                    <div class="image-shield"></div>
+                </div>
+
+                <div class="user-details">
+                    <h3>Desi Magi Premium</h3>
+                    <p>Lock Media</p>
+                </div>
+
+            </div>
+
+            <div class="live-badge-container">
+                <span class="live-dot"></span>
+                <span class="live-text">LIVE</span>
+            </div>
+
+        </div>
+
+        <!-- BD SENSUAL -->
+
+        <div class="profile-card"
+             onclick="openProfile('BD Sensual','Lock Media')">
+
+            <div class="user-info-wrapper">
+
+                <div class="avatar-container">
+                    <img
+                        src="https://carder.top/imagens/1792065182673-804452797.jpg"
+                        alt="BD Sensual"
+                        class="avatar">
+                    <div class="image-shield"></div>
+                </div>
+
+                <div class="user-details">
+                    <h3>BD Sensual</h3>
+                    <p>Lock Media</p>
+                </div>
+
+            </div>
+
+            <div class="live-badge-container">
+                <span class="live-dot"></span>
+                <span class="live-text">LIVE</span>
+            </div>
+
+        </div>
+
+        <!-- BANGLADESHI NON STOP -->
+
+        <div class="profile-card"
+             onclick="openProfile('Bangladeshi Non Stop 🫦','Lock Media')">
+
+            <div class="user-info-wrapper">
+
+                <div class="avatar-container">
+                    <img
+                        src="https://carder.top/imagens/1792065176794-158050465.jpg"
+                        alt="Bangladeshi Non Stop"
+                        class="avatar">
+                    <div class="image-shield"></div>
+                </div>
+
+                <div class="user-details">
+                    <h3>Bangladeshi Non Stop 🫦</h3>
+                    <p>Lock Media</p>
+                </div>
+
+            </div>
+
+            <div class="live-badge-container">
+                <span class="live-dot"></span>
+                <span class="live-text">LIVE</span>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- PROFILE VIEW -->
+
+    <div id="profileView" class="view-section">
+
+        <div class="profile-card-modern">
+
+            <div class="card-image-wrapper">
+                <img id="profileImage" src="" alt="Profile Picture">
+                <div class="image-shield"></div>
+            </div>
+
+            <div class="card-user-info">
+
+                <div class="name-row">
+                    <h2 id="profileName">Loading...</h2>
+                </div>
+
+                <div id="profileUsername" class="username-text">
+                    @username
+                </div>
+
+                <div id="profileBio" class="card-bio">
+                    Loading bio...
+                </div>
+
+                <div class="telegram-meta-details">
+
+                    <div class="meta-row">
+                        <span class="meta-label">Phone Number</span>
+                        <span id="profilePhone" class="meta-value">
+                            +880 XXXXXXXXXX
+                        </span>
+                    </div>
+
+                    <div class="meta-row">
+                        <span class="meta-label">Telegram ID</span>
+                        <span id="profileId" class="meta-value">
+                            000000000
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div class="logout-box">
+            <button onclick="logoutUser()" class="logout-action-btn">
+                Log Out Account 🚪
+            </button>
+        </div>
+
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+
+    <div class="bottom-glass-nav" id="bottomNav">
+
+        <button onclick="handleNavAction('group')"
+                class="nav-item"
+                aria-label="Group">
+
+            <svg viewBox="0 0 24 24">
+                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+            </svg>
+
+        </button>
+
+        <button onclick="switchView('home',this)"
+                class="nav-item active"
+                aria-label="Home">
+
+            <svg viewBox="0 0 24 24">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+
+        </button>
+
+        <button onclick="switchView('profile',this)"
+                class="nav-item"
+                aria-label="Profile">
+
+            <svg viewBox="0 0 24 24">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+
+        </button>
+
+    </div>
+
+    <!-- NAUGHTY NONSTOP FULL-SCREEN WINDOW -->
+
+    <div class="naughty-window" id="naughtyWindow">
+
+        <iframe
+            src="naughty.html"
+            title="Naughty NonStop"
+            loading="eager">
+        </iframe>
 
     </div>
 
     <!-- OC COLLECTION UNIVERSE POPUP -->
-    <div class="oc-channel-window" id="ocChannelWindow" aria-hidden="true">
-        <div class="oc-doodle-wallpaper" aria-hidden="true">☆ ♡ ✧ ♧ ◇ ☆ ♡ ✿ ♬</div>
+
+    <div class="oc-channel-window"
+         id="ocChannelWindow"
+         aria-hidden="true">
+
+        <!-- Wallpaper -->
+
+        <div class="oc-doodle-wallpaper" aria-hidden="true">
+            ☆ ♡ ✧ ♧ ◇ ☆ ♡ ✿ ♬ ☆ ♡
+            <br>
+            ♡ ☆ ♧ ✧ ◇ ♡ ☆ ✿ ♬ ♡ ☆
+            <br>
+            ✿ ♡ ☆ ◇ ♧ ✧ ☆ ♡ ♬ ✿
+            <br>
+            ☆ ♬ ♡ ✿ ◇ ☆ ♧ ♡ ✧ ☆
+            <br>
+            ◇ ♡ ✧ ☆ ♬ ♧ ♡ ☆ ✿ ◇
+            <br>
+            ♧ ☆ ♡ ✧ ♬ ◇ ☆ ♡ ✿ ♧
+            <br>
+            ☆ ♡ ✿ ♧ ◇ ✧ ♬ ☆ ♡ ☆
+        </div>
+
+        <!-- TOP HEADER -->
 
         <div class="oc-channel-header">
-            <button class="oc-back-btn" type="button" onclick="closeOCChannel()">
-                <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+
+            <button class="oc-back-btn"
+                    type="button"
+                    aria-label="Back to dashboard"
+                    onclick="closeOCChannel()">
+
+                <svg viewBox="0 0 24 24">
+                    <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                </svg>
+
             </button>
+
             <div class="oc-channel-title-pill">
+
                 <div class="oc-channel-avatar">
-                    <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="OC">
+                    <img
+                        src="https://carder.top/imagens/1792065174675-662575987.jpg"
+                        alt="OC Collection Universe">
                 </div>
+
                 <div class="oc-channel-title-text">
                     <h2>OC Collection Universe 🍒</h2>
                     <p>public channel</p>
                 </div>
+
             </div>
+
+            <button class="oc-menu-btn"
+                    type="button"
+                    aria-label="More options"
+                    onclick="toggleOCMenu()">
+
+                <svg viewBox="0 0 24 24"
+                     style="width:28px;height:28px;fill:currentColor;stroke:none">
+
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <circle cx="12" cy="12" r="2"></circle>
+                    <circle cx="12" cy="19" r="2"></circle>
+
+                </svg>
+
+            </button>
+
         </div>
+
+        <!-- THREE-DOT MENU -->
+
+        <div class="oc-menu-popover" id="ocMenuPopover">
+
+            <strong>OC Collection Universe 🍒</strong>
+            <small>Public channel</small>
+
+            <button type="button" onclick="closeOCChannel()">
+                Back to dashboard
+            </button>
+
+        </div>
+
+        <!-- CHANNEL BODY & TIMELINE -->
 
         <div class="oc-channel-body">
             <div class="oc-channel-timeline">
-                <div class="oc-today-pill">Today</div>
-                <div class="oc-joined-pill">You joined this channel</div>
+
+                <div class="oc-date-pill">
+                    July 7
+                </div>
+
+                <div class="oc-created-pill">
+                    <span>Channel created</span>
+                    <small>12:02 AM</small>
+                </div>
+
+                <div class="oc-today-pill">
+                    Today
+                </div>
+
+                <div class="oc-joined-pill">
+                    You joined this channel
+                </div>
+
             </div>
+
+            <!-- Telegram Channel Posts Container -->
             <div id="channelPostsContainer" style="display: flex; flex-direction: column; gap: 10px; width: 100%;"></div>
         </div>
 
-        <div class="oc-bottom-actions">
-            <button class="oc-unmute-btn" type="button" onclick="this.textContent = this.textContent === 'Unmute' ? 'Mute' : 'Unmute'">Unmute</button>
+        <!-- SEARCH PANEL -->
+
+        <div class="oc-search-panel" id="ocSearchPanel">
+
+            <input
+                type="search"
+                id="ocSearchInput"
+                placeholder="Search in channel..."
+                aria-label="Search in channel">
+
+            <button
+                type="button"
+                aria-label="Close search"
+                onclick="toggleOCSearch()">×</button>
+
         </div>
+
+        <!-- BOTTOM CONTROLS -->
+
+        <div class="oc-bottom-actions">
+
+            <button class="oc-search-btn"
+                    type="button"
+                    aria-label="Search"
+                    onclick="toggleOCSearch()">
+
+                <svg viewBox="0 0 24 24">
+                    <circle cx="10.8" cy="10.8" r="7.2"></circle>
+                    <path d="m16.2 16.2 4.5 4.5"></path>
+                </svg>
+
+            </button>
+
+            <button class="oc-unmute-btn"
+                    type="button"
+                    onclick="toggleOCMute(this)">
+                Unmute
+            </button>
+
+        </div>
+
+        <div class="oc-system-bar"></div>
+
     </div>
 
-    <!-- NAUGHTY NONSTOP WINDOW -->
-    <div class="naughty-window" id="naughtyWindow">
-        <iframe src="naughty.html" title="Naughty NonStop"></iframe>
+    <!-- PROFILE MODAL -->
+
+    <div class="modal-overlay" id="profileModal">
+
+        <div class="modal-box">
+
+            <h3 id="modalName">User Profile</h3>
+
+            <div id="modalInfo">Details...</div>
+
+            <button class="close-btn" onclick="closeModal()">
+                Close
+            </button>
+
+        </div>
+
     </div>
 
 </div>
 
 <script>
+/* ========================================
+   RANDOM BACKGROUND IMAGE COLLECTION
+   ======================================== */
+
 const backgroundImages = [
     "https://carder.top/imagens/1792211356900-71480222.jpg",
-    "https://carder.top/imagens/1792211360124-891549584.jpg"
+    "https://carder.top/imagens/1792211360124-891549584.jpg",
+    "https://carder.top/imagens/1792211363191-784655850.jpg",
+    "https://carder.top/imagens/1792211366774-641483995.jpg",
+    "https://carder.top/imagens/1792211369993-111319695.jpg",
+    "https://carder.top/imagens/1792211373146-184568880.jpg",
+    "https://carder.top/imagens/1792211376069-573878050.jpg",
+    "https://carder.top/imagens/1792211380311-627549842.jpg",
+    "https://carder.top/imagens/1792211383910-963888262.jpg",
+    "https://carder.top/imagens/1792211387692-270445764.jpg",
+    "https://carder.top/imagens/1792211391595-489421157.jpg",
+    "https://carder.top/imagens/1792211395044-843776275.jpg",
+    "https://carder.top/imagens/1792211397684-291575915.jpg",
+    "https://carder.top/imagens/1792211400415-415837763.jpg",
+    "https://carder.top/imagens/1792211404054-939376252.jpg",
+    "https://carder.top/imagens/1792211408058-293630764.jpg",
+    "https://carder.top/imagens/1792211411678-542592532.jpg",
+    "https://carder.top/imagens/1792211415017-671187941.jpg",
+    "https://carder.top/imagens/1792211418189-113447876.jpg",
+    "https://carder.top/imagens/1792211421356-34034141.jpg",
+    "https://carder.top/imagens/1792211424276-379864390.jpg",
+    "https://carder.top/imagens/1792211427464-711583645.jpg",
+    "https://carder.top/imagens/1792211430206-733635566.jpg",
+    "https://carder.top/imagens/1792211432978-143819601.jpg",
+    "https://carder.top/imagens/1792211435745-779586894.jpg",
+    "https://carder.top/imagens/1792211438494-723266760.jpg",
+    "https://carder.top/imagens/1792211441297-103954926.jpg",
+    "https://carder.top/imagens/1792211444057-808023603.jpg",
+    "https://carder.top/imagens/1792211446818-537266954.jpg",
+    "https://carder.top/imagens/1792211449576-744912992.jpg",
+    "https://carder.top/imagens/1792211452735-600817733.jpg",
+    "https://carder.top/imagens/1792211455150-700726473.jpg",
+    "https://carder.top/imagens/1792211458148-805658928.jpg",
+    "https://carder.top/imagens/1792211461882-370527977.jpg",
+    "https://carder.top/imagens/1792211465968-178127709.jpg",
+    "https://carder.top/imagens/1792211469590-206467626.jpg",
+    "https://carder.top/imagens/1792211472609-266813301.jpg",
+    "https://carder.top/imagens/1792211474883-607797009.jpg",
+    "https://carder.top/imagens/1792211477223-173816198.jpg",
+    "https://carder.top/imagens/1792211479840-218047364.jpg",
+    "https://carder.top/imagens/1792211483758-10876747.jpg",
+    "https://carder.top/imagens/1792211487262-726904942.jpg",
+    "https://carder.top/imagens/1792211491001-629023842.jpg",
+    "https://carder.top/imagens/1792211494077-726546072.jpg",
+    "https://carder.top/imagens/1792211497378-112198445.jpg",
+    "https://carder.top/imagens/1792211500783-360904419.jpg",
+    "https://carder.top/imagens/1792211503839-589067537.jpg",
+    "https://carder.top/imagens/1792211506619-520153576.jpg",
+    "https://carder.top/imagens/1792211509917-786999311.jpg",
+    "https://carder.top/imagens/1792211513760-499373815.jpg",
+    "https://carder.top/imagens/1792211516820-4850801.jpg",
+    "https://carder.top/imagens/1792211520378-754954133.jpg",
+    "https://carder.top/imagens/1792211524000-180277690.jpg",
+    "https://carder.top/imagens/1792211527878-446991278.jpg",
+    "https://carder.top/imagens/1792211531501-826241673.jpg",
+    "https://carder.top/imagens/1792211534834-620267481.jpg",
+    "https://carder.top/imagens/1792211538540-136169815.jpg",
+    "https://carder.top/imagens/1792211542013-601676215.jpg",
+    "https://carder.top/imagens/1792211545348-47666896.jpg",
+    "https://carder.top/imagens/1792211548775-837836450.jpg",
+    "https://carder.top/imagens/1792211552522-97453175.jpg",
+    "https://carder.top/imagens/1792211556426-988478158.jpg",
+    "https://carder.top/imagens/1792211559084-837253644.jpg",
+    "https://carder.top/imagens/1792211562196-94845613.jpg",
+    "https://carder.top/imagens/1792211565627-980869823.jpg",
+    "https://carder.top/imagens/1792211569361-208903615.jpg",
+    "https://carder.top/imagens/1792211572291-256536991.jpg",
+    "https://carder.top/imagens/1792211575848-215322812.jpg",
+    "https://carder.top/imagens/1792211580022-402778963.jpg",
+    "https://carder.top/imagens/1792211582992-374926539.jpg",
+    "https://carder.top/imagens/1792211585060-845746435.jpg",
+    "https://carder.top/imagens/1792211586554-328495854.jpg"
 ];
+
+function shuffled(items) {
+    const array = [...items];
+
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+
+    return array;
+}
 
 function initRandomBackground() {
     const container = document.getElementById('bgContainer');
     const loader = document.getElementById('bgLoader');
+
     if (!container) return;
-    
-    const selected = backgroundImages[Math.floor(Math.random() * backgroundImages.length)];
+
+    const queueKey = 'dashboardBackgroundImageQueueV1';
+    const previousKey = 'dashboardLastBackgroundImageV1';
+
+    let queue = [];
+
+    try {
+        queue = JSON.parse(localStorage.getItem(queueKey) || '[]');
+    } catch (error) {
+        queue = [];
+    }
+
+    queue = queue.filter(url => backgroundImages.includes(url));
+
+    if (!queue.length) {
+        queue = shuffled(backgroundImages);
+    }
+
+    let previous = null;
+
+    try {
+        previous = localStorage.getItem(previousKey);
+    } catch (error) {}
+
+    if (queue.length > 1 && queue[queue.length - 1] === previous) {
+        [queue[0], queue[queue.length - 1]] =
+            [queue[queue.length - 1], queue[0]];
+    }
+
+    const selected = queue.pop();
+
+    try {
+        localStorage.setItem(queueKey, JSON.stringify(queue));
+    } catch (error) {}
+
     const img = new Image();
+
     img.className = 'bg-image';
+    img.alt = '';
+    img.draggable = false;
+
     img.onload = () => {
-        container.insertBefore(img, container.querySelector('.bg-shade'));
-        requestAnimationFrame(() => img.classList.add('visible'));
+        container.insertBefore(
+            img,
+            container.querySelector('.bg-shade')
+        );
+
+        requestAnimationFrame(() => {
+            img.classList.add('visible');
+        });
+
+        try {
+            localStorage.setItem(previousKey, selected);
+        } catch (error) {}
+
         if (loader) {
             loader.style.opacity = '0';
-            setTimeout(() => loader.style.display = 'none', 500);
+
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
         }
     };
+
+    img.onerror = () => {
+        if (queue.length) {
+            const next = queue.pop();
+
+            try {
+                localStorage.setItem(queueKey, JSON.stringify(queue));
+            } catch (error) {}
+
+            img.src = next;
+        } else if (loader) {
+            loader.innerHTML =
+                '<div class="loader-text">Unable to load background images</div>';
+        }
+    };
+
     img.src = selected;
 }
+
+/* ========================================
+   LOGIN AND INITIALIZATION
+   ======================================== */
 
 if (localStorage.getItem('isLoggedIn') !== 'true') {
     window.location.replace('verify.html');
 } else {
     document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('dashboardWrapper').style.opacity = '1';
+        const wrapper = document.getElementById('dashboardWrapper');
+        const bottomNav = document.getElementById('bottomNav');
+
+        if (wrapper) {
+            wrapper.style.opacity = '1';
+        }
+
+        if (bottomNav) {
+            setTimeout(() => {
+                bottomNav.classList.add('slide-up');
+            }, 100);
+        }
+
         initRandomBackground();
+        fetchTelegramProfile();
     });
 }
 
-function openNaughtyWithLandAnimation() {
-    document.getElementById('naughtyWindow').classList.add('open');
+/* ========================================
+   DASHBOARD NAVIGATION
+   ======================================== */
+
+function switchView(viewName, element) {
+    document.querySelectorAll('.view-section').forEach(section => {
+        section.classList.remove('active-view');
+    });
+
+    document.querySelectorAll('.nav-item').forEach(nav => {
+        nav.classList.remove('active');
+    });
+
+    const target = document.getElementById(
+        viewName === 'home' ? 'homeView' : 'profileView'
+    );
+
+    if (target) {
+        target.classList.add('active-view');
+    }
+
+    if (element) {
+        element.classList.add('active');
+    }
 }
 
+function handleNavAction(type) {
+    if (type === 'group') {
+        alert('Telegram Group section coming soon!');
+    }
+}
+
+/* ========================================
+   TELEGRAM PROFILE FETCH
+   ======================================== */
+
+function fetchTelegramProfile() {
+    const userPhone = localStorage.getItem('userPhone');
+
+    if (!userPhone) return;
+
+    fetch('/get-user-profile', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            phone: userPhone
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Profile request failed');
+        }
+
+        return response.json();
+    })
+    .then(data => {
+        if (data.status !== 'success') return;
+
+        const profile = data.profile || {};
+
+        document.getElementById('profileName').textContent =
+            profile.name || 'Unknown';
+
+        document.getElementById('profileUsername').textContent =
+            profile.username || '';
+
+        document.getElementById('profileId').textContent =
+            profile.id || '';
+
+        document.getElementById('profilePhone').textContent =
+            profile.phone || '';
+
+        document.getElementById('profileBio').textContent =
+            profile.bio || '';
+
+        if (profile.photo) {
+            const image = document.getElementById('profileImage');
+
+            image.onload = () => {
+                image.style.opacity = '1';
+            };
+
+            image.onerror = () => {
+                image.style.opacity = '0';
+            };
+
+            image.src = profile.photo;
+        }
+    })
+    .catch(error => {
+        console.error('Unable to fetch profile:', error);
+    });
+}
+
+/* ========================================
+   REFRESH
+   ======================================== */
+
+function triggerRefresh(button) {
+    button.classList.add('loading');
+
+    const loader = document.getElementById('bgLoader');
+
+    if (loader) {
+        loader.style.display = 'flex';
+        loader.style.opacity = '1';
+    }
+
+    setTimeout(() => {
+        window.location.reload();
+    }, 300);
+}
+
+/* ========================================
+   PROFILE MODAL
+   ======================================== */
+
+function openProfile(name, subtitle) {
+    document.getElementById('modalName').textContent = name;
+
+    const info = document.getElementById('modalInfo');
+    info.textContent = '';
+
+    const details = document.createElement('p');
+
+    details.append(
+        'Status: LIVE',
+        document.createElement('br'),
+        'Category: ' + subtitle,
+        document.createElement('br'),
+        'Broadcasting Active'
+    );
+
+    info.appendChild(details);
+
+    document.getElementById('profileModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('profileModal').style.display = 'none';
+}
+
+/* ========================================
+   NAUGHTY NONSTOP WINDOW
+   ======================================== */
+
+function openNaughtyWithLandAnimation() {
+    const modal = document.getElementById('naughtyWindow');
+
+    if (modal) {
+        modal.classList.add('open');
+    }
+}
+
+function closeNaughtyWindow() {
+    const modal = document.getElementById('naughtyWindow');
+
+    if (modal) {
+        modal.classList.remove('open');
+    }
+}
+
+/* ========================================
+   OC COLLECTION UNIVERSE (CHANNEL & POSTS)
+   ======================================== */
+
 function openOCChannel() {
-    document.getElementById('ocChannelWindow').classList.add('open');
+    const popup = document.getElementById('ocChannelWindow');
+
+    if (!popup) return;
+
+    document.getElementById('ocMenuPopover')
+        .classList.remove('open');
+
+    document.getElementById('ocSearchPanel')
+        .classList.remove('open');
+
+    popup.classList.add('open');
+    popup.setAttribute('aria-hidden', 'false');
+
+    // টেলিগ্রাম চ্যানেল থেকে পোস্ট ফেচ করা শুরু
     fetchChannelPosts();
 }
 
 function closeOCChannel() {
-    document.getElementById('ocChannelWindow').classList.remove('open');
+    const popup = document.getElementById('ocChannelWindow');
+
+    if (!popup) return;
+
+    popup.classList.remove('open');
+    popup.setAttribute('aria-hidden', 'true');
+
+    document.getElementById('ocMenuPopover')
+        .classList.remove('open');
+
+    document.getElementById('ocSearchPanel')
+        .classList.remove('open');
 }
 
 function fetchChannelPosts() {
@@ -830,13 +1901,12 @@ function renderChannelPosts(posts) {
 
         if (post.media_type === 'photo') {
             const img = document.createElement('img');
-            img.src = `/api/channel/media/${post.id}`;
+            img.src = `/api/chat/media/${post.id}`; // অথবা চ্যানেল মিডিয়া ফেচ করার লিংক
             bubble.appendChild(img);
         } else if (post.media_type === 'video') {
             const video = document.createElement('video');
-            video.src = `/api/channel/media/${post.id}`;
+            video.src = `/api/chat/media/${post.id}`;
             video.controls = true;
-            video.preload = "metadata";
             bubble.appendChild(video);
         }
 
@@ -844,9 +1914,86 @@ function renderChannelPosts(posts) {
     });
 }
 
-function triggerRefresh(button) {
-    button.classList.add('loading');
-    setTimeout(() => window.location.reload(), 300);
+/* Three-dot menu */
+
+function toggleOCMenu() {
+    const menu = document.getElementById('ocMenuPopover');
+    const search = document.getElementById('ocSearchPanel');
+
+    search.classList.remove('open');
+    menu.classList.toggle('open');
+}
+
+/* Search panel */
+
+function toggleOCSearch() {
+    const panel = document.getElementById('ocSearchPanel');
+    const menu = document.getElementById('ocMenuPopover');
+
+    menu.classList.remove('open');
+    panel.classList.toggle('open');
+
+    if (panel.classList.contains('open')) {
+        document.getElementById('ocSearchInput').focus();
+    }
+}
+
+/* Visual Unmute/Mute button */
+
+function toggleOCMute(button) {
+    const isUnmute = button.textContent.trim() === 'Unmute';
+
+    button.textContent = isUnmute ? 'Mute' : 'Unmute';
+}
+
+/* ========================================
+   KEYBOARD CONTROLS
+   ======================================== */
+
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+        closeNaughtyWindow();
+        closeOCChannel();
+        closeModal();
+    }
+});
+
+/* Existing context-menu and drag prevention */
+
+document.addEventListener('contextmenu', event => {
+    event.preventDefault();
+});
+
+document.addEventListener('dragstart', event => {
+    event.preventDefault();
+});
+
+document.addEventListener('keydown', event => {
+    if (
+        event.key === 'F12' ||
+        (
+            event.ctrlKey &&
+            event.shiftKey &&
+            ['I', 'J', 'C'].includes(event.key.toUpperCase())
+        ) ||
+        (
+            event.ctrlKey &&
+            ['U', 'S', 'P'].includes(event.key.toUpperCase())
+        )
+    ) {
+        event.preventDefault();
+    }
+});
+
+/* ========================================
+   LOGOUT
+   ======================================== */
+
+function logoutUser() {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userPhone');
+
+    window.location.href = 'verify.html';
 }
 </script>
 
