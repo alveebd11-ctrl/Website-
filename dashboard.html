@@ -1467,9 +1467,13 @@ body {
 
 </div>
 
+<!-- OC Channel Module -->
+<script src="oc-channel.js"></script>
+
 <script>
 /* ========================================
    RANDOM BACKGROUND IMAGE COLLECTION
+   (No-stuck Loading Version)
    ======================================== */
 
 const backgroundImages = [
@@ -1549,29 +1553,44 @@ const backgroundImages = [
 
 function shuffled(items) {
     const array = [...items];
-
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
-
     return array;
+}
+
+function hideLoader() {
+    const loader = document.getElementById('bgLoader');
+    if (!loader) return;
+
+    loader.style.opacity = '0';
+    setTimeout(() => {
+        loader.style.display = 'none';
+    }, 400);
 }
 
 function initRandomBackground() {
     const container = document.getElementById('bgContainer');
     const loader = document.getElementById('bgLoader');
 
-    if (!container) return;
+    if (!container) {
+        hideLoader();
+        return;
+    }
+
+    // ৪ সেকেন্ড পর জোর করে লোডার হাইড
+    const forceHideTimer = setTimeout(() => {
+        hideLoader();
+    }, 4000);
 
     const queueKey = 'dashboardBackgroundImageQueueV1';
     const previousKey = 'dashboardLastBackgroundImageV1';
 
     let queue = [];
-
     try {
         queue = JSON.parse(localStorage.getItem(queueKey) || '[]');
-    } catch (error) {
+    } catch (e) {
         queue = [];
     }
 
@@ -1582,33 +1601,29 @@ function initRandomBackground() {
     }
 
     let previous = null;
-
     try {
         previous = localStorage.getItem(previousKey);
-    } catch (error) {}
+    } catch (e) {}
 
     if (queue.length > 1 && queue[queue.length - 1] === previous) {
-        [queue[0], queue[queue.length - 1]] =
-            [queue[queue.length - 1], queue[0]];
+        [queue[0], queue[queue.length - 1]] = [queue[queue.length - 1], queue[0]];
     }
 
     const selected = queue.pop();
 
     try {
         localStorage.setItem(queueKey, JSON.stringify(queue));
-    } catch (error) {}
+    } catch (e) {}
 
     const img = new Image();
-
     img.className = 'bg-image';
     img.alt = '';
     img.draggable = false;
 
     img.onload = () => {
-        container.insertBefore(
-            img,
-            container.querySelector('.bg-shade')
-        );
+        clearTimeout(forceHideTimer);
+
+        container.insertBefore(img, container.querySelector('.bg-shade'));
 
         requestAnimationFrame(() => {
             img.classList.add('visible');
@@ -1616,29 +1631,21 @@ function initRandomBackground() {
 
         try {
             localStorage.setItem(previousKey, selected);
-        } catch (error) {}
+        } catch (e) {}
 
-        if (loader) {
-            loader.style.opacity = '0';
-
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 500);
-        }
+        hideLoader();
     };
 
     img.onerror = () => {
         if (queue.length) {
             const next = queue.pop();
-
             try {
                 localStorage.setItem(queueKey, JSON.stringify(queue));
-            } catch (error) {}
-
+            } catch (e) {}
             img.src = next;
-        } else if (loader) {
-            loader.innerHTML =
-                '<div class="loader-text">Unable to load background images</div>';
+        } else {
+            clearTimeout(forceHideTimer);
+            hideLoader();
         }
     };
 
@@ -1725,7 +1732,6 @@ function fetchTelegramProfile() {
         if (!response.ok) {
             throw new Error('Profile request failed');
         }
-
         return response.json();
     })
     .then(data => {
@@ -1836,125 +1842,14 @@ function closeNaughtyWindow() {
 }
 
 /* ========================================
-   OC COLLECTION UNIVERSE (CHANNEL & POSTS)
-   ======================================== */
-
-function openOCChannel() {
-    const popup = document.getElementById('ocChannelWindow');
-
-    if (!popup) return;
-
-    document.getElementById('ocMenuPopover')
-        .classList.remove('open');
-
-    document.getElementById('ocSearchPanel')
-        .classList.remove('open');
-
-    popup.classList.add('open');
-    popup.setAttribute('aria-hidden', 'false');
-
-    // টেলিগ্রাম চ্যানেল থেকে পোস্ট ফেচ করা শুরু
-    fetchChannelPosts();
-}
-
-function closeOCChannel() {
-    const popup = document.getElementById('ocChannelWindow');
-
-    if (!popup) return;
-
-    popup.classList.remove('open');
-    popup.setAttribute('aria-hidden', 'true');
-
-    document.getElementById('ocMenuPopover')
-        .classList.remove('open');
-
-    document.getElementById('ocSearchPanel')
-        .classList.remove('open');
-}
-
-function fetchChannelPosts() {
-    fetch('/api/channel/posts')
-        .then(res => res.json())
-        .then(data => {
-            if (data.ok && data.posts) {
-                renderChannelPosts(data.posts);
-            }
-        })
-        .catch(err => console.error("Error fetching channel posts:", err));
-}
-
-function renderChannelPosts(posts) {
-    const container = document.getElementById('channelPostsContainer');
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    posts.forEach(post => {
-        const bubble = document.createElement('div');
-        bubble.className = 'oc-post-bubble';
-
-        if (post.text) {
-            const textEl = document.createElement('div');
-            textEl.textContent = post.text;
-            bubble.appendChild(textEl);
-        }
-
-        if (post.media_type === 'photo') {
-            const img = document.createElement('img');
-            img.src = `/api/chat/media/${post.id}`; // অথবা চ্যানেল মিডিয়া ফেচ করার লিংক
-            bubble.appendChild(img);
-        } else if (post.media_type === 'video') {
-            const video = document.createElement('video');
-            video.src = `/api/chat/media/${post.id}`;
-            video.controls = true;
-            bubble.appendChild(video);
-        }
-
-        container.appendChild(bubble);
-    });
-}
-
-/* Three-dot menu */
-
-function toggleOCMenu() {
-    const menu = document.getElementById('ocMenuPopover');
-    const search = document.getElementById('ocSearchPanel');
-
-    search.classList.remove('open');
-    menu.classList.toggle('open');
-}
-
-/* Search panel */
-
-function toggleOCSearch() {
-    const panel = document.getElementById('ocSearchPanel');
-    const menu = document.getElementById('ocMenuPopover');
-
-    menu.classList.remove('open');
-    panel.classList.toggle('open');
-
-    if (panel.classList.contains('open')) {
-        document.getElementById('ocSearchInput').focus();
-    }
-}
-
-/* Visual Unmute/Mute button */
-
-function toggleOCMute(button) {
-    const isUnmute = button.textContent.trim() === 'Unmute';
-
-    button.textContent = isUnmute ? 'Mute' : 'Unmute';
-}
-
-/* ========================================
    KEYBOARD CONTROLS
    ======================================== */
 
 document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
         closeNaughtyWindow();
-        closeOCChannel();
         closeModal();
+        // closeOCChannel() will be handled by oc-channel.js
     }
 });
 
