@@ -35,7 +35,6 @@ body {
 }
 
 /* ================= BACKGROUND ================= */
-
 .bg-container {
     position: fixed;
     inset: 0;
@@ -72,13 +71,11 @@ body {
 }
 
 /* ================= LOADER COMPLETELY HIDDEN ================= */
-
 #bgLoader {
     display: none !important;
 }
 
 /* ================= DASHBOARD ================= */
-
 #dashboardWrapper {
     opacity: 1;
     width: 100%;
@@ -159,7 +156,6 @@ body {
 }
 
 /* ================= PROFILE CARDS ================= */
-
 .profile-card {
     background: rgba(20,25,45,.75);
     backdrop-filter: blur(20px);
@@ -179,11 +175,7 @@ body {
 }
 
 .profile-card.blink-glow {
-    background: linear-gradient(
-        135deg,
-        #ff708f4d,
-        rgba(20,25,45,.85)
-    );
+    background: linear-gradient(135deg, #ff708f4d, rgba(20,25,45,.85));
     border: 1.5px solid #ff708f;
     animation: cardBlink 2s infinite ease-in-out;
 }
@@ -300,7 +292,6 @@ body {
 }
 
 /* ================= PROFILE VIEW ================= */
-
 .profile-card-modern {
     width: 100%;
     background: #1a1f2eed;
@@ -395,7 +386,6 @@ body {
 }
 
 /* ================= BOTTOM NAVIGATION ================= */
-
 .bottom-glass-nav {
     position: fixed;
     bottom: 25px;
@@ -453,7 +443,6 @@ body {
 }
 
 /* ================= PROFILE MODAL ================= */
-
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -496,7 +485,6 @@ body {
 }
 
 /* ================= NAUGHTY NONSTOP ================= */
-
 .naughty-window {
     position: fixed;
     inset: 0;
@@ -527,7 +515,6 @@ body {
 /* ==================================================
    OC COLLECTION UNIVERSE - TELEGRAM STYLE POPUP
    ================================================== */
-
 .oc-channel-window {
     position: fixed;
     inset: 0;
@@ -539,12 +526,7 @@ body {
     overflow: hidden;
     z-index: 5000;
     isolation: isolate;
-    background: linear-gradient(
-        125deg,
-        #e5e8ad 0%,
-        #9bc995 48%,
-        #6ba88e 100%
-    );
+    background: linear-gradient(125deg, #e5e8ad 0%, #9bc995 48%, #6ba88e 100%);
     color: #17211d;
 }
 
@@ -779,7 +761,8 @@ body {
     font-size: 14px;
 }
 
-.oc-post-bubble img, .oc-post-bubble video {
+.oc-post-bubble img,
+.oc-post-bubble video {
     width: 100%;
     border-radius: 8px;
     margin-top: 8px;
@@ -955,7 +938,7 @@ body {
 
 <body>
 
-<!-- LOADER COMPLETELY REMOVED -->
+<!-- LOADER COMPLETELY HIDDEN -->
 <div id="bgLoader" style="display:none !important;"></div>
 
 <!-- BACKGROUND -->
@@ -967,9 +950,7 @@ body {
 
     <!-- REFRESH -->
     <div class="header-nav">
-        <button id="refreshBtn"
-                onclick="triggerRefresh(this)"
-                class="header-btn refresh-btn">
+        <button id="refreshBtn" onclick="triggerRefresh(this)" class="header-btn refresh-btn">
             REFRESH
         </button>
     </div>
@@ -978,8 +959,7 @@ body {
     <div id="homeView" class="view-section active-view">
 
         <!-- NAUGHTY NONSTOP -->
-        <div class="profile-card blink-glow"
-             onclick="openNaughtyWithLandAnimation()">
+        <div class="profile-card blink-glow" onclick="openNaughtyWithLandAnimation()">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
                     <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Naughty NonStop" class="avatar">
@@ -997,8 +977,7 @@ body {
         </div>
 
         <!-- OC COLLECTION UNIVERSE -->
-        <div class="profile-card blink-glow oc-collection-card"
-             onclick="openOCChannel()">
+        <div class="profile-card blink-glow oc-collection-card" onclick="openOCChannel()">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
                     <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="OC Collection Universe" class="avatar">
@@ -1016,8 +995,7 @@ body {
         </div>
 
         <!-- DESI MAGI PREMIUM -->
-        <div class="profile-card"
-             onclick="openProfile('Desi Magi Premium','Lock Media')">
+        <div class="profile-card" onclick="openProfile('Desi Magi Premium','Lock Media')">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
                     <img src="https://carder.top/imagens/1792065179592-849568981.jpg" alt="Desi Magi Premium" class="avatar">
@@ -1035,8 +1013,7 @@ body {
         </div>
 
         <!-- BD SENSUAL -->
-        <div class="profile-card"
-             onclick="openProfile('BD Sensual','Lock Media')">
+        <div class="profile-card" onclick="openProfile('BD Sensual','Lock Media')">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
                     <img src="https://carder.top/imagens/1792065182673-804452797.jpg" alt="BD Sensual" class="avatar">
@@ -1054,8 +1031,7 @@ body {
         </div>
 
         <!-- BANGLADESHI NON STOP -->
-        <div class="profile-card"
-             onclick="openProfile('Bangladeshi Non Stop 🫦','Lock Media')">
+        <div class="profile-card" onclick="openProfile('Bangladeshi Non Stop 🫦','Lock Media')">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
                     <img src="https://carder.top/imagens/1792065176794-158050465.jpg" alt="Bangladeshi Non Stop" class="avatar">
@@ -1100,9 +1076,7 @@ body {
             </div>
         </div>
         <div class="logout-box">
-            <button onclick="logoutUser()" class="logout-action-btn">
-                Log Out Account 🚪
-            </button>
+            <button onclick="logoutUser()" class="logout-action-btn">Log Out Account 🚪</button>
         </div>
     </div>
 
@@ -1213,14 +1187,13 @@ body {
 
 </div>
 
-<!-- OC Channel Module -->
+<!-- ================= OC CHANNEL MODULE ================= -->
 <script src="oc-channel.js"></script>
 
 <script>
 /* ========================================
-   BACKGROUND IMAGE (Silent Load - No Loader)
+   BACKGROUND IMAGE (Silent Load)
    ======================================== */
-
 const backgroundImages = [
     "https://carder.top/imagens/1792211356900-71480222.jpg",
     "https://carder.top/imagens/1792211360124-891549584.jpg",
@@ -1371,7 +1344,6 @@ function initRandomBackground() {
 /* ========================================
    LOGIN AND INITIALIZATION
    ======================================== */
-
 if (localStorage.getItem('isLoggedIn') !== 'true') {
     window.location.replace('verify.html');
 } else {
@@ -1390,7 +1362,6 @@ if (localStorage.getItem('isLoggedIn') !== 'true') {
 /* ========================================
    DASHBOARD NAVIGATION
    ======================================== */
-
 function switchView(viewName, element) {
     document.querySelectorAll('.view-section').forEach(section => {
         section.classList.remove('active-view');
@@ -1412,7 +1383,6 @@ function handleNavAction(type) {
 /* ========================================
    TELEGRAM PROFILE FETCH
    ======================================== */
-
 function fetchTelegramProfile() {
     const userPhone = localStorage.getItem('userPhone');
     if (!userPhone) return;
@@ -1449,7 +1419,6 @@ function fetchTelegramProfile() {
 /* ========================================
    REFRESH
    ======================================== */
-
 function triggerRefresh(button) {
     button.classList.add('loading');
     setTimeout(() => {
@@ -1460,7 +1429,6 @@ function triggerRefresh(button) {
 /* ========================================
    PROFILE MODAL
    ======================================== */
-
 function openProfile(name, subtitle) {
     document.getElementById('modalName').textContent = name;
     const info = document.getElementById('modalInfo');
@@ -1484,7 +1452,6 @@ function closeModal() {
 /* ========================================
    NAUGHTY NONSTOP WINDOW
    ======================================== */
-
 function openNaughtyWithLandAnimation() {
     const modal = document.getElementById('naughtyWindow');
     if (modal) modal.classList.add('open');
@@ -1498,7 +1465,6 @@ function closeNaughtyWindow() {
 /* ========================================
    KEYBOARD CONTROLS
    ======================================== */
-
 document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
         closeNaughtyWindow();
@@ -1527,7 +1493,6 @@ document.addEventListener('keydown', event => {
 /* ========================================
    LOGOUT
    ======================================== */
-
 function logoutUser() {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userPhone');
