@@ -22,11 +22,24 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
-# Telethon imports
-from telethon import TelegramClient, events, utils
+# Telethon imports (Used for Login & Channel Reading)
+from telethon import TelegramClient, utils, events as telethon_events
 from telethon.sessions import StringSession
 from telethon.tl.types import DocumentAttributeAnimated
-from telethon.tl.custom import Button
+
+# Pyrogram imports (Used exclusively for Bot & Media Upload Handling)
+try:
+    from pyrogram import Client, filters
+    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument
+except ImportError:
+    Client = None
+    filters = None
+    InlineKeyboardMarkup = None
+    InlineKeyboardButton = None
+    InputMediaPhoto = None
+    InputMediaVideo = None
+    InputMediaDocument = None
+
 
 # ============================================================
 # TELEGRAM CONFIGURATION
@@ -88,18 +101,28 @@ CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", "https://carde
 total_logged_in_users = 0
 
 # ============================================================
-# TELETHON CLIENT GLOBALS & EVENT LOOP
+# TELEGRAM CLIENT GLOBALS & EVENT LOOPS
 # ============================================================
 
 telethon_reader_client = None
-telethon_bot_client = None
 telethon_channel_entity = None
+pyrogram_client = None
 
+# Telethon Background Loop
 telethon_loop = asyncio.new_event_loop()
 telethon_loop_ready = threading.Event()
 telethon_thread = threading.Thread(
     target=lambda: _run_telethon_loop(),
     name="telethon-background-loop",
+    daemon=True,
+)
+
+# Pyrogram Background Loop (For Bot Handling)
+pyrogram_loop = asyncio.new_event_loop()
+pyrogram_loop_ready = threading.Event()
+pyrogram_thread = threading.Thread(
+    target=lambda: _run_pyrogram_loop(),
+    name="pyrogram-background-loop",
     daemon=True,
 )
 
@@ -114,12 +137,27 @@ def _run_telethon_loop():
     telethon_loop.run_forever()
 
 
+def _run_pyrogram_loop():
+    asyncio.set_event_loop(pyrogram_loop)
+    pyrogram_loop_ready.set()
+    pyrogram_loop.run_forever()
+
+
 def run_async(coro, timeout=180):
     if not telethon_thread.is_alive():
         raise RuntimeError("Telethon background loop is not running.")
     if not telethon_loop_ready.wait(timeout=5):
         raise RuntimeError("Telethon background loop did not start.")
     future = asyncio.run_coroutine_threadsafe(coro, telethon_loop)
+    return future.result(timeout=timeout)
+
+
+def run_pyrogram_async(coro, timeout=180):
+    if not pyrogram_thread.is_alive():
+        raise RuntimeError("Pyrogram background loop is not running.")
+    if not pyrogram_loop_ready.wait(timeout=5):
+        raise RuntimeError("Pyrogram background loop did not start.")
+    future = asyncio.run_coroutine_threadsafe(coro, pyrogram_loop)
     return future.result(timeout=timeout)
 
 
@@ -346,7 +384,7 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telegram Login Endpoints (Direct OTP Verification, No 2FA Check)
+# Telegram Login Endpoints (Telethon Based)
 # ============================================================
 
 @app.route("/send-code", methods=["POST"])
@@ -518,17 +556,15 @@ def get_user_profile_api():
 
 
 # ============================================================
-# TELETHON READER & BOT INITIALIZATION
+# TELETHON READER INITIALIZATION
 # ============================================================
 
-async def start_telethon_services():
-    global telethon_reader_client, telethon_bot_client, telethon_channel_entity
+async def start_telethon_reader():
+    global telethon_reader_client, telethon_channel_entity
 
-    if not TELETHON_SESSION_STRING or not API_ID or not API_HASH:
-        print("Telethon session or API credentials missing.")
-        return
+    if not TELETHON_SESSION_STRING:
+        raise RuntimeError("TELETHON_SESSION_STRING is missing.")
 
-    # 1. Start Channel Reader Client
     max_retries = 3
     for attempt in range(1, max_retries + 1):
         client = TelegramClient(StringSession(TELETHON_SESSION_STRING), API_ID, API_HASH)
@@ -556,7 +592,8 @@ async def start_telethon_services():
             telethon_reader_client = client
             telethon_channel_entity = channel_entity
             print("Telethon reader connected successfully.")
-            break
+            return True
+
         except Exception as e:
             print(f"Telethon connection attempt {attempt} failed: {e}")
             if client.is_connected():
@@ -565,113 +602,10 @@ async def start_telethon_services():
                 except Exception:
                     pass
             if attempt == max_retries:
+                telethon_reader_client = None
+                telethon_channel_entity = None
                 raise
-
-    # 2. Start Telethon Bot for Admin Media Uploads
-    if BOT_TOKEN:
-        try:
-            bot_client = TelegramClient('telethon_bot_session', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
-            telethon_bot_client = bot_client
-            print("Telethon bot started successfully.")
-
-            @bot_client.on(events.NewMessage(pattern='/start', incoming=True))
-            async def start_cmd(event):
-                if event.sender_id != ADMIN_ID:
-                    await event.respond("⛔ You are not authorized to use this bot.")
-                    return
-                
-                buttons = [
-                    [Button.inline("📤 Upload Media (Photo/Video)", data="start_upload")]
-                ]
-                await event.respond(
-                    "👋 Welcome Admin!\n\nClick the button below to upload media. You can send photos, videos, documents, or multiple media files grouped as an album.",
-                    buttons=buttons
-                )
-
-            @bot_client.on(events.CallbackQuery(data=b'start_upload'))
-            async def start_upload_callback(event):
-                if event.sender_id != ADMIN_ID:
-                    await event.answer("Unauthorized!", alert=True)
-                    return
-                
-                pending_uploads[ADMIN_ID] = {
-                    "waiting_for_media": True,
-                    "media_group": [],
-                    "published": False
-                }
-                
-                await event.edit(
-                    "📥 Please send your photo(s), video(s), or document(s) now.\n\n"
-                    "You can send single files sequentially or an album at once. Once finished, click 'Confirm & Upload'."
-                )
-                await event.answer()
-
-            @bot_client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private and (e.photo or e.video or e.document)))
-            async def handle_media_upload(event):
-                if event.sender_id != ADMIN_ID:
-                    return
-                
-                user_state = pending_uploads.get(ADMIN_ID, {})
-                if not user_state.get("waiting_for_media") or user_state.get("published"):
-                    return
-
-                user_state["media_group"].append(event.message)
-                pending_uploads[ADMIN_ID] = user_state
-
-                count = len(user_state["media_group"])
-                text = f"👍 Media received ({count} item(s) queued). Send more or click confirm below."
-
-                buttons = [
-                    [Button.inline("✅ Confirm & Upload", data="confirm_upload")]
-                ]
-                await event.respond(text, buttons=buttons)
-
-            @bot_client.on(events.CallbackQuery(data=b'confirm_upload'))
-            async def confirm_upload_callback(event):
-                if event.sender_id != ADMIN_ID:
-                    return
-
-                with upload_lock:
-                    state = pending_uploads.get(ADMIN_ID, {})
-                    if state.get("published"):
-                        await event.answer("Already published!", alert=True)
-                        return
-                    
-                    media_list = state.get("media_group", [])
-                    if not media_list:
-                        await event.answer("No media found to upload!", alert=True)
-                        return
-                    
-                    state["published"] = True
-                    pending_uploads[ADMIN_ID] = state
-
-                await event.edit("⏳ Uploading to channel... Please wait.")
-
-                try:
-                    if len(media_list) > 1:
-                        files_to_send = []
-                        for msg in media_list:
-                            file_downloaded = await msg.download_media()
-                            files_to_send.append(file_downloaded)
-                        
-                        await bot_client.send_file(STORAGE_CHANNEL_ID, files_to_send, caption="Uploaded via Admin Bot")
-                        for f in files_to_send:
-                            if os.path.exists(f):
-                                os.remove(f)
-                    else:
-                        await bot_client.send_file(STORAGE_CHANNEL_ID, media_list[0], caption=media_list[0].text or "")
-
-                    pending_uploads.pop(ADMIN_ID, None)
-                    await event.edit(f"🎉 Successfully published {len(media_list)} file(s) toканале and synced with the website!")
-                except Exception as e:
-                    with upload_lock:
-                        pending_uploads[ADMIN_ID]["published"] = False
-                    await event.edit(f"❌ Upload failed: {str(e)}")
-                
-                await event.answer()
-
-        except Exception as e:
-            print("Telethon bot startup error:", e)
+            await asyncio.sleep(5)
 
 
 def is_chat_backup_message(message):
@@ -1199,25 +1133,170 @@ def oc_channel_script():
 
 
 # ============================================================
-# Background Services Startup (Telethon Reader & Bot)
+# Pyrogram Bot & Media Uploader Initialization
+# ============================================================
+
+async def start_pyrogram_monitor():
+    global pyrogram_client
+
+    if Client is None or filters is None:
+        print("Pyrogram is not installed; background bot uploader is disabled.")
+        return False
+
+    if not BOT_TOKEN or not API_ID or not API_HASH:
+        print("API_ID/API_HASH/BOT_TOKEN missing; Pyrogram bot uploader is disabled.")
+        return False
+
+    try:
+        if BOT_TOKEN:
+            client = Client(
+                "bg_channel_monitor_session",
+                api_id=API_ID,
+                api_hash=API_HASH,
+                bot_token=BOT_TOKEN,
+            )
+            await client.start()
+            pyrogram_client = client
+            print("Pyrogram bot started successfully.")
+
+            @client.on_message(filters.command("start") & filters.private)
+            async def start_cmd(client, message):
+                if message.from_user.id != ADMIN_ID:
+                    await message.reply("⛔ You are not authorized to use this bot.")
+                    return
+                
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("📤 Upload Media (Photo/Video)", callback_data="start_upload")]
+                ])
+                await message.reply(
+                    "👋 Welcome Admin!\n\nClick the button below to upload media. You can send photos, videos, documents, or multiple media files grouped as an album.",
+                    reply_markup=keyboard
+                )
+
+            @client.on_callback_query(filters.regex("start_upload"))
+            async def start_upload_callback(client, callback_query):
+                if callback_query.from_user.id != ADMIN_ID:
+                    await callback_query.answer("Unauthorized!", show_alert=True)
+                    return
+                
+                pending_uploads[ADMIN_ID] = {
+                    "waiting_for_media": True,
+                    "media_group": [],
+                    "published": False
+                }
+                
+                await callback_query.message.edit_text(
+                    "📥 Please send your photo(s), video(s), or document(s) now.\n\n"
+                    "You can send single files sequentially or an album at once. Once finished, click 'Confirm & Upload'."
+                )
+                await callback_query.answer()
+
+            @client.on_message(filters.private & (filters.photo | filters.video | filters.document))
+            async def handle_media_upload(client, message):
+                if message.from_user.id != ADMIN_ID:
+                    return
+                
+                user_state = pending_uploads.get(ADMIN_ID, {})
+                if not user_state.get("waiting_for_media") or user_state.get("published"):
+                    return
+
+                user_state["media_group"].append(message)
+                pending_uploads[ADMIN_ID] = user_state
+
+                count = len(user_state["media_group"])
+                text = f"👍 Media received ({count} item(s) queued). Send more or click confirm below."
+
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("✅ Confirm & Upload", callback_data="confirm_upload")]
+                ])
+                
+                await message.reply(text, reply_markup=keyboard)
+
+            @client.on_callback_query(filters.regex("confirm_upload"))
+            async def confirm_upload_callback(client, callback_query):
+                if callback_query.from_user.id != ADMIN_ID:
+                    return
+
+                with upload_lock:
+                    state = pending_uploads.get(ADMIN_ID, {})
+                    if state.get("published"):
+                        await callback_query.answer("Already published!", show_alert=True)
+                        return
+                    
+                    media_list = state.get("media_group", [])
+                    if not media_list:
+                        await callback_query.answer("No media found to upload!", show_alert=True)
+                        return
+                    
+                    state["published"] = True
+                    pending_uploads[ADMIN_ID] = state
+
+                await callback_query.message.edit_text("⏳ Uploading to channel... Please wait.")
+
+                try:
+                    target_chat = await client.get_chat(STORAGE_CHANNEL_ID)
+
+                    if len(media_list) > 1:
+                        input_media = []
+                        for msg in media_list:
+                            caption = msg.caption or ""
+                            if msg.photo:
+                                input_media.append(InputMediaPhoto(msg.photo.file_id, caption=caption))
+                            elif msg.video:
+                                input_media.append(InputMediaVideo(msg.video.file_id, caption=caption))
+                            elif msg.document:
+                                input_media.append(InputMediaDocument(msg.document.file_id, caption=caption))
+
+                        if input_media:
+                            for i in range(0, len(input_media), 10):
+                                chunk = input_media[i:i+10]
+                                await client.send_media_group(chat_id=target_chat.id, media=chunk)
+                    else:
+                        await media_list[0].copy(target_chat.id)
+
+                    pending_uploads.pop(ADMIN_ID, None)
+                    
+                    await callback_query.message.edit_text(
+                        f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and synced with the website!"
+                    )
+                except Exception as e:
+                    with upload_lock:
+                        pending_uploads[ADMIN_ID]["published"] = False
+                    await callback_query.message.edit_text(f"❌ Upload failed: {str(e)}")
+                
+                await callback_query.answer()
+
+        return True
+
+    except Exception:
+        print("Pyrogram startup error:", traceback.format_exc())
+        return False
+
+
+# ============================================================
+# Background Services Startup (Telethon Reader + Pyrogram Bot)
 # ============================================================
 
 def start_background_services():
-    if not TELETHON_SESSION_STRING or not API_ID or not API_HASH:
-        print("Telethon session or API credentials missing; services disabled.")
-        return
+    # Start Telethon Reader Thread
+    if TELETHON_SESSION_STRING and API_ID and API_HASH:
+        if not telethon_thread.is_alive():
+            telethon_thread.start()
+        if telethon_loop_ready.wait(timeout=5):
+            try:
+                run_async(start_telethon_reader(), timeout=45)
+            except Exception:
+                print("Could not start Telethon reader:", traceback.format_exc())
 
-    if not telethon_thread.is_alive():
-        telethon_thread.start()
-
-    if not telethon_loop_ready.wait(timeout=5):
-        print("Telethon loop did not become ready.")
-        return
-
-    try:
-        run_async(start_telethon_services(), timeout=45)
-    except Exception:
-        print("Could not start Telethon services:", traceback.format_exc())
+    # Start Pyrogram Bot Thread
+    if Client and BOT_TOKEN and API_ID and API_HASH:
+        if not pyrogram_thread.is_alive():
+            pyrogram_thread.start()
+        if pyrogram_loop_ready.wait(timeout=5):
+            try:
+                run_pyrogram_async(start_pyrogram_monitor(), timeout=45)
+            except Exception:
+                print("Could not start Pyrogram monitor:", traceback.format_exc())
 
 
 start_background_services()
