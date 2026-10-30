@@ -452,6 +452,111 @@ def find_cached_media(message_id: int) -> Optional[Path]:
 
 
 # ============================================================
+# Channel History Auto-Recovery (NEW)
+# ============================================================
+# সার্ভার রিস্টার্ট বা কোড আপডেটের ফলে chat_messages.db এবং telethon_cache
+# ফোল্ডার মুছে গেলেও, এই ফাংশনগুলো সার্ভার চালু হওয়ার সময় টেলিগ্রাম
+# স্টোরেজ চ্যানেলের সম্পূর্ণ হিস্ট্রি আবার পড়ে channel_posts টেবিল এবং
+# মিডিয়া ক্যাশ পুনরায় তৈরি করে দেয়। ছবি/ভিডিও কখনো "উধাও" হবে না।
+
+async def sync_posts_from_channel():
+    """টেলিগ্রাম স্টোরেজ চ্যানেলের সব পোস্ট আবার স্ক্যান করে channel_posts
+    টেবিলে যা নেই তা যোগ করে দেয়, এবং ক্যাশে নেই এমন মিডিয়ার তালিকা তৈরি করে।"""
+    global telethon_reader_client, telethon_channel_entity
+
+    if not telethon_reader_client or not telethon_channel_entity:
+        print("[Sync] Telethon reader not ready; skipping channel sync.")
+        return
+
+    try:
+        with db_connect() as conn:
+            existing_ids = {
+                row["message_id"]
+                for row in conn.execute("SELECT message_id FROM channel_posts").fetchall()
+            }
+
+        synced_count = 0
+        to_cache = []
+
+        async for msg in telethon_reader_client.iter_messages(telethon_channel_entity, limit=None):
+            if not getattr(msg, "media", None):
+                continue
+
+            media_type = None
+            mime_type = None
+
+            if getattr(msg, "photo", None):
+                media_type = "photo"
+                mime_type = "image/jpeg"
+            elif getattr(msg, "video", None):
+                media_type = "video"
+                mime_type = getattr(msg.video, "mime_type", None) or "video/mp4"
+            elif getattr(msg, "document", None):
+                doc_mime = (msg.document.mime_type or "").lower()
+                is_animated = any(
+                    isinstance(a, DocumentAttributeAnimated)
+                    for a in (msg.document.attributes or [])
+                )
+                if doc_mime.startswith("video/"):
+                    media_type = "video"
+                elif is_animated:
+                    media_type = "animation"
+                elif doc_mime.startswith("image/"):
+                    media_type = "photo"
+                else:
+                    # অন্য ধরনের ডকুমেন্ট (যেমন pdf) হলে এড়িয়ে যান
+                    continue
+                mime_type = doc_mime or "application/octet-stream"
+            else:
+                continue
+
+            if msg.id not in existing_ids:
+                created_at = (msg.date or datetime.now(timezone.utc)).isoformat()
+                try:
+                    with db_connect() as conn:
+                        conn.execute(
+                            """
+                            INSERT OR IGNORE INTO channel_posts (
+                                message_id, text, media_type, mime_type, telegram_file_id, created_at
+                            ) VALUES (?, ?, ?, ?, ?, ?)
+                            """,
+                            (msg.id, msg.message or "", media_type, mime_type, None, created_at)
+                        )
+                        conn.commit()
+                    existing_ids.add(msg.id)
+                    synced_count += 1
+                except Exception as insert_err:
+                    print(f"[Sync] Could not insert message {msg.id}: {insert_err}")
+
+            if not find_cached_media(msg.id):
+                to_cache.append(msg.id)
+
+        if synced_count:
+            print(f"[Sync] Restored {synced_count} post(s) from Telegram channel history.")
+        else:
+            print("[Sync] channel_posts table already up to date.")
+
+        if to_cache:
+            print(f"[Sync] {len(to_cache)} media file(s) need re-caching; starting background download...")
+            asyncio.create_task(recache_missing_media(to_cache))
+
+    except Exception:
+        print("[Sync] Channel sync failed:", traceback.format_exc())
+
+
+async def recache_missing_media(message_ids):
+    """ক্যাশে নেই এমন মিডিয়া ব্যাকগ্রাউন্ডে ধীরে ধীরে আবার ডাউনলোড করে,
+    যাতে টেলিগ্রাম রেট-লিমিটে না পড়তে হয়।"""
+    for mid in message_ids:
+        try:
+            await cache_channel_media_telethon(mid)
+        except Exception as e:
+            print(f"[Sync] Failed to re-cache message {mid}: {e}")
+        await asyncio.sleep(0.5)
+    print(f"[Sync] Background re-caching finished for {len(message_ids)} item(s).")
+
+
+# ============================================================
 # Telegram Login Endpoints
 # ============================================================
 
@@ -691,7 +796,7 @@ async def start_telethon_reader():
 def get_channel_posts_api():
     try:
         with db_connect() as conn:
-            # সঠিক সিরিয়াল মেইনটেইন করার জন্য ASC (পুরোনো থেকে নতুন) অথবা DESC সাজিয়ে পাঠানো
+            # সঠিক সিরিয়াল মেইনটেইন করার জন্য ASC (পুরোনো থেকে নতুন) অথবা DESC সাজিয়ে পাঠানো
             rows = conn.execute(
                 "SELECT * FROM channel_posts ORDER BY message_id ASC LIMIT 100"
             ).fetchall()
@@ -765,6 +870,24 @@ def get_channel_media(message_id):
                 conditional=True,
                 as_attachment=False
             )
+
+        # ---------- 1b. Cache missing: try Telethon download on-demand ----------
+        try:
+            cached_ok = run_async(cache_channel_media_telethon(message_id), timeout=120)
+        except Exception as e:
+            cached_ok = False
+            print(f"[Media] On-demand Telethon cache failed for {message_id}: {e}")
+
+        if cached_ok:
+            cached_path = find_cached_media(message_id)
+            if cached_path and cached_path.is_file():
+                mime_type = mimetypes.guess_type(str(cached_path))[0] or default_mime
+                return send_file(
+                    cached_path,
+                    mimetype=mime_type,
+                    conditional=True,
+                    as_attachment=False
+                )
 
         # ---------- 2. Fallback: Bot API download + cache it ----------
         file_id = row["telegram_file_id"]
@@ -1391,9 +1514,18 @@ def start_background_services():
             telethon_thread.start()
         if telethon_loop_ready.wait(timeout=5):
             try:
-                run_async(start_telethon_reader(), timeout=60)
+                reader_ok = run_async(start_telethon_reader(), timeout=60)
             except Exception:
+                reader_ok = False
                 print("Could not start Telethon reader:", traceback.format_exc())
+
+            # ---------- NEW: সার্ভার চালু হলে টেলিগ্রাম চ্যানেলের পুরো হিস্ট্রি
+            # আবার স্ক্যান করে channel_posts টেবিল ও মিডিয়া ক্যাশ পুনরুদ্ধার করা ----------
+            if reader_ok:
+                try:
+                    run_async(sync_posts_from_channel(), timeout=180)
+                except Exception:
+                    print("Channel history sync failed (will retry on next restart):", traceback.format_exc())
 
     if Client and BOT_TOKEN and API_ID and API_HASH:
         if not pyrogram_thread.is_alive():
