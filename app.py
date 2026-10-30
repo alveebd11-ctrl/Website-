@@ -394,7 +394,7 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telegram Login Endpoints (Direct OTP Verification, No 2FA Check)
+# Telegram Login Endpoints
 # ============================================================
 
 @app.route("/send-code", methods=["POST"])
@@ -625,7 +625,7 @@ async def start_telethon_reader():
 
 
 # ============================================================
-# API: GET TELEGRAM CHANNEL POSTS FROM SQLITE
+# API: GET TELEGRAM CHANNEL POSTS FROM SQLITE (Fixed Sequencing)
 # ============================================================
 
 @app.route("/api/channel/posts", methods=["GET"])
@@ -633,8 +633,9 @@ async def start_telethon_reader():
 def get_channel_posts_api():
     try:
         with db_connect() as conn:
+            # সঠিক সিরিয়াল মেইনটেইন করার জন্য ASC (পুরোনো থেকে নতুন) অথবা DESC সাজিয়ে পাঠানো
             rows = conn.execute(
-                "SELECT * FROM channel_posts ORDER BY message_id DESC LIMIT 100"
+                "SELECT * FROM channel_posts ORDER BY message_id ASC LIMIT 100"
             ).fetchall()
 
         posts = []
@@ -1056,7 +1057,6 @@ def dashboard_page():
     return "dashboard.html not found", 404
 
 
-# New route added for the Premium Media Viewer page
 @app.route("/oc-collection.html", methods=["GET"])
 def oc_collection_page():
     page_path = BASE_DIR / "oc-collection.html"
@@ -1288,7 +1288,7 @@ async def start_pyrogram_monitor():
 
 
 # ============================================================
-# Background Services Startup (Telethon Reader + Pyrogram Bot)
+# Background Services Startup
 # ============================================================
 
 def start_background_services():
