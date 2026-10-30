@@ -510,9 +510,6 @@ body {
 }
 </style>
 
-<!-- External Stylesheet Linking for Premium Viewer -->
-<link rel="stylesheet" href="style.css">
-
 </head>
 
 <body>
@@ -548,8 +545,8 @@ body {
             </div>
         </div>
 
-        <!-- OC COLLECTION UNIVERSE -->
-        <div class="profile-card blink-glow oc-collection-card" onclick="openOCChannel()">
+        <!-- OC COLLECTION UNIVERSE (Routes to new page) -->
+        <div class="profile-card blink-glow oc-collection-card" onclick="window.location.href='/oc-collection.html'">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
                     <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="OC Collection Universe" class="avatar">
@@ -647,11 +644,6 @@ body {
     <!-- NAUGHTY NONSTOP -->
     <div class="naughty-window" id="naughtyWindow">
         <iframe src="naughty.html" title="Naughty NonStop" loading="eager"></iframe>
-    </div>
-
-    <!-- ALVEE PREMIUM MEDIA VIEWER (Replaces the old OC Channel structure) -->
-    <div class="oc-video-popup" id="ocVideoPopup" aria-hidden="true">
-        <!-- This container is dynamically populated by oc-channel.js -->
     </div>
 
     <!-- PROFILE MODAL -->
@@ -778,15 +770,9 @@ document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
         closeNaughtyWindow();
         closeModal();
-        if (typeof window.closeOCChannel === 'function') {
-            window.closeOCChannel();
-        }
     }
 });
 </script>
-
-<!-- EXTERNAL SCRIPT FOR OC CHANNEL LOGIC -->
-<script src="oc-channel.js"></script>
 
 </body>
 </html>
