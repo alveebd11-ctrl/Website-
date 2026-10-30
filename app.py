@@ -46,15 +46,27 @@ API_HASH = os.environ.get("API_HASH", "55d7b29aa48e8e160abe9e3cb91ba347").strip(
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
 USER_SESSION_STRING = os.environ.get("USER_SESSION_STRING", "BQG2RvEAQcLayAiWVZ5JJHOl-VkaC-054zB-bZQI95jMadwYkvov8uBTFE8VNa8Ba5AcWBlqDSB1db0NQngudiCHAfK3D7lf79y715nQRKF_6XCOnFxYJhKjNHcgGCTw9s1a1_yFRJ8fQ7tuBGmvHihk5wQQSQRJ1umkswFTVcLEbXWNxkYcKYq5RtiewihrmrrCtF8vddtM-Ue4K7e2ngXD2DjfqMFrXCd6fG2JxNNQ1FIbtsf8d0CmSnvmtTBwkZXjk7jnx2pZJzaDSacELqFIhaTNtTxTS0UOXKUjSWj1D3TeQXGBhmsMAklDpM-FMQdJnFeKE0qoBJ0NnNxw7KJ3ONupwgAAAAHLWYEDAA").strip()
 
-# টেলিগ্রাম চ্যানেল আইডি সঠিক ফরম্যাটে সেট করা হলো
-_raw_channel_id = os.environ.get("STORAGE_CHANNEL_ID", "-1004322205565").strip()
-if not _raw_channel_id.startswith("-"):
-    if _raw_channel_id.startswith("100"):
-        STORAGE_CHANNEL_ID = int(f"-{_raw_channel_id}")
-    else:
-        STORAGE_CHANNEL_ID = int(f"-{_raw_channel_id}")
+# Telegram Storage Channel ID formatting logic
+_raw_channel_id = os.environ.get(
+    "STORAGE_CHANNEL_ID", "4322205565"
+).strip()
+
+if not _raw_channel_id:
+    STORAGE_CHANNEL_ID = 0
 else:
-    STORAGE_CHANNEL_ID = int(_raw_channel_id)
+    channel_digits = _raw_channel_id.lstrip("-")
+
+    if not channel_digits.isdigit():
+        raise ValueError("Invalid Telegram channel ID")
+
+    if channel_digits.startswith("100"):
+        STORAGE_CHANNEL_ID = -int(channel_digits)
+    else:
+        STORAGE_CHANNEL_ID = -int(
+            "100" + channel_digits
+        )
+
+print("Telegram Storage Channel:", STORAGE_CHANNEL_ID)
 
 WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "my_secure_webhook_secret_123").strip()
 
