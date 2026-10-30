@@ -7,9 +7,6 @@
 <title>ALVEE Premium Media Viewer</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-    /* ============================================================
-       ALVEE PREMIUM MEDIA VIEWER CSS
-       ============================================================ */
     :root {
         --oc-bg: #09090B;
         --oc-panel: #171719;
@@ -27,7 +24,7 @@
         background: var(--oc-bg);
         color: var(--oc-text);
         font-family: 'Poppins', sans-serif;
-        overflow: hidden; /* Controlled by the main window */
+        overflow: hidden;
     }
 
     #ocChannelWindow {
@@ -39,7 +36,6 @@
         position: relative;
     }
 
-    /* Original Header Styles */
     .oc-channel-header {
         position: relative; z-index: 10; display: flex; align-items: center; gap: 10px;
         padding: 14px 12px; width: 100%; background: rgba(10, 5, 20, 0.6);
@@ -70,7 +66,6 @@
     .oc-channel-title-text h2 { margin: 0; color: #fff; font-size: clamp(13px, 3.5vw, 18px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .oc-channel-title-text p { margin: 2px 0 0; color: #b39ddb; font-size: clamp(10px, 2.5vw, 12px); font-weight: 500; }
 
-    /* Popovers */
     .oc-menu-popover, .oc-search-panel {
         position: absolute; top: 80px; right: 16px; z-index: 20; display: none;
         width: min(270px, calc(100vw - 32px)); padding: 16px; flex-direction: column; gap: 8px;
@@ -82,7 +77,6 @@
     .oc-search-panel input { width: 100%; background: transparent; border: none; outline: none; color: #fff; font-family: inherit; font-size: 14px; }
     .oc-menu-popover button { margin-top: 8px; padding: 10px; border: none; border-radius: 12px; background: rgba(138, 43, 226, 0.2); color: #e0b0ff; cursor: pointer; }
 
-    /* JS Injected Elements Styling */
     .alv-topbar {
         display: flex; align-items: center; gap: 6px; padding: 10px 15px; background: var(--oc-bg);
         border-bottom: 1px solid var(--oc-border); z-index: 5;
@@ -99,11 +93,9 @@
     .alv-trending-btn { background: #27272a; color: #ffffff; border: 1px solid var(--oc-border); margin-left: auto; }
     .alv-trending-btn.is-active { background: rgba(245, 158, 11, 0.2); border-color: var(--oc-accent); color: var(--oc-accent); }
 
-    /* Feed Body */
     .oc-channel-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; align-items: center; }
     #channelPostsContainer { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 25px; padding-bottom: 50px; }
 
-    /* Post Card */
     .alv-post {
         background: var(--oc-panel); border: 1px solid var(--oc-border); border-radius: 20px;
         padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
@@ -160,7 +152,6 @@
 
 <div id="ocChannelWindow" class="open" aria-hidden="false">
     
-    <!-- Existing OC Channel Header -->
     <div class="oc-channel-header">
         <a href="/dashboard.html" class="oc-back-btn" aria-label="Back to dashboard">
             <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
@@ -192,7 +183,6 @@
         </button>
     </div>
 
-    <!-- Menus -->
     <div class="oc-menu-popover" id="ocMenuPopover">
         <strong>OC Collection Universe</strong>
         <small>Premium Dark Interface</small>
@@ -204,17 +194,12 @@
         <button type="button" aria-label="Close search" onclick="toggleOCSearch()" style="background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;">×</button>
     </div>
 
-    <!-- Main Feed Body -->
     <div class="oc-channel-body">
         <div id="channelPostsContainer">
-            <!-- JS Script injects vertical feed here -->
         </div>
     </div>
 </div>
 
-<!-- =========================================================
-   ALVEE PREMIUM MEDIA VIEWER JAVASCRIPT LOGIC
-========================================================= -->
 <script>
 (function () {
     'use strict';
@@ -238,7 +223,6 @@
     let isFetchingMedia = false;
     let isRenderingBatch = false;
     let pollingTimer = null;
-    let feedObserver = null;
     let currentSearchQuery = '';
     let trendingTimer = null;
     let toastTimer = null;
@@ -599,7 +583,6 @@
         fetchTelegramMedia();
         pollingTimer = window.setInterval(fetchTelegramMedia, CONFIG.refreshInterval);
         
-        // Infinite scroll observer
         const obs = new IntersectionObserver(e => { if (e[0].isIntersecting) renderNextBatch(); }, { root: byId('ocChannelWindow'), rootMargin: '300px' });
         obs.observe(ensureSentinel());
 
