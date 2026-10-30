@@ -1,4 +1,3 @@
-
 /* ============================================================
    OC COLLECTION UNIVERSE
    COMPLETE STYLE.CSS
@@ -294,8 +293,6 @@ video {
 
 /* ============================================================
    06. MAIN SCROLLABLE MEDIA FEED
-   IMPORTANT: ACTUAL JS CONTAINER ID
-   channelPostsContainer
    ============================================================ */
 
 .oc-channel-timeline,
@@ -319,7 +316,7 @@ video {
     flex-direction: column;
     align-items: center;
 
-    gap: 14px;
+    gap: 16px;
 
     z-index: 2;
 
@@ -354,8 +351,7 @@ video {
 
 
 /* ============================================================
-   07. INDIVIDUAL COMPACT MEDIA CARDS
-   EACH PHOTO/VIDEO = SEPARATE CARD
+   07. INDIVIDUAL COMPACT MEDIA CARDS (FIXED LAYOUT)
    ============================================================ */
 
 .media-card,
@@ -365,19 +361,18 @@ video {
 
     position: relative;
 
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     flex: 0 0 auto;
 
     width: 100%;
-    max-width: 480px;
+    max-width: 420px;
 
-    height: clamp(170px, 48vw, 220px);
-
-    min-height: 170px;
-    max-height: 220px;
-
-    aspect-ratio: auto;
+    /* সঠিক অনুপাত যাতে ছবি বা ভিডিও কেটে না যায় */
+    aspect-ratio: 4 / 5;
+    max-height: 75vh;
 
     margin: 0 auto;
     padding: 0;
@@ -386,7 +381,7 @@ video {
 
     border-radius: 16px;
 
-    background: rgba(30, 27, 75, 0.45);
+    background: rgba(15, 23, 42, 0.6);
 
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -423,8 +418,7 @@ video {
 
 
 /* ============================================================
-   08. CARD IMAGE AND VIDEO
-   FULL MEDIA VISIBLE WITHOUT CROPPING
+   08. CARD IMAGE AND VIDEO (FIXED OBJECT-FIT)
    ============================================================ */
 
 #channelPostsContainer > .media-card > img,
@@ -432,22 +426,16 @@ video {
 .media-card img,
 .media-card video {
 
-    position: absolute;
-
-    inset: 0;
-
     width: 100%;
     height: 100%;
 
-    max-width: none;
-    max-height: none;
-
     display: block;
 
-    object-fit: contain;
+    /* ছবি বা ভিডিও সম্পূর্ণ দেখানোর জন্য cover ব্যবহার করা হলো যাতে স্ক্রিন জুড়ে সুন্দর দেখায় */
+    object-fit: cover;
     object-position: center;
 
-    background: #080611;
+    background: #0b0f19;
 
     border: none;
     border-radius: 15px;
@@ -958,12 +946,10 @@ video {
     #channelPostsContainer > .media-card {
 
         width: 100%;
-        max-width: 520px;
+        max-width: 480px;
 
-        height: 240px;
-
-        min-height: 240px;
-        max-height: 240px;
+        aspect-ratio: 4 / 5;
+        height: auto;
     }
 
     .oc-channel-header {
@@ -1023,13 +1009,10 @@ video {
     #channelPostsContainer > .media-card {
 
         width: 100%;
+        max-width: 100%;
 
-        max-width: 480px;
-
-        height: clamp(170px, 48vw, 210px);
-
-        min-height: 170px;
-        max-height: 210px;
+        aspect-ratio: 4 / 5;
+        height: auto;
     }
 
 }
@@ -1078,10 +1061,8 @@ video {
 
     #channelPostsContainer > .media-card {
 
-        height: 170px;
-
-        min-height: 170px;
-        max-height: 170px;
+        aspect-ratio: 4 / 5;
+        height: auto;
 
         border-radius: 13px;
     }
