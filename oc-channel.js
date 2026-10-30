@@ -5,12 +5,12 @@
         containerId: 'channelPostsContainer',
         channelId: 'ocChannelWindow',
         apiURL: '/api/channel/posts',
-        mediaURLPrefix: '/api/chat/media/',
+        mediaURLPrefix: '/api/channel/media/',
         refreshInterval: 30000,
         batchSize: 10,
         observerRootMargin: '350px 0px',
         telegramURL: 'https://t.me/ALVEE_BD1',
-        brandText: '𝆺𝅥⃝🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀𝆺𝅥♥️⟵꯭'
+        brandText: '🫂🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀🫂♥️⟵꯭'
     };
 
     const mediaCards = new Map();
