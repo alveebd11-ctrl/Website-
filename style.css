@@ -1,514 +1,275 @@
-/* =========================================================
-   ALVEE PREMIUM MEDIA VIEWER
-   Scoped styles for OC Collection Universe only.
-   Existing dashboard and OC header styles are intentionally
-   left untouched. Keep this file as pure CSS.
-   ========================================================= */
+/* ============================================================
+   ALVEE PREMIUM MEDIA VIEWER — STYLE.CSS
+   ============================================================ */
 
-.oc-channel-window {
-    background: #09090b !important;
-    color: #f8fafc;
+:root {
+    --oc-bg: #09090B;
+    --oc-panel: #171719;
+    --oc-card: #171719;
+    --oc-accent: #f59e0b;
+    --oc-subscribe: #ef4444;
+    --oc-telegram: linear-gradient(135deg, #0088cc, #00bfff);
+    --oc-text: #f8fafc;
+    --oc-muted: #94a3b8;
+    --oc-border: rgba(255, 255, 255, 0.12);
 }
 
-/* Keep the existing OC header unchanged. */
-.oc-channel-header {
-    flex: 0 0 auto;
+*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-/* ALVEE brand / Subscribe / Trending row */
-.alv-topbar {
-    position: relative;
-    z-index: 15;
-    flex: 0 0 auto;
+/* Fullscreen Media Viewer Modal */
+#ocVideoPopup, .oc-video-popup {
+    position: fixed;
+    inset: 0;
     width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 12px 10px;
-    background: #09090b;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.alv-brand {
-    flex: 1 1 auto;
-    min-width: 0;
-    height: 44px;
-    padding: 0 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    white-space: nowrap;
-    border: 1px solid #e5e7eb;
-    border-radius: 13px;
-    background: #fff;
-    color: #111827;
-    font-family: 'Poppins', sans-serif;
-    font-size: clamp(9px, 2.65vw, 14px);
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.35px;
-}
-
-.alv-header-btn {
-    flex: 0 0 auto;
-    min-width: 76px;
-    height: 44px;
-    padding: 0 12px;
-    border: 1px solid rgba(255, 255, 255, 0.13);
-    border-radius: 13px;
-    color: #fff;
-    font-family: 'Poppins', sans-serif;
-    font-size: clamp(11px, 3vw, 14px);
-    font-weight: 800;
-    cursor: pointer;
-    transition: background .22s ease, border-color .22s ease, transform .22s ease, box-shadow .22s ease;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-}
-
-.alv-header-btn:active {
-    transform: scale(.96);
-}
-
-.alv-subscribe-btn {
-    background: #e3262e;
-    border-color: #f0444b;
-}
-
-.alv-subscribe-btn.is-active {
-    background: #16834a;
-    border-color: #27b36a;
-    box-shadow: 0 0 15px rgba(39, 179, 106, .2);
-}
-
-.alv-trending-btn {
-    background: #242428;
-    border-color: #3a3a40;
-}
-
-.alv-trending-btn.is-active {
-    background: #34313e;
-    border-color: #f2b84b;
-    color: #ffd36b;
-}
-
-/* Existing channel body becomes a vertical scrolling feed. */
-.oc-channel-body {
-    position: relative !important;
-    display: flex !important;
-    flex: 1 1 auto !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    align-items: stretch !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    width: 100% !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-    background: #09090b !important;
-}
-
-#channelPostsContainer {
-    position: relative !important;
-    display: flex !important;
-    flex: 1 1 auto !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 15px !important;
-    width: 100% !important;
-    height: auto !important;
-    min-width: 0 !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    padding: 12px 12px calc(24px + env(safe-area-inset-bottom, 0px)) !important;
-    margin: 0 !important;
-    scroll-snap-type: none !important;
-    scrollbar-width: thin;
-    scrollbar-color: #444 transparent;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-}
-
-#channelPostsContainer::-webkit-scrollbar {
-    width: 4px;
-}
-
-#channelPostsContainer::-webkit-scrollbar-thumb {
-    background: #45454b;
-    border-radius: 10px;
-}
-
-/* Individual media post */
-.alv-post {
-    position: relative;
-    display: flex;
-    flex: 0 0 auto;
+    height: 100vh;
+    height: 100dvh;
+    display: none;
     flex-direction: column;
-    gap: 12px;
-    width: 100%;
-    max-width: 760px;
-    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    background: var(--oc-bg);
+    z-index: 99999;
+    overflow-y: auto;
     padding: 12px;
-    overflow: hidden;
-    border: 1px solid #29292e;
-    border-radius: 25px;
-    background: #111113;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .28);
+    font-family: 'Poppins', sans-serif;
+    color: var(--oc-text);
 }
 
-.alv-post[hidden] {
-    display: none !important;
+#ocVideoPopup.open, .oc-video-popup.open {
+    display: flex;
 }
 
-.alv-post-head {
+/* Main Container Card */
+.oc-viewer-container {
+    width: 100%;
+    max-width: 420px;
+    background: var(--oc-panel);
+    border: 1px solid var(--oc-border);
+    border-radius: 24px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.85);
+}
+
+/* Top Header Bar */
+.oc-viewer-header {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    min-height: 42px;
+    gap: 8px;
+    width: 100%;
 }
 
-.alv-tribute-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    min-height: 38px;
-    padding: 0 15px;
-    border: 1px solid rgba(255, 196, 76, .18);
+.oc-brand-btn {
+    background: #ffffff;
+    color: #000000;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 8px 12px;
     border-radius: 12px;
-    background: #282522;
-    color: #ffca55;
-    font-family: 'Poppins', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform .2s ease, background .2s ease;
-}
-
-.alv-tribute-btn:active {
-    transform: scale(.96);
-    background: #393126;
-}
-
-.alv-media-frame {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 150px;
-    overflow: hidden;
-    border: 1px solid #29292e;
-    border-radius: 18px;
-    background: #050505;
-}
-
-.alv-media-frame img,
-.alv-media-frame video {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-width: 100%;
-    max-height: 74dvh;
-    margin: 0 auto;
-    border: 0;
-    background: #000;
-    object-fit: contain;
-    object-position: center;
-}
-
-.alv-media-frame video {
-    outline: none;
-}
-
-.alv-media-error {
-    width: 100%;
-    padding: 35px 15px;
-    color: #a1a1aa;
-    text-align: center;
-    font-size: 13px;
-}
-
-/* Four-item interaction / statistics bar. No share item. */
-.alv-stats-bar {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 7px;
-    width: 100%;
-    padding: 5px;
-    border: 1px solid #29292e;
-    border-radius: 19px;
-    background: #19191c;
-}
-
-.alv-stat-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    min-width: 0;
-    min-height: 54px;
-    padding: 7px 5px;
-    border: 1px solid #303035;
-    border-radius: 15px;
-    background: #202023;
-    color: #e5e7eb;
-    font-family: 'Poppins', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-}
-
-button.alv-stat-item {
-    cursor: pointer;
-    transition: transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
-    -webkit-tap-highlight-color: transparent;
-}
-
-button.alv-stat-item:active {
-    transform: scale(.95);
-}
-
-.alv-stat-item svg {
-    flex: 0 0 auto;
-    width: 21px;
-    height: 21px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.9;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.alv-stat-views {
-    color: #65aaff;
-}
-
-.alv-stat-like.is-active {
-    color: #ff5b79;
-    border-color: rgba(255, 91, 121, .5);
-    background: rgba(255, 91, 121, .1);
-}
-
-.alv-stat-like.is-active svg {
-    fill: currentColor;
-}
-
-.alv-stat-bookmark.is-active {
-    color: #ffc857;
-    border-color: rgba(255, 200, 87, .5);
-    background: rgba(255, 200, 87, .1);
-}
-
-.alv-stat-bookmark.is-active svg {
-    fill: currentColor;
-}
-
-.alv-stat-count {
+    border: none;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    letter-spacing: -0.5px;
 }
 
-/* Original, animated Telegram CTA */
-.alv-telegram-btn {
+.oc-subscribe-btn {
+    background: var(--oc-subscribe);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.1s ease;
+}
+
+.oc-subscribe-btn:active {
+    transform: scale(0.96);
+}
+
+.oc-subscribe-btn.subscribed {
+    background: #10b981;
+}
+
+.oc-trending-btn {
+    background: #27272a;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--oc-border);
+    cursor: pointer;
+    margin-left: auto;
+    transition: all 0.3s ease;
+}
+
+.oc-trending-btn.done {
+    background: rgba(245, 158, 11, 0.2);
+    border-color: var(--oc-accent);
+    color: var(--oc-accent);
+}
+
+/* Media Box */
+.oc-media-box {
     position: relative;
+    width: 100%;
+    background: #000000;
+    border: 1px solid var(--oc-border);
+    border-radius: 16px;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 11px;
-    width: 100%;
-    min-height: 62px;
-    padding: 12px 18px;
-    overflow: hidden;
-    border: 1px solid rgba(112, 183, 255, .45);
-    border-radius: 22px;
-    background: linear-gradient(105deg, #0878e8 0%, #1765e8 48%, #254de0 100%);
-    color: #fff;
-    text-decoration: none;
-    font-family: 'Poppins', sans-serif;
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: .1px;
-    box-shadow: 0 8px 24px rgba(0, 103, 255, .25);
-    animation: alvTelegramPulse 3s ease-in-out infinite;
-    transition: transform .2s ease, box-shadow .2s ease;
-    -webkit-tap-highlight-color: transparent;
+    min-height: 320px;
 }
 
-.alv-telegram-btn::before {
-    content: '';
+/* Tribute Badge */
+.oc-tribute-badge {
     position: absolute;
-    top: -80%;
-    left: -45%;
-    width: 35%;
-    height: 260%;
-    transform: rotate(25deg);
-    background: rgba(255, 255, 255, .15);
-    animation: alvTelegramShine 5s ease-in-out infinite;
-    pointer-events: none;
-}
-
-.alv-telegram-btn svg {
-    position: relative;
-    z-index: 1;
-    width: 25px;
-    height: 25px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.alv-telegram-btn span {
-    position: relative;
-    z-index: 1;
-}
-
-.alv-telegram-btn:active {
-    transform: scale(.97);
-    box-shadow: 0 4px 15px rgba(0, 103, 255, .35);
-}
-
-@keyframes alvTelegramPulse {
-    0%, 100% { box-shadow: 0 8px 24px rgba(0, 103, 255, .22); }
-    50% { box-shadow: 0 9px 30px rgba(0, 103, 255, .42); }
-}
-
-@keyframes alvTelegramShine {
-    0%, 65%, 100% { left: -45%; opacity: 0; }
-    72% { opacity: 1; }
-    90% { left: 120%; opacity: 0; }
-}
-
-/* Loading / empty / error messages */
-.oc-channel-status {
-    flex: 0 0 auto;
-    width: 100%;
-    max-width: 760px;
-    padding: 35px 16px;
-    margin: 10px auto;
-    color: #b7b7c0;
-    text-align: center;
-    font-size: 14px;
-    line-height: 1.7;
-}
-
-.oc-feed-sentinel {
-    flex: 0 0 auto;
-    width: 100%;
-    max-width: 760px;
-    padding: 15px 10px;
-    color: #92929b;
-    text-align: center;
+    top: 12px;
+    left: 12px;
+    background: rgba(23, 23, 25, 0.85);
+    border: 1px solid var(--oc-border);
+    color: var(--oc-accent);
     font-size: 12px;
-}
-
-/* Small toast used by A Tribute and unavailable comments. */
-.alv-toast {
-    position: fixed;
-    left: 50%;
-    bottom: calc(22px + env(safe-area-inset-bottom, 0px));
-    z-index: 100100;
-    width: max-content;
-    max-width: calc(100vw - 36px);
-    padding: 12px 17px;
-    transform: translate(-50%, 12px);
-    border: 1px solid rgba(255, 255, 255, .14);
-    border-radius: 14px;
-    background: rgba(30, 30, 34, .96);
-    color: #fff;
-    text-align: center;
-    font-family: 'Poppins', sans-serif;
-    font-size: 13px;
     font-weight: 600;
-    line-height: 1.45;
+    padding: 6px 12px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+}
+
+.oc-toast-notification {
+    position: absolute;
+    top: 54px;
+    left: 12px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--oc-accent);
+    color: #ffffff;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    z-index: 20;
     opacity: 0;
+    transition: opacity 0.3s ease;
     pointer-events: none;
-    transition: opacity .22s ease, transform .22s ease;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, .4);
 }
 
-.alv-toast.is-visible {
+.oc-toast-notification.show {
     opacity: 1;
-    transform: translate(-50%, 0);
 }
 
-/* Keep the existing search and menu controls functional. */
-.oc-menu-popover {
-    z-index: 10020;
+/* Media Wrapper (Maintains original aspect ratio) */
+.oc-popup-video-wrapper {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.oc-search-panel {
-    z-index: 10020;
+.oc-popup-video-wrapper img,
+.oc-popup-video-wrapper video {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 62vh !important;
+    object-fit: contain !important;
+    display: block !important;
 }
 
-@media (min-width: 700px) {
-    .alv-topbar {
-        padding-right: max(16px, calc((100vw - 760px) / 2));
-        padding-left: max(16px, calc((100vw - 760px) / 2));
-    }
-
-    #channelPostsContainer {
-        padding-right: 18px !important;
-        padding-left: 18px !important;
-    }
-
-    .alv-post {
-        padding: 15px;
-    }
+/* Statistics Bar (4 Items, No Share) */
+.oc-stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    width: 100%;
 }
 
-@media (max-width: 360px) {
-    .alv-topbar {
-        gap: 5px;
-        padding-right: 8px;
-        padding-left: 8px;
-    }
-
-    .alv-brand {
-        padding: 0 6px;
-        font-size: 8.5px;
-    }
-
-    .alv-header-btn {
-        min-width: 67px;
-        padding: 0 8px;
-        font-size: 11px;
-    }
-
-    .alv-stat-item {
-        gap: 4px;
-        min-height: 49px;
-        font-size: 11px;
-    }
-
-    .alv-stat-item svg {
-        width: 18px;
-        height: 18px;
-    }
-
-    .alv-telegram-btn {
-        min-height: 56px;
-        font-size: 16px;
-    }
+.oc-stat-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--oc-border);
+    border-radius: 12px;
+    padding: 10px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--oc-muted);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    transition: background 0.2s ease;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .alv-telegram-btn,
-    .alv-telegram-btn::before {
-        animation: none !important;
-    }
+.oc-stat-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
 
-    .alv-header-btn,
-    .alv-tribute-btn,
-    .alv-stat-item,
-    .alv-telegram-btn,
-    .alv-toast {
-        transition: none !important;
-    }
+.oc-stat-item svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+}
+
+.oc-stat-item.liked svg {
+    stroke: #ef4444;
+    fill: #ef4444;
+}
+
+.oc-stat-item.bookmarked svg {
+    stroke: var(--oc-accent);
+    fill: var(--oc-accent);
+}
+
+.oc-stat-item.views-item {
+    color: #38bdf8;
+}
+
+/* Telegram Join Button */
+.oc-telegram-join-btn {
+    width: 100%;
+    background: var(--oc-telegram);
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 136, 204, 0.4);
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.oc-telegram-join-btn:active {
+    transform: scale(0.97);
+}
+
+.oc-telegram-join-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: #ffffff;
+}
+
+/* Hide old unused channel timeline container elements */
+#channelPostsContainer, .oc-channel-timeline, #media-feed {
+    display: none !important;
 }
