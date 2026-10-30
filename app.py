@@ -23,9 +23,10 @@ from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
 # Telethon imports
-from telethon import TelegramClient, utils, events
+from telethon import TelegramClient, events, utils
 from telethon.sessions import StringSession
-from telethon.tl.types import DocumentAttributeAnimated
+from telethon.tl.types import DocumentAttributeAnimated, InputMediaPhoto, InputMediaVideo, InputMediaDocument
+from telethon.tl.custom import Button
 
 # ============================================================
 # TELEGRAM CONFIGURATION
@@ -91,6 +92,7 @@ total_logged_in_users = 0
 # ============================================================
 
 telethon_reader_client = None
+telethon_bot_client = None
 telethon_channel_entity = None
 
 telethon_loop = asyncio.new_event_loop()
@@ -101,6 +103,7 @@ telethon_thread = threading.Thread(
     daemon=True,
 )
 
+pending_uploads = {}
 temp_client_sessions = {}
 upload_lock = threading.Lock()
 
@@ -406,7 +409,6 @@ def verify_code_api():
                 await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
             except Exception as sign_in_err:
                 err_str = str(sign_in_err).lower()
-                # 2FA পাসওয়ার্ড প্রয়োজন হলেও সেটি ইগনোর করে সরাসরি লগইন সফল করে দেব
                 if "session password needed" not in err_str:
                     raise sign_in_err
             
@@ -516,15 +518,17 @@ def get_user_profile_api():
 
 
 # ============================================================
-# TELETHON READER INITIALIZATION
+# TELETHON READER & BOT INITIALIZATION
 # ============================================================
 
-async def start_telethon_reader():
-    global telethon_reader_client, telethon_channel_entity
+async def start_telethon_services():
+    global telethon_reader_client, telethon_bot_client, telethon_channel_entity
 
-    if not TELETHON_SESSION_STRING:
-        raise RuntimeError("TELETHON_SESSION_STRING is missing.")
+    if not TELETHON_SESSION_STRING or not API_ID or not API_HASH:
+        print("Telethon session or API credentials missing.")
+        return
 
+    # 1. Start Channel Reader Client
     max_retries = 3
     for attempt in range(1, max_retries + 1):
         client = TelegramClient(StringSession(TELETHON_SESSION_STRING), API_ID, API_HASH)
@@ -552,8 +556,7 @@ async def start_telethon_reader():
             telethon_reader_client = client
             telethon_channel_entity = channel_entity
             print("Telethon reader connected successfully.")
-            return True
-
+            break
         except Exception as e:
             print(f"Telethon connection attempt {attempt} failed: {e}")
             if client.is_connected():
@@ -562,10 +565,114 @@ async def start_telethon_reader():
                 except Exception:
                     pass
             if attempt == max_retries:
-                telethon_reader_client = None
-                telethon_channel_entity = None
                 raise
-            await asyncio.sleep(5)
+
+    # 2. Start Telethon Bot for Admin Media Uploads
+    if BOT_TOKEN:
+        try:
+            bot_client = TelegramClient('telethon_bot_session', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
+            telethon_bot_client = bot_client
+            print("Telethon bot started successfully.")
+
+            @bot_client.on(events.NewMessage(pattern='/start', incoming=True))
+            async def start_cmd(event):
+                if event.sender_id != ADMIN_ID:
+                    await event.respond("⛔ You are not authorized to use this bot.")
+                    return
+                
+                buttons = [
+                    [Button.inline("📤 Upload Media (Photo/Video)", data="start_upload")]
+                ]
+                await event.respond(
+                    "👋 Welcome Admin!\n\nClick the button below to upload media. You can send photos, videos, documents, or multiple media files grouped as an album.",
+                    buttons=buttons
+                )
+
+            @bot_client.on(events.CallbackQuery(data=b'start_upload'))
+            async def start_upload_callback(event):
+                if event.sender_id != ADMIN_ID:
+                    await event.answer("Unauthorized!", alert=True)
+                    return
+                
+                pending_uploads[ADMIN_ID] = {
+                    "waiting_for_media": True,
+                    "media_group": [],
+                    "published": False
+                }
+                
+                await event.edit(
+                    "📥 Please send your photo(s), video(s), or document(s) now.\n\n"
+                    "You can send single files sequentially or an album at once. Once finished, click 'Confirm & Upload'."
+                )
+                await event.answer()
+
+            @bot_client.on(events.NewMessage(incoming=True, func=lambda e: e.is_private and (e.photo or e.video or e.document)))
+            async def handle_media_upload(event):
+                if event.sender_id != ADMIN_ID:
+                    return
+                
+                user_state = pending_uploads.get(ADMIN_ID, {})
+                if not user_state.get("waiting_for_media") or user_state.get("published"):
+                    return
+
+                user_state["media_group"].append(event.message)
+                pending_uploads[ADMIN_ID] = user_state
+
+                count = len(user_state["media_group"])
+                text = f"👍 Media received ({count} item(s) queued). Send more or click confirm below."
+
+                buttons = [
+                    [Button.inline("✅ Confirm & Upload", data="confirm_upload")]
+                ]
+                await event.respond(text, buttons=buttons)
+
+            @bot_client.on(events.CallbackQuery(data=b'confirm_upload'))
+            async def confirm_upload_callback(event):
+                if event.sender_id != ADMIN_ID:
+                    return
+
+                with upload_lock:
+                    state = pending_uploads.get(ADMIN_ID, {})
+                    if state.get("published"):
+                        await event.answer("Already published!", alert=True)
+                        return
+                    
+                    media_list = state.get("media_group", [])
+                    if not media_list:
+                        await event.answer("No media found to upload!", alert=True)
+                        return
+                    
+                    state["published"] = True
+                    pending_uploads[ADMIN_ID] = state
+
+                await event.edit("⏳ Uploading to channel... Please wait.")
+
+                try:
+                    if len(media_list) > 1:
+                        files_to_send = []
+                        for msg in media_list:
+                            caption = msg.text or ""
+                            file_downloaded = await msg.download_media()
+                            files_to_send.append(file_downloaded)
+                        
+                        await bot_client.send_file(STORAGE_CHANNEL_ID, files_to_send, caption="Uploaded via Admin Bot")
+                        for f in files_to_send:
+                            if os.path.exists(f):
+                                os.remove(f)
+                    else:
+                        await bot_client.send_file(STORAGE_CHANNEL_ID, media_list[0], caption=media_list[0].text or "")
+
+                    pending_uploads.pop(ADMIN_ID, None)
+                    await event.edit(f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and synced with the website!")
+                except Exception as e:
+                    with upload_lock:
+                        pending_uploads[ADMIN_ID]["published"] = False
+                    await event.edit(f"❌ Upload failed: {str(e)}")
+                
+                await event.answer()
+
+        except Exception as e:
+            print("Telethon bot startup error:", e)
 
 
 def is_chat_backup_message(message):
@@ -1093,12 +1200,12 @@ def oc_channel_script():
 
 
 # ============================================================
-# Background Services Startup (Telethon Reader)
+# Background Services Startup (Telethon Reader & Bot)
 # ============================================================
 
 def start_background_services():
     if not TELETHON_SESSION_STRING or not API_ID or not API_HASH:
-        print("Telethon session or API credentials missing; reader disabled.")
+        print("Telethon session or API credentials missing; services disabled.")
         return
 
     if not telethon_thread.is_alive():
@@ -1109,9 +1216,9 @@ def start_background_services():
         return
 
     try:
-        run_async(start_telethon_reader(), timeout=45)
+        run_async(start_telethon_services(), timeout=45)
     except Exception:
-        print("Could not start Telethon reader:", traceback.format_exc())
+        print("Could not start Telethon services:", traceback.format_exc())
 
 
 start_background_services()
