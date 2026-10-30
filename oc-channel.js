@@ -1,58 +1,40 @@
 
-/* =========================================================
-   OC COLLECTION UNIVERSE
-   Telegram Media Synchronization
-   Individual Photo / Video Cards
-   Premium Dark Neon Glassmorphism Feed
-   ========================================================= */
-
+/* OC COLLECTION UNIVERSE — Telegram Media Feed
+   Original aspect ratios | 10-item batches | Infinite scroll */
 (function () {
     'use strict';
-
-    /* =====================================================
-       CONFIGURATION
-       ===================================================== */
 
     const CONFIG = {
         containerId: 'channelPostsContainer',
         channelId: 'ocChannelWindow',
         popupId: 'ocVideoPopup',
         popupWrapper: '.oc-popup-video-wrapper',
+        apiURL: '/api/get_videos',
         refreshInterval: 30000,
-        apiURL: '/api/get_videos'
+        batchSize: 10,
+        observerRootMargin: '400px 0px'
     };
 
-    let mediaCards = new Map();
+    const mediaCards = new Map();
+    const knownMediaIds = new Set();
+    let pendingMedia = [];
     let isFetchingMedia = false;
+    let isRenderingBatch = false;
     let pollingTimer = null;
+    let feedObserver = null;
     let previousBodyOverflow = '';
     let lastFocusedCard = null;
+    let currentSearchQuery = '';
 
-    /* =====================================================
-       DOM HELPERS
-       ===================================================== */
+    const byId = id => document.getElementById(id);
+    const getContainer = () => byId(CONFIG.containerId);
 
-    function getElement(id) {
-        return document.getElementById(id);
+    function removeStatus() {
+        getContainer()?.querySelector('.oc-channel-status')?.remove();
     }
 
-    function getMediaContainer() {
-        return getElement(CONFIG.containerId);
-    }
-
-    function removeChannelStatus() {
-        const container = getMediaContainer();
-        if (!container) return;
-
-        const status = container.querySelector('.oc-channel-status');
-
-        if (status) {
-            status.remove();
-        }
-    }
-
-    function showChannelStatus(message, state) {
-        const container = getMediaContainer();
+    function showStatus(message, state) {
+        const container = getContainer();
         if (!container) return;
 
         let status = container.querySelector('.oc-channel-status');
@@ -68,107 +50,118 @@
         status.textContent = message;
     }
 
-    /* =====================================================
-       SAFE MEDIA URL VALIDATION
-       ===================================================== */
+    /* SAFE MEDIA URL */
 
     function getSafeMediaURL(post) {
-        if (!post || typeof post.media_url !== 'string') {
-            return null;
-        }
+        if (!post || typeof post.media_url !== 'string') return null;
 
         try {
-            const url = new URL(
-                post.media_url,
-                window.location.origin
-            );
+            const url = new URL(post.media_url, window.location.origin);
 
-            if (url.origin !== window.location.origin) {
-                return null;
-            }
+            if (url.origin !== window.location.origin) return null;
 
             if (!/^\/api\/channel\/media\/\d+\/?$/.test(url.pathname)) {
                 return null;
             }
 
             return url.href;
-
-        } catch (error) {
+        } catch (_) {
             return null;
         }
     }
 
-    /* =====================================================
-       MEDIA TYPE DETECTION
-       ===================================================== */
+    /* MEDIA TYPE */
 
     function getMediaType(post) {
-        const type = String(
-            post.media_type || ''
-        ).toLowerCase();
+        const type = String(post.media_type || '').toLowerCase();
+        const mime = String(post.mime_type || '').toLowerCase();
 
-        const mime = String(
-            post.mime_type || ''
-        ).toLowerCase();
-
-        const isVideo =
+        const video =
             type === 'video' ||
             mime.startsWith('video/') ||
-            (
-                type === 'animation' &&
-                !mime.startsWith('image/')
-            );
+            (type === 'animation' && !mime.startsWith('image/'));
 
-        const isImage =
-            !isVideo &&
-            (
-                type === 'photo' ||
-                mime.startsWith('image/') ||
-                type === 'animation'
-            );
+        const image =
+            !video &&
+            (type === 'photo' || mime.startsWith('image/') || type === 'animation');
 
-        if (isVideo) return 'video';
-        if (isImage) return 'photo';
-
-        return null;
+        return video ? 'video' : image ? 'photo' : null;
     }
 
-    /* =====================================================
-       CREATE INDIVIDUAL MEDIA CARD
-       ===================================================== */
+    /* SEARCH */
 
-    function createMediaCard(post, mediaURL, mediaType, mediaId) {
+    function getSearchText(item) {
+        const post = item.post || {};
 
+        return [
+            post.text,
+            post.caption,
+            post.title,
+            item.mediaType,
+            item.id
+        ].map(value => String(value || '')).join(' ').toLowerCase();
+    }
+
+    function matchesSearch(item, query) {
+        return !query || getSearchText(item).includes(query);
+    }
+
+    function setCardVisibility(card, query) {
+        const visible =
+            !query ||
+            String(card.dataset.metadata || '').includes(query);
+
+        card.hidden = !visible;
+
+        if (visible) {
+            card.style.removeProperty('display');
+        } else {
+            card.style.setProperty('display', 'none', 'important');
+        }
+    }
+
+    /* CREATE MEDIA CARD */
+
+    function createMediaCard(item) {
         const card = document.createElement('button');
 
         card.type = 'button';
         card.className = 'media-card';
-        card.dataset.mediaId = mediaId;
+        card.dataset.mediaId = item.id;
+        card.dataset.metadata = getSearchText(item);
 
-        card.setAttribute('aria-label',
-            mediaType === 'video'
-                ? 'Play video'
-                : 'View photo'
+        card.setAttribute(
+            'aria-label',
+            item.mediaType === 'video' ? 'Play video' : 'View photo'
         );
 
-        /*
-         * Caption is kept only for optional searching.
-         * It is never displayed inside the card.
-         */
-
-        card.dataset.metadata = String(post.text || '');
-
-        if (mediaType === 'video') {
-
+        if (item.mediaType === 'video') {
             const video = document.createElement('video');
 
-            video.src = mediaURL;
+            video.src = item.mediaURL;
             video.muted = true;
             video.loop = true;
             video.playsInline = true;
             video.preload = 'metadata';
             video.tabIndex = -1;
+
             video.setAttribute('aria-hidden', 'true');
+
+            video.addEventListener('loadedmetadata', function () {
+                if (video.videoWidth && video.videoHeight) {
+                    video.setAttribute('width', video.videoWidth);
+                    video.setAttribute('height', video.videoHeight);
+
+                    card.dataset.aspectRatio =
+                        video.videoWidth + ':' + video.videoHeight;
+                }
+            }, { once: true });
+
+            video.addEventListener(
+                'error',
+                () => card.classList.add('media-load-error'),
+                { once: true }
+            );
 
             card.appendChild(video);
 
@@ -180,158 +173,324 @@
             card.appendChild(playIcon);
 
         } else {
-
             const img = document.createElement('img');
 
-            img.src = mediaURL;
+            img.src = item.mediaURL;
             img.alt = 'OC Collection photo';
             img.loading = 'lazy';
             img.decoding = 'async';
+
+            img.addEventListener('load', function () {
+                if (img.naturalWidth && img.naturalHeight) {
+                    img.setAttribute('width', img.naturalWidth);
+                    img.setAttribute('height', img.naturalHeight);
+
+                    card.dataset.aspectRatio =
+                        img.naturalWidth + ':' + img.naturalHeight;
+                }
+            }, { once: true });
+
+            img.addEventListener(
+                'error',
+                () => card.classList.add('media-load-error'),
+                { once: true }
+            );
 
             card.appendChild(img);
         }
 
         card.addEventListener('click', function () {
-
             lastFocusedCard = card;
-
-            openPopupPlayer(
-                mediaURL,
-                mediaType
-            );
+            openPopupPlayer(item.mediaURL, item.mediaType);
         });
+
+        setCardVisibility(card, currentSearchQuery);
 
         return card;
     }
 
-    /* =====================================================
-       PROCESS TELEGRAM POSTS
-       ===================================================== */
+    /* INFINITE SCROLL SENTINEL */
 
-    function renderTelegramPosts(posts) {
+    function ensureSentinel() {
+        const container = getContainer();
+        if (!container) return null;
 
-        const container = getMediaContainer();
+        let sentinel = container.querySelector('.oc-feed-sentinel');
 
-        if (!container || !Array.isArray(posts)) {
+        if (!sentinel) {
+            sentinel = document.createElement('div');
+
+            sentinel.className = 'oc-feed-sentinel';
+
+            sentinel.setAttribute('role', 'status');
+            sentinel.setAttribute('aria-live', 'polite');
+
+            sentinel.style.cssText =
+                'width:100%;padding:16px 10px;text-align:center;' +
+                'font-size:12px;color:#b6a2d4;flex:0 0 auto;';
+        }
+
+        if (
+            sentinel.parentNode !== container ||
+            container.lastElementChild !== sentinel
+        ) {
+            container.appendChild(sentinel);
+        }
+
+        return sentinel;
+    }
+
+    function setupFeedObserver() {
+        const container = getContainer();
+        const sentinel = ensureSentinel();
+
+        if (!container || !sentinel) return;
+
+        if ('IntersectionObserver' in window) {
+            if (!feedObserver) {
+                feedObserver = new IntersectionObserver(entries => {
+                    if (entries.some(entry => entry.isIntersecting)) {
+                        renderNextBatch();
+                    }
+                }, {
+                    root: container,
+                    rootMargin: CONFIG.observerRootMargin,
+                    threshold: 0
+                });
+            }
+
+            feedObserver.observe(sentinel);
+
+        } else if (
+            container.dataset.ocScrollInitialized !== 'true'
+        ) {
+            container.dataset.ocScrollInitialized = 'true';
+
+            container.addEventListener(
+                'scroll',
+                handleFeedScroll,
+                { passive: true }
+            );
+        }
+    }
+
+    function handleFeedScroll() {
+        const container = getContainer();
+
+        if (!container || !pendingMedia.length) return;
+
+        const distance =
+            container.scrollHeight -
+            container.scrollTop -
+            container.clientHeight;
+
+        if (distance < 500) {
+            renderNextBatch();
+        }
+    }
+
+    function updateLoadMoreUI() {
+        const sentinel = ensureSentinel();
+
+        if (!sentinel) return;
+
+        const hasMoreMatches = pendingMedia.some(item =>
+            matchesSearch(item, currentSearchQuery)
+        );
+
+        sentinel.hidden = !hasMoreMatches;
+
+        sentinel.style.display =
+            hasMoreMatches ? 'block' : 'none';
+
+        sentinel.textContent = hasMoreMatches
+            ? 'Scroll down to load more media...'
+            : '';
+
+        setupFeedObserver();
+    }
+
+    /* INSERT MEDIA CARDS */
+
+    function prependBatch(items) {
+        const container = getContainer();
+
+        if (!container || !items.length) return;
+
+        const wasScrolled = container.scrollTop > 0;
+        const oldHeight = container.scrollHeight;
+
+        const fragment = document.createDocumentFragment();
+
+        items.forEach(item => {
+            const card = createMediaCard(item);
+
+            mediaCards.set(item.id, card);
+
+            fragment.appendChild(card);
+        });
+
+        container.prepend(fragment);
+
+        // Preserve the reader's scroll position when new posts arrive.
+        if (wasScrolled) {
+            container.scrollTop +=
+                container.scrollHeight - oldHeight;
+        }
+    }
+
+    function appendBatch(items) {
+        const container = getContainer();
+
+        if (!container || !items.length) return;
+
+        const fragment = document.createDocumentFragment();
+
+        items.forEach(item => {
+            const card = createMediaCard(item);
+
+            mediaCards.set(item.id, card);
+
+            fragment.appendChild(card);
+        });
+
+        container.insertBefore(fragment, ensureSentinel());
+    }
+
+    /* LOAD NEXT 10 ITEMS */
+
+    function renderNextBatch() {
+        if (isRenderingBatch || !pendingMedia.length) {
+            updateLoadMoreUI();
             return 0;
         }
 
-        const newItems = [];
-        const batchIds = new Set();
+        if (!getContainer()) return 0;
 
-        posts.forEach(function (post) {
+        isRenderingBatch = true;
 
+        try {
+            const batch = [];
+            const remaining = [];
+
+            pendingMedia.forEach(item => {
+                if (
+                    batch.length < CONFIG.batchSize &&
+                    matchesSearch(item, currentSearchQuery)
+                ) {
+                    batch.push(item);
+                } else {
+                    remaining.push(item);
+                }
+            });
+
+            pendingMedia = remaining;
+
+            if (batch.length) {
+                removeStatus();
+
+                appendBatch(batch);
+
+                filterOCPosts(currentSearchQuery);
+            }
+
+            updateLoadMoreUI();
+
+            return batch.length;
+
+        } finally {
+            isRenderingBatch = false;
+        }
+    }
+
+    /* PROCESS TELEGRAM POSTS */
+
+    function renderTelegramPosts(posts) {
+        if (!Array.isArray(posts)) return 0;
+
+        const incoming = [];
+
+        posts.forEach(post => {
             if (!post) return;
 
             const mediaURL = getSafeMediaURL(post);
-
-            if (!mediaURL) return;
-
             const mediaType = getMediaType(post);
 
-            if (!mediaType) return;
+            if (!mediaURL || !mediaType) return;
 
-            const mediaId = String(
-                post.message_id ||
-                post.id ||
-                mediaURL
+            const id = String(
+                post.message_id ?? post.id ?? mediaURL
             );
 
-            if (
-                mediaCards.has(mediaId) ||
-                batchIds.has(mediaId)
-            ) {
-                return;
-            }
+            if (knownMediaIds.has(id)) return;
 
-            batchIds.add(mediaId);
+            knownMediaIds.add(id);
 
-            const card = createMediaCard(
+            incoming.push({
+                id,
                 post,
                 mediaURL,
-                mediaType,
-                mediaId
-            );
-
-            newItems.push({
-                id: mediaId,
-                card: card
+                mediaType
             });
         });
 
-        /*
-         * The Telethon API returns newest posts first.
-         * Reverse insertion + prepend preserves newest-first order.
-         * Every Telegram message gets its own individual card.
-         */
-
-        removeChannelStatus();
-
-        for (let i = newItems.length - 1; i >= 0; i--) {
-
-            const item = newItems[i];
-
-            container.prepend(item.card);
-
-            mediaCards.set(
-                item.id,
-                item.card
-            );
+        if (!incoming.length) {
+            updateLoadMoreUI();
+            return 0;
         }
 
-        if (newItems.length > 0) {
-            filterOCPosts(
-                getElement('ocSearchInput')?.value || ''
-            );
+        removeStatus();
+
+        const firstBatch =
+            incoming.slice(0, CONFIG.batchSize);
+
+        const overflow =
+            incoming.slice(CONFIG.batchSize);
+
+        if (overflow.length) {
+            pendingMedia = overflow.concat(pendingMedia);
         }
 
-        return newItems.length;
+        // API posts must be ordered newest first.
+        prependBatch(firstBatch);
+
+        filterOCPosts(currentSearchQuery);
+        updateLoadMoreUI();
+
+        return incoming.length;
     }
 
-    /* =====================================================
-       FETCH TELEGRAM MEDIA
-       ===================================================== */
+    /* FETCH TELEGRAM MEDIA */
 
     async function fetchTelegramMedia() {
+        const container = getContainer();
 
-        const container = getMediaContainer();
-
-        if (!container || isFetchingMedia) {
-            return;
-        }
+        if (!container || isFetchingMedia) return;
 
         isFetchingMedia = true;
 
-        container.setAttribute(
-            'aria-busy',
-            'true'
-        );
+        container.setAttribute('aria-busy', 'true');
 
-        if (mediaCards.size === 0) {
-            showChannelStatus(
+        if (!mediaCards.size && !pendingMedia.length) {
+            showStatus(
                 'Loading photos and videos...',
                 'loading'
             );
         }
 
         try {
-
-            const response = await fetch(
-                CONFIG.apiURL,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    },
-                    credentials: 'same-origin',
-                    cache: 'no-store'
-                }
-            );
+            const response = await fetch(CONFIG.apiURL, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                cache: 'no-store'
+            });
 
             if (!response.ok) {
                 throw new Error(
-                    'Telegram API HTTP error: ' +
-                    response.status
+                    'Telegram API HTTP error: ' + response.status
                 );
             }
 
@@ -342,120 +501,81 @@
                 !Array.isArray(data.posts)
             ) {
                 throw new Error(
-                    data.error ||
-                    'Invalid Telegram API response.'
+                    data.error || 'Invalid Telegram API response.'
                 );
             }
 
             renderTelegramPosts(data.posts);
 
-            if (mediaCards.size === 0) {
-
-                showChannelStatus(
+            if (!mediaCards.size && !pendingMedia.length) {
+                showStatus(
                     'No photos or videos have been published yet.',
                     'empty'
                 );
             }
 
         } catch (error) {
-
             console.error(
                 'OC Collection media loading error:',
                 error
             );
 
-            if (mediaCards.size === 0) {
-
-                showChannelStatus(
+            if (!mediaCards.size && !pendingMedia.length) {
+                showStatus(
                     'Unable to load media. Please try again later.',
                     'error'
                 );
             }
 
         } finally {
-
             isFetchingMedia = false;
-
-            container.removeAttribute(
-                'aria-busy'
-            );
+            container.removeAttribute('aria-busy');
         }
     }
 
-    /*
-     * Expose fetch function for manual refresh if required.
-     */
-
     window.fetchTelegramMedia = fetchTelegramMedia;
+    window.loadMoreOCMedia = renderNextBatch;
 
-    /* =====================================================
-       AUTOMATIC MEDIA REFRESH
-       ===================================================== */
+    /* AUTOMATIC REFRESH */
 
     function startMediaPolling() {
-
         stopMediaPolling();
 
-        pollingTimer = setInterval(function () {
+        pollingTimer = window.setInterval(() => {
+            const channel = byId(CONFIG.channelId);
 
-            const channel = getElement(
-                CONFIG.channelId
-            );
-
-            if (
-                channel &&
-                channel.classList.contains('open')
-            ) {
+            if (channel?.classList.contains('open')) {
                 fetchTelegramMedia();
             }
-
         }, CONFIG.refreshInterval);
     }
 
     function stopMediaPolling() {
-
         if (pollingTimer !== null) {
-
-            clearInterval(pollingTimer);
-
+            window.clearInterval(pollingTimer);
             pollingTimer = null;
         }
     }
 
-    /* =====================================================
-       SEARCH / FILTER
-       ===================================================== */
+    /* SEARCH FILTER */
 
     function filterOCPosts(query) {
+        currentSearchQuery =
+            String(query || '').trim().toLowerCase();
 
-        const searchText = String(
-            query || ''
-        ).trim().toLowerCase();
-
-        mediaCards.forEach(function (card) {
-
-            const metadata = String(
-                card.dataset.metadata || ''
-            ).toLowerCase();
-
-            card.hidden = Boolean(
-                searchText &&
-                !metadata.includes(searchText)
-            );
+        mediaCards.forEach(card => {
+            setCardVisibility(card, currentSearchQuery);
         });
+
+        updateLoadMoreUI();
     }
 
-    /* =====================================================
-       OPEN CHANNEL
-       ===================================================== */
+    /* OPEN CHANNEL */
 
     window.openOCChannel = function () {
-
         initializeEvents();
 
-        const channel = getElement(
-            CONFIG.channelId
-        );
+        const channel = byId(CONFIG.channelId);
 
         if (!channel) {
             console.error(
@@ -465,189 +585,110 @@
         }
 
         if (!channel.classList.contains('open')) {
-
             previousBodyOverflow =
                 document.body.style.overflow;
         }
 
-        const naughtyWindow = getElement(
-            'naughtyWindow'
-        );
+        byId('naughtyWindow')?.classList.remove('open');
 
-        const profileModal = getElement(
-            'profileModal'
-        );
-
-        if (naughtyWindow) {
-            naughtyWindow.classList.remove('open');
-        }
+        const profileModal = byId('profileModal');
 
         if (profileModal) {
             profileModal.style.display = 'none';
         }
 
-        getElement('ocMenuPopover')
-            ?.classList.remove('open');
+        byId('ocMenuPopover')?.classList.remove('open');
+        byId('ocSearchPanel')?.classList.remove('open');
 
-        getElement('ocSearchPanel')
-            ?.classList.remove('open');
+        const input = byId('ocSearchInput');
 
-        const searchInput = getElement(
-            'ocSearchInput'
-        );
+        if (input) input.value = '';
 
-        if (searchInput) {
-
-            searchInput.value = '';
-
-            filterOCPosts('');
-        }
+        filterOCPosts('');
 
         channel.classList.add('open');
 
-        channel.setAttribute(
-            'aria-hidden',
-            'false'
-        );
+        channel.setAttribute('aria-hidden', 'false');
 
         document.body.style.overflow = 'hidden';
 
         closePopupPlayer();
-
         fetchTelegramMedia();
-
         startMediaPolling();
     };
 
-    /* =====================================================
-       CLOSE CHANNEL
-       ===================================================== */
+    /* CLOSE CHANNEL */
 
     window.closeOCChannel = function () {
-
-        const channel = getElement(
-            CONFIG.channelId
-        );
+        const channel = byId(CONFIG.channelId);
 
         if (!channel) return;
 
         channel.classList.remove('open');
 
-        channel.setAttribute(
-            'aria-hidden',
-            'true'
-        );
+        channel.setAttribute('aria-hidden', 'true');
 
-        getElement('ocMenuPopover')
-            ?.classList.remove('open');
+        byId('ocMenuPopover')?.classList.remove('open');
+        byId('ocSearchPanel')?.classList.remove('open');
 
-        getElement('ocSearchPanel')
-            ?.classList.remove('open');
+        const input = byId('ocSearchInput');
 
-        const searchInput = getElement(
-            'ocSearchInput'
-        );
+        if (input) input.value = '';
 
-        if (searchInput) {
-
-            searchInput.value = '';
-
-            filterOCPosts('');
-        }
+        filterOCPosts('');
 
         closePopupPlayer();
-
         stopMediaPolling();
 
         document.body.style.overflow =
             previousBodyOverflow;
     };
 
-    /* =====================================================
-       MENU TOGGLE
-       ===================================================== */
+    /* MENU */
 
     window.toggleOCMenu = function () {
-
-        const menu = getElement(
-            'ocMenuPopover'
-        );
+        const menu = byId('ocMenuPopover');
 
         if (!menu) return;
 
-        const opening =
-            !menu.classList.contains('open');
+        const opening = !menu.classList.contains('open');
 
-        menu.classList.toggle(
-            'open',
-            opening
-        );
+        menu.classList.toggle('open', opening);
 
         if (opening) {
-
-            getElement('ocSearchPanel')
-                ?.classList.remove('open');
+            byId('ocSearchPanel')?.classList.remove('open');
         }
     };
 
-    /* =====================================================
-       SEARCH TOGGLE
-       ===================================================== */
+    /* SEARCH PANEL */
 
     window.toggleOCSearch = function () {
-
-        const panel = getElement(
-            'ocSearchPanel'
-        );
+        const panel = byId('ocSearchPanel');
 
         if (!panel) return;
 
-        const opening =
-            !panel.classList.contains('open');
+        const opening = !panel.classList.contains('open');
 
-        panel.classList.toggle(
-            'open',
-            opening
-        );
+        panel.classList.toggle('open', opening);
 
         if (opening) {
+            byId('ocMenuPopover')?.classList.remove('open');
 
-            getElement('ocMenuPopover')
-                ?.classList.remove('open');
-
-            const input = getElement(
-                'ocSearchInput'
-            );
-
-            if (input) {
-                setTimeout(function () {
-                    input.focus();
-                }, 50);
-            }
+            byId('ocSearchInput')?.focus();
 
         } else {
+            const input = byId('ocSearchInput');
 
-            const input = getElement(
-                'ocSearchInput'
-            );
-
-            if (input) {
-                input.value = '';
-            }
+            if (input) input.value = '';
 
             filterOCPosts('');
         }
     };
 
-    /* =====================================================
-       FULLSCREEN POPUP PLAYER
-       ===================================================== */
+    /* FULLSCREEN PLAYER */
 
     function openPopupPlayer(src, type) {
-
-        const popup = getElement(
-            CONFIG.popupId
-        );
+        const popup = byId(CONFIG.popupId);
 
         if (!popup) {
             console.error(
@@ -656,9 +697,8 @@
             return;
         }
 
-        const wrapper = popup.querySelector(
-            CONFIG.popupWrapper
-        );
+        const wrapper =
+            popup.querySelector(CONFIG.popupWrapper);
 
         if (!wrapper) {
             console.error(
@@ -670,92 +710,59 @@
         wrapper.replaceChildren();
 
         if (type === 'video') {
-
-            const video = document.createElement(
-                'video'
-            );
+            const video = document.createElement('video');
 
             video.id = 'ocPopupVideoPlayer';
-
             video.src = src;
             video.controls = true;
             video.autoplay = true;
             video.playsInline = true;
             video.preload = 'metadata';
-
             video.className = 'oc-popup-media-video';
 
             wrapper.appendChild(video);
 
             popup.classList.add('open');
 
-            popup.setAttribute(
-                'aria-hidden',
-                'false'
-            );
+            popup.setAttribute('aria-hidden', 'false');
 
             const playPromise = video.play();
 
-            if (
-                playPromise &&
-                typeof playPromise.catch === 'function'
-            ) {
-                playPromise.catch(function () {
-                    // Browser autoplay restrictions are normal.
-                });
+            if (playPromise?.catch) {
+                playPromise.catch(() => {});
             }
 
         } else if (type === 'photo') {
-
-            const img = document.createElement(
-                'img'
-            );
+            const img = document.createElement('img');
 
             img.src = src;
-
             img.alt = 'OC Collection photo';
-
             img.className = 'oc-popup-media-image';
 
             wrapper.appendChild(img);
 
             popup.classList.add('open');
 
-            popup.setAttribute(
-                'aria-hidden',
-                'false'
-            );
+            popup.setAttribute('aria-hidden', 'false');
         }
     }
 
-    /* =====================================================
-       CLOSE POPUP PLAYER
-       ===================================================== */
+    /* CLOSE PLAYER */
 
     function closePopupPlayer() {
-
-        const popup = getElement(
-            CONFIG.popupId
-        );
+        const popup = byId(CONFIG.popupId);
 
         if (!popup) return;
 
-        const wrapper = popup.querySelector(
-            CONFIG.popupWrapper
-        );
+        const wrapper =
+            popup.querySelector(CONFIG.popupWrapper);
 
         if (wrapper) {
-
-            const video = wrapper.querySelector(
-                'video'
-            );
+            const video = wrapper.querySelector('video');
 
             if (video) {
-
                 video.pause();
-
                 video.removeAttribute('src');
-
                 video.load();
             }
 
@@ -764,10 +771,7 @@
 
         popup.classList.remove('open');
 
-        popup.setAttribute(
-            'aria-hidden',
-            'true'
-        );
+        popup.setAttribute('aria-hidden', 'true');
 
         if (
             lastFocusedCard &&
@@ -779,34 +783,52 @@
         lastFocusedCard = null;
     }
 
-    /* =====================================================
-       INITIALIZE EVENTS
-       ===================================================== */
+    /* INITIALIZE EVENTS */
 
     function initializeEvents() {
-
-        const input = getElement(
-            'ocSearchInput'
-        );
+        const input = byId('ocSearchInput');
 
         if (
             input &&
             input.dataset.ocInitialized !== 'true'
         ) {
-
             input.dataset.ocInitialized = 'true';
 
-            input.addEventListener(
-                'input',
-                function () {
-                    filterOCPosts(this.value);
-                }
+            input.addEventListener('input', function () {
+                filterOCPosts(this.value);
+            });
+        }
+
+        const closeButton = byId('ocPopupCloseBtn');
+
+        if (
+            closeButton &&
+            closeButton.dataset.ocInitialized !== 'true'
+        ) {
+            closeButton.dataset.ocInitialized = 'true';
+
+            closeButton.addEventListener(
+                'click',
+                closePopupPlayer
             );
         }
 
-        const channel = getElement(
-            CONFIG.channelId
-        );
+        const popup = byId(CONFIG.popupId);
+
+        if (
+            popup &&
+            popup.dataset.ocInitialized !== 'true'
+        ) {
+            popup.dataset.ocInitialized = 'true';
+
+            popup.addEventListener('click', event => {
+                if (event.target === popup) {
+                    closePopupPlayer();
+                }
+            });
+        }
+
+        const channel = byId(CONFIG.channelId);
 
         if (
             !channel ||
@@ -817,139 +839,59 @@
 
         channel.dataset.ocEventsInitialized = 'true';
 
-        /* Outside click closes menu */
+        document.addEventListener('click', event => {
+            if (!channel.classList.contains('open')) return;
 
-        document.addEventListener(
-            'click',
-            function (event) {
+            const menu = byId('ocMenuPopover');
 
-                if (!channel.classList.contains('open')) {
-                    return;
-                }
-
-                const menu = getElement(
-                    'ocMenuPopover'
-                );
-
-                const menuButton = channel.querySelector(
-                    '.oc-menu-btn, .oc-header-action-btn[aria-label="Menu"]'
-                );
-
-                if (
-                    menu &&
-                    menu.classList.contains('open') &&
-                    !menu.contains(event.target) &&
-                    !menuButton?.contains(event.target)
-                ) {
-                    menu.classList.remove('open');
-                }
-            }
-        );
-
-        /* Escape key support */
-
-        document.addEventListener(
-            'keydown',
-            function (event) {
-
-                if (event.key !== 'Escape') {
-                    return;
-                }
-
-                const popup = getElement(
-                    CONFIG.popupId
-                );
-
-                if (
-                    popup &&
-                    popup.classList.contains('open')
-                ) {
-                    closePopupPlayer();
-                    return;
-                }
-
-                if (!channel.classList.contains('open')) {
-                    return;
-                }
-
-                const searchPanel = getElement(
-                    'ocSearchPanel'
-                );
-
-                const menu = getElement(
-                    'ocMenuPopover'
-                );
-
-                if (
-                    searchPanel &&
-                    searchPanel.classList.contains('open')
-                ) {
-                    window.toggleOCSearch();
-
-                } else if (
-                    menu &&
-                    menu.classList.contains('open')
-                ) {
-                    menu.classList.remove('open');
-
-                } else {
-                    window.closeOCChannel();
-                }
-            }
-        );
-
-        /* Popup close button */
-
-        const popupCloseBtn = getElement(
-            'ocPopupCloseBtn'
-        );
-
-        if (popupCloseBtn) {
-
-            popupCloseBtn.addEventListener(
-                'click',
-                closePopupPlayer
+            const menuButton = channel.querySelector(
+                '.oc-menu-btn, .oc-header-action-btn[aria-label="Menu"]'
             );
-        }
 
-        /* Popup background click */
+            if (
+                menu?.classList.contains('open') &&
+                !menu.contains(event.target) &&
+                !menuButton?.contains(event.target)
+            ) {
+                menu.classList.remove('open');
+            }
+        });
 
-        const popup = getElement(
-            CONFIG.popupId
-        );
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') return;
 
-        if (popup) {
+            const popupElement = byId(CONFIG.popupId);
 
-            popup.addEventListener(
-                'click',
-                function (event) {
+            if (popupElement?.classList.contains('open')) {
+                closePopupPlayer();
+                return;
+            }
 
-                    if (
-                        event.target === popup ||
-                        event.target.classList.contains(
-                            'oc-popup-video-wrapper'
-                        )
-                    ) {
-                        closePopupPlayer();
-                    }
-                }
-            );
-        }
+            if (!channel.classList.contains('open')) return;
+
+            const search = byId('ocSearchPanel');
+            const menu = byId('ocMenuPopover');
+
+            if (search?.classList.contains('open')) {
+                window.toggleOCSearch();
+
+            } else if (menu?.classList.contains('open')) {
+                menu.classList.remove('open');
+
+            } else {
+                window.closeOCChannel();
+            }
+        });
     }
 
-    /* =====================================================
-       STARTUP
-       ===================================================== */
+    /* STARTUP */
 
     if (document.readyState === 'loading') {
-
         document.addEventListener(
             'DOMContentLoaded',
             initializeEvents
         );
-
     } else {
-
         initializeEvents();
     }
 
