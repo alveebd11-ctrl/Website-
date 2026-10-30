@@ -361,17 +361,14 @@ video {
 
     position: relative;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
+    display: block;
     flex: 0 0 auto;
 
     width: 100%;
     max-width: 420px;
 
-    /* সঠিক অনুপাত যাতে ছবি বা ভিডিও কেটে না যায় */
     aspect-ratio: 4 / 5;
+    height: auto;
     max-height: 75vh;
 
     margin: 0 auto;
@@ -386,8 +383,7 @@ video {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
 
-    border:
-        1px solid rgba(168, 85, 247, 0.28);
+    border: 1px solid rgba(168, 85, 247, 0.28);
 
     box-shadow:
         0 8px 32px rgba(15, 23, 42, 0.37),
@@ -401,9 +397,7 @@ video {
         border-color 0.2s ease;
 }
 
-
 /* Card Hover */
-
 .media-card:hover {
     border-color: rgba(168, 85, 247, 0.6);
 
@@ -423,17 +417,21 @@ video {
 
 #channelPostsContainer > .media-card > img,
 #channelPostsContainer > .media-card > video,
+.media-card > img,
+.media-card > video,
 .media-card img,
 .media-card video {
 
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    inset: 0;
+
+    width: 100% !important;
+    height: 100% !important;
 
     display: block;
 
-    /* ছবি বা ভিডিও সম্পূর্ণ দেখানোর জন্য cover ব্যবহার করা হলো যাতে স্ক্রিন জুড়ে সুন্দর দেখায় */
-    object-fit: cover;
-    object-position: center;
+    object-fit: cover !important;
+    object-position: center center !important;
 
     background: #0b0f19;
 
@@ -455,16 +453,15 @@ video {
 
     transform: translate(-50%, -50%);
 
-    width: 50px;
-    height: 50px;
+    width: 54px;
+    height: 54px;
 
-    background: rgba(15, 23, 42, 0.72);
+    background: rgba(15, 23, 42, 0.75);
 
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 
-    border:
-        1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 
     border-radius: 50%;
 
@@ -474,12 +471,11 @@ video {
 
     color: #ffffff;
 
-    box-shadow:
-        0 0 18px rgba(168, 85, 247, 0.45);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
 
     pointer-events: none;
 
-    z-index: 3;
+    z-index: 5;
 }
 
 .video-overlay-icon::after {
@@ -491,10 +487,10 @@ video {
     width: 0;
     height: 0;
 
-    border-top: 8px solid transparent;
-    border-bottom: 8px solid transparent;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
 
-    border-left: 14px solid #ffffff;
+    border-left: 16px solid #ffffff;
 
     margin-left: 3px;
 }
@@ -1069,8 +1065,8 @@ video {
 
     .video-overlay-icon {
 
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
     }
 
 }
