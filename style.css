@@ -1,11 +1,6 @@
-/* ============================================================
-   ALVEE PREMIUM MEDIA VIEWER — STYLE.CSS
-   ============================================================ */
-
 :root {
     --oc-bg: #09090B;
     --oc-panel: #171719;
-    --oc-card: #171719;
     --oc-accent: #f59e0b;
     --oc-subscribe: #ef4444;
     --oc-telegram: linear-gradient(135deg, #0088cc, #00bfff);
@@ -14,262 +9,131 @@
     --oc-border: rgba(255, 255, 255, 0.12);
 }
 
-*, *::before, *::after {
-    box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Fullscreen Media Viewer Modal */
-#ocVideoPopup, .oc-video-popup {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+body {
     background: var(--oc-bg);
-    z-index: 99999;
-    overflow-y: auto;
-    padding: 12px;
-    font-family: 'Poppins', sans-serif;
     color: var(--oc-text);
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden;
 }
 
-#ocVideoPopup.open, .oc-video-popup.open {
-    display: flex;
-}
-
-/* Main Container Card */
-.oc-viewer-container {
-    width: 100%;
-    max-width: 420px;
-    background: var(--oc-panel);
-    border: 1px solid var(--oc-border);
-    border-radius: 24px;
-    padding: 16px;
+#ocChannelWindow {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.85);
-}
-
-/* Top Header Bar */
-.oc-viewer-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-}
-
-.oc-brand-btn {
-    background: #ffffff;
-    color: #000000;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 8px 12px;
-    border-radius: 12px;
-    border: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    letter-spacing: -0.5px;
-}
-
-.oc-subscribe-btn {
-    background: var(--oc-subscribe);
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 8px 16px;
-    border-radius: 12px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.3s ease, transform 0.1s ease;
-}
-
-.oc-subscribe-btn:active {
-    transform: scale(0.96);
-}
-
-.oc-subscribe-btn.subscribed {
-    background: #10b981;
-}
-
-.oc-trending-btn {
-    background: #27272a;
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 12px;
-    border: 1px solid var(--oc-border);
-    cursor: pointer;
-    margin-left: auto;
-    transition: all 0.3s ease;
-}
-
-.oc-trending-btn.done {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: var(--oc-accent);
-    color: var(--oc-accent);
-}
-
-/* Media Box */
-.oc-media-box {
+    height: 100vh;
+    width: 100vw;
+    background: var(--oc-bg);
     position: relative;
-    width: 100%;
-    background: #000000;
-    border: 1px solid var(--oc-border);
-    border-radius: 16px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 320px;
 }
 
-/* Tribute Badge */
-.oc-tribute-badge {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    background: rgba(23, 23, 25, 0.85);
-    border: 1px solid var(--oc-border);
-    color: var(--oc-accent);
-    font-size: 12px;
-    font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 10px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    z-index: 10;
-    backdrop-filter: blur(8px);
+.oc-channel-header {
+    position: relative; z-index: 10; display: flex; align-items: center; gap: 10px;
+    padding: 14px 12px; width: 100%; background: rgba(10, 5, 20, 0.6);
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(138, 43, 226, 0.2);
 }
-
-.oc-toast-notification {
-    position: absolute;
-    top: 54px;
-    left: 12px;
-    background: rgba(15, 23, 42, 0.95);
-    border: 1px solid var(--oc-accent);
-    color: #ffffff;
-    font-size: 11px;
-    padding: 6px 10px;
-    border-radius: 8px;
-    z-index: 20;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-
-.oc-toast-notification.show {
-    opacity: 1;
-}
-
-/* Media Wrapper (Maintains original aspect ratio) */
-.oc-popup-video-wrapper {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.oc-popup-video-wrapper img,
-.oc-popup-video-wrapper video {
-    width: 100% !important;
-    height: auto !important;
-    max-height: 62vh !important;
-    object-fit: contain !important;
-    display: block !important;
-}
-
-/* Statistics Bar (4 Items, No Share) */
-.oc-stats-bar {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    width: 100%;
-}
-
-.oc-stat-item {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--oc-border);
-    border-radius: 12px;
-    padding: 10px 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    color: var(--oc-muted);
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    background: transparent;
-    transition: background 0.2s ease;
-}
-
-.oc-stat-item:hover {
-    background: rgba(255, 255, 255, 0.06);
-}
-
-.oc-stat-item svg {
-    width: 18px;
-    height: 18px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 2;
-}
-
-.oc-stat-item.liked svg {
-    stroke: #ef4444;
-    fill: #ef4444;
-}
-
-.oc-stat-item.bookmarked svg {
-    stroke: var(--oc-accent);
-    fill: var(--oc-accent);
-}
-
-.oc-stat-item.views-item {
-    color: #38bdf8;
-}
-
-/* Telegram Join Button */
-.oc-telegram-join-btn {
-    width: 100%;
-    background: var(--oc-telegram);
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: 700;
-    padding: 14px;
-    border-radius: 14px;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0, 136, 204, 0.4);
+.oc-back-btn, .oc-header-action-btn {
+    flex: 0 0 clamp(45px, 11vw, 55px); width: clamp(45px, 11vw, 55px); height: clamp(45px, 11vw, 55px);
+    padding: 0; border: 1px solid rgba(138, 43, 226, 0.3); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    background: rgba(255, 255, 255, 0.05); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.2s;
     text-decoration: none;
-    transition: transform 0.2s ease;
 }
+.oc-back-btn:active, .oc-header-action-btn:active { transform: scale(0.92); }
+.oc-back-btn svg, .oc-header-action-btn svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+.oc-channel-title-pill {
+    flex: 1; min-width: 0; min-height: clamp(45px, 11vw, 55px); padding: 5px 12px 5px 5px;
+    display: flex; align-items: center; gap: 10px; border-radius: 100px;
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(138, 43, 226, 0.3);
+}
+.oc-channel-avatar {
+    flex: 0 0 clamp(35px, 9vw, 45px); width: clamp(35px, 9vw, 45px); height: clamp(35px, 9vw, 45px);
+    border: 2px solid rgba(138, 43, 226, 0.8); border-radius: 50%; overflow: hidden; background: #111;
+}
+.oc-channel-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.oc-channel-title-text { flex: 1; min-width: 0; }
+.oc-channel-title-text h2 { margin: 0; color: #fff; font-size: clamp(13px, 3.5vw, 18px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oc-channel-title-text p { margin: 2px 0 0; color: #b39ddb; font-size: clamp(10px, 2.5vw, 12px); font-weight: 500; }
 
-.oc-telegram-join-btn:active {
-    transform: scale(0.97);
+.oc-menu-popover, .oc-search-panel {
+    position: absolute; top: 80px; right: 16px; z-index: 20; display: none;
+    width: min(270px, calc(100vw - 32px)); padding: 16px; flex-direction: column; gap: 8px;
+    background: rgba(15, 10, 30, 0.95); backdrop-filter: blur(10px); color: #fff;
+    border: 1px solid rgba(138, 43, 226, 0.4); border-radius: 18px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
 }
+.oc-menu-popover.open, .oc-search-panel.open { display: flex; }
+.oc-search-panel { flex-direction: row; align-items: center; }
+.oc-search-panel input { width: 100%; background: transparent; border: none; outline: none; color: #fff; font-family: inherit; font-size: 14px; }
+.oc-menu-popover button { margin-top: 8px; padding: 10px; border: none; border-radius: 12px; background: rgba(138, 43, 226, 0.2); color: #e0b0ff; cursor: pointer; }
 
-.oc-telegram-join-btn svg {
-    width: 20px;
-    height: 20px;
-    fill: #ffffff;
+.alv-topbar {
+    display: flex; align-items: center; gap: 6px; padding: 10px 15px; background: var(--oc-bg);
+    border-bottom: 1px solid var(--oc-border); z-index: 5;
 }
+.alv-brand {
+    background: #ffffff; color: #000000; font-size: 11px; font-weight: 700;
+    padding: 7px 10px; border-radius: 10px; white-space: nowrap;
+}
+.alv-header-btn {
+    font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 10px; border: none; cursor: pointer; transition: all 0.3s ease;
+}
+.alv-subscribe-btn { background: var(--oc-subscribe); color: #ffffff; }
+.alv-subscribe-btn.is-active { background: #10b981; }
+.alv-trending-btn { background: #27272a; color: #ffffff; border: 1px solid var(--oc-border); margin-left: auto; }
+.alv-trending-btn.is-active { background: rgba(245, 158, 11, 0.2); border-color: var(--oc-accent); color: var(--oc-accent); }
 
-/* Hide old unused channel timeline container elements */
-#channelPostsContainer, .oc-channel-timeline, #media-feed {
-    display: none !important;
+.oc-channel-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+#channelPostsContainer { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 25px; padding-bottom: 50px; }
+
+.alv-post {
+    background: var(--oc-panel); border: 1px solid var(--oc-border); border-radius: 20px;
+    padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
 }
+.alv-post-head { position: relative; }
+.alv-media-frame {
+    position: relative; width: 100%; background: #000; border: 1px solid var(--oc-border);
+    border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 320px;
+}
+.alv-media-frame img, .alv-media-frame video { width: 100%; height: auto; max-height: 65vh; object-fit: contain; }
+
+.alv-tribute-btn {
+    position: absolute; top: 10px; left: 10px; background: rgba(23, 23, 25, 0.9);
+    border: 1px solid var(--oc-border); color: var(--oc-accent); font-size: 11px;
+    font-weight: 600; padding: 5px 10px; border-radius: 8px; display: inline-flex;
+    align-items: center; gap: 5px; cursor: pointer; z-index: 10;
+}
+.alv-tribute-icon { width: 14px; height: 14px; fill: currentColor; }
+
+.alv-toast {
+    position: absolute; top: 48px; left: 10px; background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--oc-accent); color: #ffffff; font-size: 10px;
+    padding: 5px 8px; border-radius: 6px; z-index: 20; opacity: 0;
+    transition: opacity 0.3s ease; pointer-events: none;
+}
+.alv-toast.is-visible { opacity: 1; }
+
+.alv-stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
+.alv-stat-item {
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--oc-border);
+    border-radius: 10px; padding: 8px 2px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px; color: var(--oc-muted);
+    font-size: 10px; font-weight: 500; cursor: pointer; transition: background 0.2s;
+}
+.alv-stat-item:not(.alv-stat-views):hover { background: rgba(255, 255, 255, 0.08); }
+.alv-stat-item svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+.alv-stat-like.is-active svg { stroke: #ef4444; fill: #ef4444; }
+.alv-stat-bookmark.is-active svg { stroke: var(--oc-accent); fill: var(--oc-accent); }
+.alv-stat-views { color: #38bdf8; cursor: default; }
+
+.alv-telegram-btn {
+    width: 100%; background: var(--oc-telegram); color: #ffffff; font-size: 14px;
+    font-weight: 700; padding: 12px; border-radius: 12px; border: none; display: flex;
+    align-items: center; justify-content: center; gap: 8px; text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4);
+}
+.alv-telegram-btn svg { width: 18px; height: 18px; fill: #ffffff; }
+
+.oc-feed-sentinel { color: var(--oc-muted); font-size: 13px; text-align: center; padding: 20px; }
+.oc-channel-status { color: var(--oc-accent); font-size: 13px; text-align: center; padding: 20px; }
