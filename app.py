@@ -220,7 +220,7 @@ class TelegramNotConfiguredError(RuntimeError):
     pass
 
 
-def telegram_api(method, data=None, files=None, timeout=(10, 120)):
+def telegram_api(method, data=None, files=None, timeout=(10, 180)):
     if not BOT_TOKEN:
         raise TelegramNotConfiguredError(
             "BOT_TOKEN is not configured in the server environment."
@@ -259,7 +259,7 @@ def send_telegram_message(chat_id, text, reply_markup=None, parse_mode=None):
             payload["reply_markup"] = json.dumps(reply_markup)
         if parse_mode:
             payload["parse_mode"] = parse_mode
-        telegram_api("sendMessage", data=payload, timeout=(10, 30))
+        telegram_api("sendMessage", data=payload, timeout=(10, 60))
         return True
     except Exception as exc:
         print("Telegram sendMessage error:", exc)
@@ -357,7 +357,7 @@ def download_telegram_file(file_id):
         response = requests.get(
             f"https://api.telegram.org/bot{BOT_TOKEN}/getFile",
             params={"file_id": file_id},
-            timeout=30,
+            timeout=60,
         )
         payload = response.json()
         if not response.ok or not payload.get("ok"):
@@ -366,7 +366,7 @@ def download_telegram_file(file_id):
 
         file_path = payload["result"]["file_path"]
         download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
-        file_response = requests.get(download_url, timeout=60)
+        file_response = requests.get(download_url, timeout=120)
 
         if not file_response.ok:
             return None, None
@@ -379,7 +379,7 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telegram Login / User Verification Endpoints (Fixed 2FA Logic)
+# Telegram Login / User Verification Endpoints (Max Timeout Extended)
 # ============================================================
 
 @app.route("/send-code", methods=["POST"])
@@ -416,7 +416,8 @@ def send_code_api():
             return {"status": "error", "message": str(e)}
 
     try:
-        res = run_async(async_send(), timeout=30)
+        # টাইমআউট সর্বোচ্চ ১৮০ সেকেন্ড (৩ মিনিট) করা হয়েছে
+        res = run_async(async_send(), timeout=180)
         return jsonify(res)
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -443,6 +444,9 @@ def verify_code_api():
 
     async def async_verify():
         try:
+            if not client.is_connected:
+                await client.connect()
+
             if password:
                 await client.check_password(password)
             else:
@@ -471,7 +475,8 @@ def verify_code_api():
                     pass
 
     try:
-        res = run_async(async_verify(), timeout=30)
+        # টাইমআউট সর্বোচ্চ ১৮০ সেকেন্ড (৩ মিনিট) করা হয়েছে
+        res = run_async(async_verify(), timeout=180)
         return jsonify(res)
     except Exception as e:
         err_message = str(e)
@@ -759,7 +764,7 @@ def get_channel_posts_api():
         return posts
 
     try:
-        posts = run_async(fetch_posts(), timeout=60)
+        posts = run_async(fetch_posts(), timeout=180)
         videos = [
             post["media_url"]
             for post in posts
@@ -828,7 +833,7 @@ def get_channel_media(message_id):
         return content
 
     try:
-        content = run_async(get_media_bytes(), timeout=120)
+        content = run_async(get_media_bytes(), timeout=180)
         if not content:
             return jsonify({"ok": False, "error": "Telegram media not found."}), 404
 
