@@ -351,7 +351,7 @@ video {
 
 
 /* ============================================================
-   07. INDIVIDUAL COMPACT MEDIA CARDS (FIXED LAYOUT)
+   07. INDIVIDUAL COMPACT MEDIA CARDS (ULTRA FIXED)
    ============================================================ */
 
 .media-card,
@@ -359,84 +359,97 @@ video {
 .oc-channel-timeline > .media-card,
 #media-feed > .media-card {
 
-    position: relative;
+    position: relative !important;
 
-    display: block;
-    flex: 0 0 auto;
+    display: block !important;
+    flex: 0 0 auto !important;
 
-    width: 100%;
-    max-width: 420px;
+    width: 100% !important;
+    max-width: 420px !important;
 
-    aspect-ratio: 4 / 5;
-    height: auto;
+    /* সবচেয়ে নির্ভরযোগ্য 4:5 অনুপাত */
+    height: 0 !important;
+    padding-bottom: 125% !important;   /* 5/4 = 125% */
     max-height: 75vh;
 
-    margin: 0 auto;
-    padding: 0;
+    margin: 0 auto !important;
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 
-    overflow: hidden;
+    overflow: hidden !important;
 
-    border-radius: 16px;
+    border-radius: 16px !important;
 
-    background: rgba(15, 23, 42, 0.6);
+    background: rgba(15, 23, 42, 0.7) !important;
 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
 
-    border: 1px solid rgba(168, 85, 247, 0.28);
+    border: 1px solid rgba(168, 85, 247, 0.35) !important;
 
     box-shadow:
-        0 8px 32px rgba(15, 23, 42, 0.37),
-        0 0 15px rgba(168, 85, 247, 0.1);
+        0 8px 32px rgba(15, 23, 42, 0.45),
+        0 0 18px rgba(168, 85, 247, 0.15) !important;
 
-    cursor: pointer;
+    cursor: pointer !important;
 
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
+    /* বাটন ডিফল্ট স্টাইল রিসেট */
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    outline: none !important;
+    font: inherit !important;
+    color: inherit !important;
+    text-align: left !important;
 }
 
-/* Card Hover */
+/* Hover */
 .media-card:hover {
-    border-color: rgba(168, 85, 247, 0.6);
-
+    border-color: rgba(168, 85, 247, 0.7) !important;
     box-shadow:
-        0 12px 35px rgba(15, 23, 42, 0.5),
-        0 0 20px rgba(236, 72, 153, 0.2);
+        0 12px 40px rgba(15, 23, 42, 0.55),
+        0 0 25px rgba(236, 72, 153, 0.25) !important;
 }
 
 .media-card:active {
-    transform: scale(0.985);
+    transform: scale(0.98) !important;
 }
 
 
 /* ============================================================
-   08. CARD IMAGE AND VIDEO (FIXED OBJECT-FIT)
+   08. CARD IMAGE AND VIDEO (FORCE COVER)
    ============================================================ */
 
-#channelPostsContainer > .media-card > img,
-#channelPostsContainer > .media-card > video,
 .media-card > img,
 .media-card > video,
 .media-card img,
-.media-card video {
+.media-card video,
+.media-card .media-card-image,
+.media-card .media-card-video {
 
-    position: absolute;
-    inset: 0;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
 
     width: 100% !important;
     height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
 
-    display: block;
+    display: block !important;
 
     object-fit: cover !important;
     object-position: center center !important;
 
-    background: #0b0f19;
+    background: #0b0f19 !important;
 
-    border: none;
-    border-radius: 15px;
+    border: none !important;
+    border-radius: 15px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 
@@ -446,53 +459,53 @@ video {
 
 .video-overlay-icon {
 
-    position: absolute;
+    position: absolute !important;
 
-    top: 50%;
-    left: 50%;
+    top: 50% !important;
+    left: 50% !important;
 
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%) !important;
 
-    width: 54px;
-    height: 54px;
+    width: 56px !important;
+    height: 56px !important;
 
-    background: rgba(15, 23, 42, 0.75);
+    background: rgba(15, 23, 42, 0.78) !important;
 
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
 
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
 
-    border-radius: 50%;
+    border-radius: 50% !important;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 
-    color: #ffffff;
+    color: #ffffff !important;
 
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
+    box-shadow: 0 0 22px rgba(168, 85, 247, 0.55) !important;
 
-    pointer-events: none;
+    pointer-events: none !important;
 
-    z-index: 5;
+    z-index: 10 !important;
 }
 
 .video-overlay-icon::after {
 
-    content: '';
+    content: '' !important;
 
-    display: block;
+    display: block !important;
 
-    width: 0;
-    height: 0;
+    width: 0 !important;
+    height: 0 !important;
 
-    border-top: 9px solid transparent;
-    border-bottom: 9px solid transparent;
+    border-top: 10px solid transparent !important;
+    border-bottom: 10px solid transparent !important;
 
-    border-left: 16px solid #ffffff;
+    border-left: 17px solid #ffffff !important;
 
-    margin-left: 3px;
+    margin-left: 4px !important;
 }
 
 
@@ -944,8 +957,8 @@ video {
         width: 100%;
         max-width: 480px;
 
-        aspect-ratio: 4 / 5;
-        height: auto;
+        height: 0 !important;
+        padding-bottom: 125% !important;
     }
 
     .oc-channel-header {
@@ -1007,8 +1020,8 @@ video {
         width: 100%;
         max-width: 100%;
 
-        aspect-ratio: 4 / 5;
-        height: auto;
+        height: 0 !important;
+        padding-bottom: 125% !important;
     }
 
 }
@@ -1057,16 +1070,16 @@ video {
 
     #channelPostsContainer > .media-card {
 
-        aspect-ratio: 4 / 5;
-        height: auto;
+        height: 0 !important;
+        padding-bottom: 125% !important;
 
-        border-radius: 13px;
+        border-radius: 13px !important;
     }
 
     .video-overlay-icon {
 
-        width: 48px;
-        height: 48px;
+        width: 50px !important;
+        height: 50px !important;
     }
 
 }
