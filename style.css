@@ -1,8 +1,11 @@
+
 /* ============================================================
    OC COLLECTION UNIVERSE
    COMPLETE STYLE.CSS
    Dark Neon Glassmorphism Media Feed
    Telegram Media Synchronization
+   Automatic Original Aspect Ratio
+   Unlimited Vertical Media Feed
    Responsive Mobile + Desktop
    ============================================================ */
 
@@ -11,7 +14,29 @@
    01. GLOBAL SETTINGS
    ============================================================ */
 
-* {
+:root {
+    --oc-bg: #0b0f19;
+    --oc-panel: #100d20;
+    --oc-card: rgba(15, 23, 42, 0.78);
+
+    --oc-purple: #a855f7;
+    --oc-purple-light: #c084fc;
+    --oc-blue: #38bdf8;
+    --oc-pink: #ec4899;
+
+    --oc-text: #f8fafc;
+    --oc-muted: #b6a2d4;
+
+    --oc-border: rgba(168, 85, 247, 0.35);
+
+    --oc-header-bg: rgba(15, 23, 42, 0.88);
+
+    --oc-card-radius: 16px;
+}
+
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
 }
@@ -23,11 +48,14 @@ html {
 }
 
 body {
-    background: #0b0f19;
-    color: #f8fafc;
+    background: var(--oc-bg);
+    color: var(--oc-text);
+
     font-family: 'Poppins', sans-serif;
+
     margin: 0;
     padding: 0;
+
     overflow-x: hidden;
 }
 
@@ -52,31 +80,36 @@ video {
    ============================================================ */
 
 .oc-channel-window {
+
     position: fixed;
     inset: 0;
 
     width: 100%;
+
     height: 100vh;
     height: 100dvh;
 
     display: none;
+
     flex-direction: column;
 
     overflow: hidden;
 
     z-index: 99999;
+
     isolation: isolate;
 
     background:
         radial-gradient(
             circle at 50% 20%,
-            #1e1b4b 0%,
-            #100b20 45%,
+            rgba(30, 27, 75, 0.95) 0%,
+            rgba(16, 11, 32, 0.98) 45%,
             #0b0f19 100%
         );
 
     font-family: 'Poppins', sans-serif;
-    color: #f8fafc;
+
+    color: var(--oc-text);
 }
 
 .oc-channel-window.open {
@@ -85,24 +118,29 @@ video {
 
 
 /* ============================================================
-   03. AMBIENT BACKGROUND
+   03. AMBIENT NEON BACKGROUND
    ============================================================ */
 
 .oc-doodle-wallpaper {
+
     position: absolute;
+
     inset: -10%;
 
-    z-index: -1;
+    z-index: 0;
+
     pointer-events: none;
 
     overflow: hidden;
 
     background:
+
         radial-gradient(
             circle at 20% 30%,
             rgba(168, 85, 247, 0.15) 0%,
             transparent 40%
         ),
+
         radial-gradient(
             circle at 80% 70%,
             rgba(56, 189, 248, 0.12) 0%,
@@ -113,23 +151,31 @@ video {
 
 /* ============================================================
    04. CHANNEL HEADER
+   Header layout remains unchanged
    ============================================================ */
 
 .oc-channel-header {
+
     position: relative;
+
     z-index: 20;
 
     display: flex;
+
     flex: 0 0 auto;
 
     align-items: center;
+
     gap: 10px;
 
     width: 100%;
 
-    padding: 14px 12px;
+    padding:
+        calc(14px + env(safe-area-inset-top, 0px))
+        12px
+        14px;
 
-    background: rgba(15, 23, 42, 0.82);
+    background: var(--oc-header-bg);
 
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -139,10 +185,15 @@ video {
 }
 
 
-/* Back and Menu Buttons */
+/* ============================================================
+   05. HEADER BUTTONS
+   Back / Menu / Search
+   ============================================================ */
 
 .oc-back-btn,
-.oc-menu-btn {
+.oc-menu-btn,
+.oc-search-btn {
+
     flex: 0 0 48px;
 
     width: 48px;
@@ -150,7 +201,9 @@ video {
 
     padding: 0;
 
-    border: 1px solid rgba(168, 85, 247, 0.22);
+    border:
+        1px solid rgba(168, 85, 247, 0.25);
+
     border-radius: 50%;
 
     background: rgba(30, 27, 48, 0.9);
@@ -158,6 +211,7 @@ video {
     color: #f8fafc;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -166,27 +220,43 @@ video {
     box-shadow:
         0 4px 12px rgba(0, 0, 0, 0.3);
 
-    transition: all 0.2s ease;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
 }
 
 .oc-back-btn:hover,
-.oc-menu-btn:hover {
+.oc-menu-btn:hover,
+.oc-search-btn:hover {
+
     background: rgba(88, 28, 135, 0.5);
-    border-color: rgba(168, 85, 247, 0.6);
+
+    border-color:
+        rgba(168, 85, 247, 0.7);
+}
+
+.oc-back-btn:active,
+.oc-menu-btn:active,
+.oc-search-btn:active {
+
+    transform: scale(0.94);
 }
 
 
-/* Header Button Icons */
+/* Header SVG Icons */
 
 .oc-back-btn svg,
 .oc-menu-btn svg,
 .oc-search-btn svg {
+
     width: 24px;
     height: 24px;
 
     fill: none;
 
     stroke: currentColor;
+
     stroke-width: 2.5;
 
     stroke-linecap: round;
@@ -195,19 +265,23 @@ video {
 
 
 /* ============================================================
-   05. CHANNEL TITLE PILL
+   06. CHANNEL TITLE PILL
    ============================================================ */
 
 .oc-channel-title-pill {
+
     flex: 1 1 auto;
 
     min-width: 0;
+
     height: 52px;
 
     padding: 0 12px;
 
     display: flex;
+
     align-items: center;
+
     gap: 10px;
 
     border-radius: 50px;
@@ -218,13 +292,17 @@ video {
     -webkit-backdrop-filter: blur(12px);
 
     border:
-        1px solid rgba(168, 85, 247, 0.25);
+        1px solid rgba(168, 85, 247, 0.3);
+
+    box-shadow:
+        inset 0 0 12px rgba(168, 85, 247, 0.04);
 }
 
 
 /* Channel Avatar */
 
 .oc-channel-avatar {
+
     flex: 0 0 38px;
 
     width: 38px;
@@ -233,7 +311,11 @@ video {
     border-radius: 50%;
 
     background:
-        linear-gradient(135deg, #38bdf8, #8b5cf6);
+        linear-gradient(
+            135deg,
+            #38bdf8,
+            #8b5cf6
+        );
 
     border:
         2px solid rgba(255, 255, 255, 0.2);
@@ -244,6 +326,7 @@ video {
     font-weight: 800;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -251,10 +334,12 @@ video {
 }
 
 .oc-channel-avatar img {
+
     width: 100%;
     height: 100%;
 
     object-fit: cover;
+
     border-radius: 50%;
 }
 
@@ -262,37 +347,46 @@ video {
 /* Channel Title */
 
 .oc-channel-title-text {
+
     flex: 1;
+
     min-width: 0;
 }
 
 .oc-channel-title-text h2 {
+
     margin: 0;
 
     font-size: clamp(14px, 3.5vw, 18px);
+
     font-weight: 700;
 
     line-height: 1.2;
 
     white-space: nowrap;
+
     overflow: hidden;
+
     text-overflow: ellipsis;
 
     color: #f8fafc;
 }
 
 .oc-channel-title-text p {
+
     margin: 2px 0 0;
 
-    color: #b6a2d4;
+    color: var(--oc-muted);
 
     font-size: 11px;
+
     font-weight: 500;
 }
 
 
 /* ============================================================
-   06. MAIN SCROLLABLE MEDIA FEED
+   07. MAIN SCROLLABLE MEDIA FEED
+   Unlimited Vertical Card Layout
    ============================================================ */
 
 .oc-channel-timeline,
@@ -304,6 +398,7 @@ video {
     flex: 1 1 auto;
 
     width: 100%;
+
     min-width: 0;
     min-height: 0;
 
@@ -313,7 +408,9 @@ video {
     padding: 14px 12px 25px;
 
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
 
     gap: 16px;
@@ -327,31 +424,43 @@ video {
     overscroll-behavior-y: contain;
 
     scrollbar-width: thin;
+
     scrollbar-color:
         rgba(168, 85, 247, 0.4)
         transparent;
 }
 
 
-/* Scrollbar */
+/* Feed Scrollbar */
 
 #channelPostsContainer::-webkit-scrollbar,
-.oc-channel-timeline::-webkit-scrollbar {
+.oc-channel-timeline::-webkit-scrollbar,
+#media-feed::-webkit-scrollbar {
+
     width: 4px;
 }
 
-#channelPostsContainer::-webkit-scrollbar-track {
+#channelPostsContainer::-webkit-scrollbar-track,
+.oc-channel-timeline::-webkit-scrollbar-track,
+#media-feed::-webkit-scrollbar-track {
+
     background: transparent;
 }
 
-#channelPostsContainer::-webkit-scrollbar-thumb {
-    background: rgba(168, 85, 247, 0.4);
+#channelPostsContainer::-webkit-scrollbar-thumb,
+.oc-channel-timeline::-webkit-scrollbar-thumb,
+#media-feed::-webkit-scrollbar-thumb {
+
+    background:
+        rgba(168, 85, 247, 0.4);
+
     border-radius: 10px;
 }
 
 
 /* ============================================================
-   07. INDIVIDUAL COMPACT MEDIA CARDS (ULTRA FIXED)
+   08. INDIVIDUAL MEDIA CARDS
+   Natural Image / Video Ratio
    ============================================================ */
 
 .media-card,
@@ -362,63 +471,137 @@ video {
     position: relative !important;
 
     display: block !important;
+
     flex: 0 0 auto !important;
 
     width: 100% !important;
+
     max-width: 420px !important;
 
-    /* সবচেয়ে নির্ভরযোগ্য 4:5 অনুপাত */
-    height: 0 !important;
-    padding-bottom: 125% !important;   /* 5/4 = 125% */
-    max-height: 75vh;
+    /*
+       IMPORTANT:
+       No fixed 4:5 ratio.
+       Card height follows its media's natural dimensions.
+    */
+
+    height: auto !important;
+
+    min-height: 0 !important;
+
+    aspect-ratio: auto !important;
+
+    padding: 0 !important;
 
     margin: 0 auto !important;
-    padding-top: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
 
     overflow: hidden !important;
 
-    border-radius: 16px !important;
+    border-radius:
+        var(--oc-card-radius) !important;
 
-    background: rgba(15, 23, 42, 0.7) !important;
+    background:
+        rgba(15, 23, 42, 0.78) !important;
 
     backdrop-filter: blur(12px) !important;
+
     -webkit-backdrop-filter: blur(12px) !important;
 
-    border: 1px solid rgba(168, 85, 247, 0.35) !important;
+    border:
+        1px solid rgba(168, 85, 247, 0.35) !important;
 
     box-shadow:
-        0 8px 32px rgba(15, 23, 42, 0.45),
-        0 0 18px rgba(168, 85, 247, 0.15) !important;
+
+        0 8px 32px
+        rgba(15, 23, 42, 0.45),
+
+        0 0 18px
+        rgba(168, 85, 247, 0.15) !important;
 
     cursor: pointer !important;
 
-    /* বাটন ডিফল্ট স্টাইল রিসেট */
     appearance: none !important;
+
     -webkit-appearance: none !important;
+
     outline: none !important;
+
     font: inherit !important;
+
     color: inherit !important;
+
     text-align: left !important;
+
+    transition:
+        border-color 0.25s ease,
+        box-shadow 0.25s ease,
+        transform 0.2s ease;
 }
 
-/* Hover */
+
+/* Card Hover */
+
 .media-card:hover {
-    border-color: rgba(168, 85, 247, 0.7) !important;
+
+    border-color:
+        rgba(168, 85, 247, 0.75) !important;
+
     box-shadow:
-        0 12px 40px rgba(15, 23, 42, 0.55),
-        0 0 25px rgba(236, 72, 153, 0.25) !important;
+
+        0 12px 40px
+        rgba(15, 23, 42, 0.55),
+
+        0 0 25px
+        rgba(236, 72, 153, 0.25) !important;
 }
+
+
+/* Card Active */
 
 .media-card:active {
-    transform: scale(0.98) !important;
+
+    transform: scale(0.985) !important;
 }
 
 
 /* ============================================================
-   08. CARD IMAGE AND VIDEO (FORCE COVER)
+   09. MEDIA RATIO PRESERVATION
+   Supports ALL aspect ratios
    ============================================================ */
+
+/*
+   The following rules preserve the original dimensions
+   of uploaded images and videos.
+
+   Supported examples:
+
+   9:16
+   4:5
+   3:4
+   2:3
+   5:7
+   1:2
+   1:1
+   5:4
+   4:3
+   3:2
+   5:3
+   16:10
+   16:9
+   1.85:1
+   1.91:1
+   2:1
+   2.35:1
+   2.39:1
+   21:9
+   3:1
+   9:19.5
+   9:20
+
+   No forced cropping.
+*/
+
+
+/* Media Elements */
 
 .media-card > img,
 .media-card > video,
@@ -427,34 +610,68 @@ video {
 .media-card .media-card-image,
 .media-card .media-card-video {
 
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
+    position: relative !important;
 
-    width: 100% !important;
-    height: 100% !important;
-    max-width: none !important;
-    max-height: none !important;
+    inset: auto !important;
 
     display: block !important;
 
-    object-fit: cover !important;
+    width: 100% !important;
+
+    height: auto !important;
+
+    max-width: 100% !important;
+
+    max-height: none !important;
+
+    aspect-ratio: auto !important;
+
+    object-fit: contain !important;
+
     object-position: center center !important;
 
     background: #0b0f19 !important;
 
     border: none !important;
-    border-radius: 15px !important;
+
+    border-radius: 0 !important;
 
     margin: 0 !important;
+
     padding: 0 !important;
 }
 
 
+/* Picture Element */
+
+.media-card picture {
+
+    display: block;
+
+    width: 100%;
+
+    height: auto;
+
+    margin: 0;
+    padding: 0;
+}
+
+.media-card picture img {
+
+    display: block;
+
+    width: 100%;
+
+    height: auto;
+
+    max-width: 100%;
+
+    object-fit: contain;
+}
+
+
 /* ============================================================
-   09. VIDEO PLAY BUTTON OVERLAY
+   10. VIDEO PLAY BUTTON OVERLAY
    ============================================================ */
 
 .video-overlay-icon {
@@ -462,34 +679,51 @@ video {
     position: absolute !important;
 
     top: 50% !important;
+
     left: 50% !important;
 
-    transform: translate(-50%, -50%) !important;
+    transform:
+        translate(-50%, -50%) !important;
 
-    width: 56px !important;
-    height: 56px !important;
+    width: 58px !important;
 
-    background: rgba(15, 23, 42, 0.78) !important;
+    height: 58px !important;
+
+    background:
+        rgba(15, 23, 42, 0.78) !important;
 
     backdrop-filter: blur(10px) !important;
+
     -webkit-backdrop-filter: blur(10px) !important;
 
-    border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
+    border:
+        1.5px solid rgba(255, 255, 255, 0.4) !important;
 
     border-radius: 50% !important;
 
     display: flex !important;
+
     align-items: center !important;
+
     justify-content: center !important;
 
     color: #ffffff !important;
 
-    box-shadow: 0 0 22px rgba(168, 85, 247, 0.55) !important;
+    box-shadow:
+
+        0 0 22px
+        rgba(168, 85, 247, 0.55),
+
+        0 0 35px
+        rgba(56, 189, 248, 0.15) !important;
 
     pointer-events: none !important;
 
     z-index: 10 !important;
 }
+
+
+/* Play Triangle */
 
 .video-overlay-icon::after {
 
@@ -498,19 +732,24 @@ video {
     display: block !important;
 
     width: 0 !important;
+
     height: 0 !important;
 
-    border-top: 10px solid transparent !important;
-    border-bottom: 10px solid transparent !important;
+    border-top:
+        10px solid transparent !important;
 
-    border-left: 17px solid #ffffff !important;
+    border-bottom:
+        10px solid transparent !important;
+
+    border-left:
+        17px solid #ffffff !important;
 
     margin-left: 4px !important;
 }
 
 
 /* ============================================================
-   10. EMPTY / ERROR / LOADING STATUS
+   11. EMPTY / ERROR / LOADING STATUS
    ============================================================ */
 
 .oc-channel-status {
@@ -526,6 +765,7 @@ video {
     color: #b8b2ca;
 
     font-size: 15px;
+
     font-weight: 500;
 
     line-height: 1.7;
@@ -533,7 +773,7 @@ video {
 
 
 /* ============================================================
-   11. FULLSCREEN POPUP PLAYER
+   12. FULLSCREEN POPUP PLAYER
    ============================================================ */
 
 #ocVideoPopup,
@@ -544,26 +784,34 @@ video {
     inset: 0;
 
     width: 100%;
-    height: 100%;
+
+    height: 100vh;
     height: 100dvh;
 
     display: none;
 
     align-items: center;
+
     justify-content: center;
 
     padding: 20px;
 
-    background: rgba(3, 2, 12, 0.96);
+    background:
+        rgba(3, 2, 12, 0.96);
 
     backdrop-filter: blur(16px);
+
     -webkit-backdrop-filter: blur(16px);
 
     z-index: 100001;
 }
 
+
+/* Popup Open */
+
 #ocVideoPopup.open,
 .oc-video-popup.open {
+
     display: flex;
 }
 
@@ -575,14 +823,18 @@ video {
     position: relative;
 
     width: 100%;
+
     max-width: 1000px;
 
     height: 100%;
+
     max-height: 90vh;
+    max-height: 90dvh;
 
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
     overflow: hidden;
@@ -596,14 +848,21 @@ video {
     display: block;
 
     width: 100%;
+
     height: 100%;
 
     max-width: 100%;
+
     max-height: 90vh;
+    max-height: 90dvh;
 
     object-fit: contain;
 
+    object-position: center;
+
     background: #000;
+
+    border-radius: 8px;
 }
 
 
@@ -614,12 +873,21 @@ video {
     display: block;
 
     width: 100%;
+
     height: 100%;
 
     max-width: 100%;
+
     max-height: 90vh;
+    max-height: 90dvh;
 
     object-fit: contain;
+
+    object-position: center;
+
+    background: #000;
+
+    border-radius: 8px;
 }
 
 
@@ -630,25 +898,31 @@ video {
     position: absolute;
 
     top: 18px;
+
     right: 18px;
 
     z-index: 100002;
 
     width: 44px;
+
     height: 44px;
 
-    border: 1px solid rgba(255,255,255,0.2);
+    border:
+        1px solid rgba(255, 255, 255, 0.2);
 
     border-radius: 50%;
 
-    background: rgba(30, 27, 48, 0.9);
+    background:
+        rgba(30, 27, 48, 0.9);
 
     color: #fff;
 
     font-size: 27px;
 
     display: flex;
+
     align-items: center;
+
     justify-content: center;
 
     cursor: pointer;
@@ -656,7 +930,7 @@ video {
 
 
 /* ============================================================
-   12. BOTTOM ACTION BAR
+   13. BOTTOM ACTION BAR
    ============================================================ */
 
 .oc-bottom-actions {
@@ -671,7 +945,7 @@ video {
 
     padding:
         12px 16px
-        calc(12px + env(safe-area-inset-bottom));
+        calc(12px + env(safe-area-inset-bottom, 0px));
 
     display: flex;
 
@@ -679,9 +953,11 @@ video {
 
     align-items: center;
 
-    background: rgba(15, 23, 42, 0.88);
+    background:
+        rgba(15, 23, 42, 0.88);
 
     backdrop-filter: blur(16px);
+
     -webkit-backdrop-filter: blur(16px);
 
     border-top:
@@ -691,26 +967,30 @@ video {
 
 /* Search Button */
 
-.oc-search-btn {
+.oc-bottom-actions .oc-search-btn {
 
     flex: 0 0 48px;
 
     width: 48px;
+
     height: 48px;
 
     padding: 0;
 
-    border: 1px solid rgba(168, 85, 247, 0.2);
+    border:
+        1px solid rgba(168, 85, 247, 0.2);
 
     border-radius: 50%;
 
-    background: rgba(30, 27, 48, 0.9);
+    background:
+        rgba(30, 27, 48, 0.9);
 
     color: #c4b5fd;
 
     display: flex;
 
     align-items: center;
+
     justify-content: center;
 
     cursor: pointer;
@@ -729,15 +1009,18 @@ video {
 
     padding: 0 18px;
 
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    border:
+        1px solid rgba(168, 85, 247, 0.25);
 
     border-radius: 25px;
 
-    background: rgba(30, 27, 48, 0.9);
+    background:
+        rgba(30, 27, 48, 0.9);
 
     color: #f8fafc;
 
     font-size: 15px;
+
     font-weight: 600;
 
     cursor: pointer;
@@ -745,7 +1028,7 @@ video {
 
 
 /* ============================================================
-   13. MENU POPOVER
+   14. MENU POPOVER
    ============================================================ */
 
 .oc-menu-popover {
@@ -755,6 +1038,7 @@ video {
     position: absolute;
 
     top: 75px;
+
     right: 12px;
 
     z-index: 100;
@@ -767,9 +1051,11 @@ video {
 
     gap: 8px;
 
-    background: rgba(30, 27, 48, 0.97);
+    background:
+        rgba(30, 27, 48, 0.97);
 
     backdrop-filter: blur(18px);
+
     -webkit-backdrop-filter: blur(18px);
 
     color: #f8fafc;
@@ -784,6 +1070,7 @@ video {
 }
 
 .oc-menu-popover.open {
+
     display: flex;
 }
 
@@ -797,11 +1084,13 @@ video {
 
     border-radius: 9px;
 
-    background: rgba(51, 41, 75, 0.8);
+    background:
+        rgba(51, 41, 75, 0.8);
 
     color: #f8fafc;
 
     font-family: inherit;
+
     font-size: 13px;
 
     text-align: left;
@@ -812,12 +1101,14 @@ video {
 }
 
 .oc-menu-popover button:hover {
-    background: rgba(126, 34, 206, 0.5);
+
+    background:
+        rgba(126, 34, 206, 0.5);
 }
 
 
 /* ============================================================
-   14. SEARCH PANEL
+   15. SEARCH PANEL
    ============================================================ */
 
 .oc-search-panel {
@@ -827,6 +1118,7 @@ video {
     position: absolute;
 
     left: 12px;
+
     right: 12px;
 
     bottom: 82px;
@@ -839,9 +1131,11 @@ video {
 
     gap: 10px;
 
-    background: rgba(30, 27, 48, 0.97);
+    background:
+        rgba(30, 27, 48, 0.97);
 
     backdrop-filter: blur(18px);
+
     -webkit-backdrop-filter: blur(18px);
 
     border:
@@ -854,6 +1148,7 @@ video {
 }
 
 .oc-search-panel.open {
+
     display: flex;
 }
 
@@ -865,22 +1160,26 @@ video {
     flex: 1;
 
     width: 100%;
+
     min-width: 0;
 
     padding: 8px 4px;
 
     border: none;
+
     outline: none;
 
     background: transparent;
 
     font-family: inherit;
+
     font-size: 14px;
 
     color: #f8fafc;
 }
 
 .oc-search-panel input::placeholder {
+
     color: #94a3b8;
 }
 
@@ -892,6 +1191,7 @@ video {
     flex: 0 0 32px;
 
     width: 32px;
+
     height: 32px;
 
     border: none;
@@ -907,87 +1207,99 @@ video {
 
 
 /* ============================================================
-   15. SYSTEM BAR
+   16. SYSTEM BAR
    ============================================================ */
 
 .oc-system-bar {
 
     width: 100px;
+
     height: 4px;
 
     border-radius: 10px;
 
-    background: rgba(255, 255, 255, 0.3);
+    background:
+        rgba(255, 255, 255, 0.3);
 
     margin: 6px auto;
 }
 
 
 /* ============================================================
-   16. ACCESSIBILITY AND FOCUS
+   17. ACCESSIBILITY AND FOCUS
    ============================================================ */
 
 .oc-channel-window button:focus-visible,
 .media-card:focus-visible {
 
-    outline: 2px solid #c084fc;
+    outline:
+        2px solid #c084fc;
+
     outline-offset: 3px;
 }
 
 .media-card:focus-visible {
-    border-color: #c084fc;
+
+    border-color: #c084fc !important;
 }
 
 
 /* ============================================================
-   17. TABLET AND DESKTOP RESPONSIVE
+   18. TABLET AND DESKTOP RESPONSIVE
    ============================================================ */
 
 @media (min-width: 768px) {
-
-    #channelPostsContainer {
-
-        padding: 20px 24px 30px;
-
-        gap: 18px;
-    }
-
-    #channelPostsContainer > .media-card {
-
-        width: 100%;
-        max-width: 480px;
-
-        height: 0 !important;
-        padding-bottom: 125% !important;
-    }
 
     .oc-channel-header {
 
         padding: 16px 22px;
     }
 
+    #channelPostsContainer,
+    .oc-channel-timeline,
+    #media-feed {
+
+        padding: 20px 24px 30px;
+
+        gap: 18px;
+    }
+
+    #channelPostsContainer > .media-card,
+    .oc-channel-timeline > .media-card,
+    #media-feed > .media-card {
+
+        width: 100% !important;
+
+        max-width: 480px !important;
+    }
+
 }
 
 
 /* ============================================================
-   18. MOBILE RESPONSIVE
+   19. MOBILE RESPONSIVE
    ============================================================ */
 
 @media (max-width: 600px) {
 
     .oc-channel-header {
 
-        padding: 12px 10px;
+        padding:
+            calc(12px + env(safe-area-inset-top, 0px))
+            10px
+            12px;
 
         gap: 8px;
     }
 
     .oc-back-btn,
-    .oc-menu-btn {
+    .oc-menu-btn,
+    .oc-search-btn {
 
         flex-basis: 46px;
 
         width: 46px;
+
         height: 46px;
     }
 
@@ -1005,47 +1317,66 @@ video {
         flex-basis: 36px;
 
         width: 36px;
+
         height: 36px;
     }
 
-    #channelPostsContainer {
+    #channelPostsContainer,
+    .oc-channel-timeline,
+    #media-feed {
 
         padding: 12px 10px 22px;
 
         gap: 12px;
     }
 
-    #channelPostsContainer > .media-card {
+    #channelPostsContainer > .media-card,
+    .oc-channel-timeline > .media-card,
+    #media-feed > .media-card {
 
-        width: 100%;
-        max-width: 100%;
+        width: 100% !important;
 
-        height: 0 !important;
-        padding-bottom: 125% !important;
+        max-width: 100% !important;
+
+        height: auto !important;
+
+        padding: 0 !important;
+    }
+
+    .video-overlay-icon {
+
+        width: 54px !important;
+
+        height: 54px !important;
     }
 
 }
 
 
 /* ============================================================
-   19. SMALL MOBILE
+   20. SMALL MOBILE
    ============================================================ */
 
 @media (max-width: 380px) {
 
     .oc-channel-header {
 
-        padding: 10px 8px;
+        padding:
+            calc(10px + env(safe-area-inset-top, 0px))
+            8px
+            10px;
 
         gap: 6px;
     }
 
     .oc-back-btn,
-    .oc-menu-btn {
+    .oc-menu-btn,
+    .oc-search-btn {
 
         flex-basis: 42px;
 
         width: 42px;
+
         height: 42px;
     }
 
@@ -1063,15 +1394,15 @@ video {
         flex-basis: 32px;
 
         width: 32px;
+
         height: 32px;
 
         font-size: 14px;
     }
 
-    #channelPostsContainer > .media-card {
-
-        height: 0 !important;
-        padding-bottom: 125% !important;
+    #channelPostsContainer > .media-card,
+    .oc-channel-timeline > .media-card,
+    #media-feed > .media-card {
 
         border-radius: 13px !important;
     }
@@ -1079,6 +1410,7 @@ video {
     .video-overlay-icon {
 
         width: 50px !important;
+
         height: 50px !important;
     }
 
@@ -1086,7 +1418,7 @@ video {
 
 
 /* ============================================================
-   20. REDUCED MOTION
+   21. REDUCED MOTION
    ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
@@ -1102,6 +1434,27 @@ video {
         animation-duration: 0.01ms !important;
     }
 
+}
+
+
+/* ============================================================
+   22. FINAL MEDIA FEED SAFETY
+   ============================================================ */
+
+/*
+   Do not force a fixed card height.
+   Do not force 4:5.
+   Do not crop original media.
+   All loaded cards remain in the vertical feed.
+*/
+
+#channelPostsContainer > .media-card,
+.oc-channel-timeline > .media-card,
+#media-feed > .media-card {
+
+    flex-shrink: 0;
+
+    box-sizing: border-box;
 }
 
 
