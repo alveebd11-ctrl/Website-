@@ -1,4 +1,5 @@
-
+<!-- OC COLLECTION CSS STYLES -->
+<style>
 /* ============================================================
    OC COLLECTION UNIVERSE
    COMPLETE STYLE.CSS
@@ -9,34 +10,22 @@
    Responsive Mobile + Desktop
    ============================================================ */
 
-
-/* ============================================================
-   01. GLOBAL SETTINGS
-   ============================================================ */
-
 :root {
     --oc-bg: #0b0f19;
     --oc-panel: #100d20;
     --oc-card: rgba(15, 23, 42, 0.78);
-
     --oc-purple: #a855f7;
     --oc-purple-light: #c084fc;
     --oc-blue: #38bdf8;
     --oc-pink: #ec4899;
-
     --oc-text: #f8fafc;
     --oc-muted: #b6a2d4;
-
     --oc-border: rgba(168, 85, 247, 0.35);
-
     --oc-header-bg: rgba(15, 23, 42, 0.88);
-
     --oc-card-radius: 16px;
 }
 
-*,
-*::before,
-*::after {
+*, *::before, *::after {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
 }
@@ -50,65 +39,35 @@ html {
 body {
     background: var(--oc-bg);
     color: var(--oc-text);
-
     font-family: 'Poppins', sans-serif;
-
     margin: 0;
     padding: 0;
-
     overflow-x: hidden;
 }
 
-button,
-input {
+button, input {
     font-family: inherit;
-}
-
-button {
     -webkit-appearance: none;
     appearance: none;
 }
 
-img,
-video {
+img, video {
     max-width: 100%;
 }
 
-
-/* ============================================================
-   02. MAIN OC CHANNEL WINDOW
-   ============================================================ */
-
 .oc-channel-window {
-
     position: fixed;
     inset: 0;
-
     width: 100%;
-
     height: 100vh;
     height: 100dvh;
-
     display: none;
-
     flex-direction: column;
-
     overflow: hidden;
-
     z-index: 99999;
-
     isolation: isolate;
-
-    background:
-        radial-gradient(
-            circle at 50% 20%,
-            rgba(30, 27, 75, 0.95) 0%,
-            rgba(16, 11, 32, 0.98) 45%,
-            #0b0f19 100%
-        );
-
+    background: radial-gradient(circle at 50% 20%, rgba(30, 27, 75, 0.95) 0%, rgba(16, 11, 32, 0.98) 45%, #0b0f19 100%);
     font-family: 'Poppins', sans-serif;
-
     color: var(--oc-text);
 }
 
@@ -116,1348 +75,1315 @@ video {
     display: flex;
 }
 
-
-/* ============================================================
-   03. AMBIENT NEON BACKGROUND
-   ============================================================ */
-
 .oc-doodle-wallpaper {
-
     position: absolute;
-
     inset: -10%;
-
     z-index: 0;
-
     pointer-events: none;
-
     overflow: hidden;
-
-    background:
-
-        radial-gradient(
-            circle at 20% 30%,
-            rgba(168, 85, 247, 0.15) 0%,
-            transparent 40%
-        ),
-
-        radial-gradient(
-            circle at 80% 70%,
-            rgba(56, 189, 248, 0.12) 0%,
-            transparent 40%
-        );
+    background: radial-gradient(circle at 20% 30%, rgba(168, 85, 247, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(56, 189, 248, 0.12) 0%, transparent 40%);
 }
-
-
-/* ============================================================
-   04. CHANNEL HEADER
-   Header layout remains unchanged
-   ============================================================ */
 
 .oc-channel-header {
-
     position: relative;
-
     z-index: 20;
-
     display: flex;
-
     flex: 0 0 auto;
-
     align-items: center;
-
     gap: 10px;
-
     width: 100%;
-
-    padding:
-        calc(14px + env(safe-area-inset-top, 0px))
-        12px
-        14px;
-
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 12px 14px;
     background: var(--oc-header-bg);
-
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-
-    border-bottom:
-        1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-
-/* ============================================================
-   05. HEADER BUTTONS
-   Back / Menu / Search
-   ============================================================ */
-
-.oc-back-btn,
-.oc-menu-btn,
-.oc-search-btn {
-
+.oc-back-btn, .oc-menu-btn, .oc-search-btn {
     flex: 0 0 48px;
-
     width: 48px;
     height: 48px;
-
     padding: 0;
-
-    border:
-        1px solid rgba(168, 85, 247, 0.25);
-
+    border: 1px solid rgba(168, 85, 247, 0.25);
     border-radius: 50%;
-
     background: rgba(30, 27, 48, 0.9);
-
     color: #f8fafc;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
-
     cursor: pointer;
-
-    box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.3);
-
-    transition:
-        background 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-.oc-back-btn:hover,
-.oc-menu-btn:hover,
-.oc-search-btn:hover {
-
+.oc-back-btn:hover, .oc-menu-btn:hover, .oc-search-btn:hover {
     background: rgba(88, 28, 135, 0.5);
-
-    border-color:
-        rgba(168, 85, 247, 0.7);
+    border-color: rgba(168, 85, 247, 0.7);
 }
 
-.oc-back-btn:active,
-.oc-menu-btn:active,
-.oc-search-btn:active {
-
+.oc-back-btn:active, .oc-menu-btn:active, .oc-search-btn:active {
     transform: scale(0.94);
 }
 
-
-/* Header SVG Icons */
-
-.oc-back-btn svg,
-.oc-menu-btn svg,
-.oc-search-btn svg {
-
+.oc-back-btn svg, .oc-menu-btn svg, .oc-search-btn svg {
     width: 24px;
     height: 24px;
-
     fill: none;
-
     stroke: currentColor;
-
     stroke-width: 2.5;
-
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-
-/* ============================================================
-   06. CHANNEL TITLE PILL
-   ============================================================ */
-
 .oc-channel-title-pill {
-
     flex: 1 1 auto;
-
     min-width: 0;
-
     height: 52px;
-
     padding: 0 12px;
-
     display: flex;
-
     align-items: center;
-
     gap: 10px;
-
     border-radius: 50px;
-
     background: rgba(30, 27, 48, 0.75);
-
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-
-    border:
-        1px solid rgba(168, 85, 247, 0.3);
-
-    box-shadow:
-        inset 0 0 12px rgba(168, 85, 247, 0.04);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    box-shadow: inset 0 0 12px rgba(168, 85, 247, 0.04);
 }
 
-
-/* Channel Avatar */
-
 .oc-channel-avatar {
-
     flex: 0 0 38px;
-
     width: 38px;
     height: 38px;
-
     border-radius: 50%;
-
-    background:
-        linear-gradient(
-            135deg,
-            #38bdf8,
-            #8b5cf6
-        );
-
-    border:
-        2px solid rgba(255, 255, 255, 0.2);
-
+    background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+    border: 2px solid rgba(255, 255, 255, 0.2);
     color: white;
-
     font-size: 16px;
     font-weight: 800;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
-
     overflow: hidden;
 }
 
 .oc-channel-avatar img {
-
     width: 100%;
     height: 100%;
-
     object-fit: cover;
-
     border-radius: 50%;
 }
 
-
-/* Channel Title */
-
 .oc-channel-title-text {
-
     flex: 1;
-
     min-width: 0;
 }
 
 .oc-channel-title-text h2 {
-
     margin: 0;
-
     font-size: clamp(14px, 3.5vw, 18px);
-
     font-weight: 700;
-
     line-height: 1.2;
-
     white-space: nowrap;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
-
     color: #f8fafc;
 }
 
 .oc-channel-title-text p {
-
     margin: 2px 0 0;
-
     color: var(--oc-muted);
-
     font-size: 11px;
-
     font-weight: 500;
 }
 
-
-/* ============================================================
-   07. MAIN SCROLLABLE MEDIA FEED
-   Unlimited Vertical Card Layout
-   ============================================================ */
-
-.oc-channel-timeline,
-#media-feed,
-#channelPostsContainer {
-
+.oc-channel-timeline, #media-feed, #channelPostsContainer {
     position: relative;
-
     flex: 1 1 auto;
-
     width: 100%;
-
     min-width: 0;
     min-height: 0;
-
     overflow-y: auto;
     overflow-x: hidden;
-
     padding: 14px 12px 25px;
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
-
     gap: 16px;
-
     z-index: 2;
-
     box-sizing: border-box;
-
     -webkit-overflow-scrolling: touch;
-
     overscroll-behavior-y: contain;
-
     scrollbar-width: thin;
-
-    scrollbar-color:
-        rgba(168, 85, 247, 0.4)
-        transparent;
+    scrollbar-color: rgba(168, 85, 247, 0.4) transparent;
 }
 
-
-/* Feed Scrollbar */
-
-#channelPostsContainer::-webkit-scrollbar,
-.oc-channel-timeline::-webkit-scrollbar,
-#media-feed::-webkit-scrollbar {
-
+#channelPostsContainer::-webkit-scrollbar, .oc-channel-timeline::-webkit-scrollbar, #media-feed::-webkit-scrollbar {
     width: 4px;
 }
 
-#channelPostsContainer::-webkit-scrollbar-track,
-.oc-channel-timeline::-webkit-scrollbar-track,
-#media-feed::-webkit-scrollbar-track {
-
-    background: transparent;
-}
-
-#channelPostsContainer::-webkit-scrollbar-thumb,
-.oc-channel-timeline::-webkit-scrollbar-thumb,
-#media-feed::-webkit-scrollbar-thumb {
-
-    background:
-        rgba(168, 85, 247, 0.4);
-
+#channelPostsContainer::-webkit-scrollbar-thumb, .oc-channel-timeline::-webkit-scrollbar-thumb, #media-feed::-webkit-scrollbar-thumb {
+    background: rgba(168, 85, 247, 0.4);
     border-radius: 10px;
 }
 
-
-/* ============================================================
-   08. INDIVIDUAL MEDIA CARDS
-   Natural Image / Video Ratio
-   ============================================================ */
-
-.media-card,
-#channelPostsContainer > .media-card,
-.oc-channel-timeline > .media-card,
-#media-feed > .media-card {
-
+.media-card, #channelPostsContainer > .media-card, .oc-channel-timeline > .media-card, #media-feed > .media-card {
     position: relative !important;
-
     display: block !important;
-
     flex: 0 0 auto !important;
-
     width: 100% !important;
-
     max-width: 420px !important;
-
-    /*
-       IMPORTANT:
-       No fixed 4:5 ratio.
-       Card height follows its media's natural dimensions.
-    */
-
     height: auto !important;
-
     min-height: 0 !important;
-
     aspect-ratio: auto !important;
-
     padding: 0 !important;
-
     margin: 0 auto !important;
-
     overflow: hidden !important;
-
-    border-radius:
-        var(--oc-card-radius) !important;
-
-    background:
-        rgba(15, 23, 42, 0.78) !important;
-
+    border-radius: var(--oc-card-radius) !important;
+    background: rgba(15, 23, 42, 0.78) !important;
     backdrop-filter: blur(12px) !important;
-
     -webkit-backdrop-filter: blur(12px) !important;
-
-    border:
-        1px solid rgba(168, 85, 247, 0.35) !important;
-
-    box-shadow:
-
-        0 8px 32px
-        rgba(15, 23, 42, 0.45),
-
-        0 0 18px
-        rgba(168, 85, 247, 0.15) !important;
-
+    border: 1px solid rgba(168, 85, 247, 0.35) !important;
+    box-shadow: 0 8px 32px rgba(15, 23, 42, 0.45), 0 0 18px rgba(168, 85, 247, 0.15) !important;
     cursor: pointer !important;
-
     appearance: none !important;
-
     -webkit-appearance: none !important;
-
     outline: none !important;
-
     font: inherit !important;
-
     color: inherit !important;
-
     text-align: left !important;
-
-    transition:
-        border-color 0.25s ease,
-        box-shadow 0.25s ease,
-        transform 0.2s ease;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
 }
-
-
-/* Card Hover */
 
 .media-card:hover {
-
-    border-color:
-        rgba(168, 85, 247, 0.75) !important;
-
-    box-shadow:
-
-        0 12px 40px
-        rgba(15, 23, 42, 0.55),
-
-        0 0 25px
-        rgba(236, 72, 153, 0.25) !important;
+    border-color: rgba(168, 85, 247, 0.75) !important;
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.55), 0 0 25px rgba(236, 72, 153, 0.25) !important;
 }
 
-
-/* Card Active */
-
 .media-card:active {
-
     transform: scale(0.985) !important;
 }
 
-
-/* ============================================================
-   09. MEDIA RATIO PRESERVATION
-   Supports ALL aspect ratios
-   ============================================================ */
-
-/*
-   The following rules preserve the original dimensions
-   of uploaded images and videos.
-
-   Supported examples:
-
-   9:16
-   4:5
-   3:4
-   2:3
-   5:7
-   1:2
-   1:1
-   5:4
-   4:3
-   3:2
-   5:3
-   16:10
-   16:9
-   1.85:1
-   1.91:1
-   2:1
-   2.35:1
-   2.39:1
-   21:9
-   3:1
-   9:19.5
-   9:20
-
-   No forced cropping.
-*/
-
-
-/* Media Elements */
-
-.media-card > img,
-.media-card > video,
-.media-card img,
-.media-card video,
-.media-card .media-card-image,
-.media-card .media-card-video {
-
+.media-card > img, .media-card > video, .media-card img, .media-card video {
     position: relative !important;
-
     inset: auto !important;
-
     display: block !important;
-
     width: 100% !important;
-
     height: auto !important;
-
     max-width: 100% !important;
-
     max-height: none !important;
-
     aspect-ratio: auto !important;
-
     object-fit: contain !important;
-
     object-position: center center !important;
-
     background: #0b0f19 !important;
-
     border: none !important;
-
-    border-radius: 0 !important;
-
     margin: 0 !important;
-
     padding: 0 !important;
 }
 
-
-/* Picture Element */
-
-.media-card picture {
-
-    display: block;
-
-    width: 100%;
-
-    height: auto;
-
-    margin: 0;
-    padding: 0;
-}
-
-.media-card picture img {
-
-    display: block;
-
-    width: 100%;
-
-    height: auto;
-
-    max-width: 100%;
-
-    object-fit: contain;
-}
-
-
-/* ============================================================
-   10. VIDEO PLAY BUTTON OVERLAY
-   ============================================================ */
-
 .video-overlay-icon {
-
     position: absolute !important;
-
     top: 50% !important;
-
     left: 50% !important;
-
-    transform:
-        translate(-50%, -50%) !important;
-
+    transform: translate(-50%, -50%) !important;
     width: 58px !important;
-
     height: 58px !important;
-
-    background:
-        rgba(15, 23, 42, 0.78) !important;
-
+    background: rgba(15, 23, 42, 0.78) !important;
     backdrop-filter: blur(10px) !important;
-
     -webkit-backdrop-filter: blur(10px) !important;
-
-    border:
-        1.5px solid rgba(255, 255, 255, 0.4) !important;
-
+    border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
     border-radius: 50% !important;
-
     display: flex !important;
-
     align-items: center !important;
-
     justify-content: center !important;
-
     color: #ffffff !important;
-
-    box-shadow:
-
-        0 0 22px
-        rgba(168, 85, 247, 0.55),
-
-        0 0 35px
-        rgba(56, 189, 248, 0.15) !important;
-
+    box-shadow: 0 0 22px rgba(168, 85, 247, 0.55), 0 0 35px rgba(56, 189, 248, 0.15) !important;
     pointer-events: none !important;
-
     z-index: 10 !important;
 }
 
-
-/* Play Triangle */
-
 .video-overlay-icon::after {
-
     content: '' !important;
-
     display: block !important;
-
     width: 0 !important;
-
     height: 0 !important;
-
-    border-top:
-        10px solid transparent !important;
-
-    border-bottom:
-        10px solid transparent !important;
-
-    border-left:
-        17px solid #ffffff !important;
-
+    border-top: 10px solid transparent !important;
+    border-bottom: 10px solid transparent !important;
+    border-left: 17px solid #ffffff !important;
     margin-left: 4px !important;
 }
 
-
-/* ============================================================
-   11. EMPTY / ERROR / LOADING STATUS
-   ============================================================ */
-
 .oc-channel-status {
-
     width: 100%;
-
     padding: 40px 16px;
-
     margin: auto 0;
-
     text-align: center;
-
     color: #b8b2ca;
-
     font-size: 15px;
-
     font-weight: 500;
-
     line-height: 1.7;
 }
 
-
-/* ============================================================
-   12. FULLSCREEN POPUP PLAYER
-   ============================================================ */
-
-#ocVideoPopup,
-.oc-video-popup {
-
+#ocVideoPopup, .oc-video-popup {
     position: fixed;
-
     inset: 0;
-
     width: 100%;
-
     height: 100vh;
     height: 100dvh;
-
     display: none;
-
     align-items: center;
-
     justify-content: center;
-
     padding: 20px;
-
-    background:
-        rgba(3, 2, 12, 0.96);
-
+    background: rgba(3, 2, 12, 0.96);
     backdrop-filter: blur(16px);
-
     -webkit-backdrop-filter: blur(16px);
-
     z-index: 100001;
 }
 
-
-/* Popup Open */
-
-#ocVideoPopup.open,
-.oc-video-popup.open {
-
+#ocVideoPopup.open, .oc-video-popup.open {
     display: flex;
 }
 
-
-/* Popup Media Wrapper */
-
 .oc-popup-video-wrapper {
-
     position: relative;
-
     width: 100%;
-
     max-width: 1000px;
-
     height: 100%;
-
     max-height: 90vh;
     max-height: 90dvh;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     overflow: hidden;
 }
 
-
-/* Popup Video */
-
-.oc-popup-video-wrapper video {
-
+.oc-popup-video-wrapper video, .oc-popup-video-wrapper img {
     display: block;
-
     width: 100%;
-
     height: 100%;
-
     max-width: 100%;
-
     max-height: 90vh;
     max-height: 90dvh;
-
     object-fit: contain;
-
     object-position: center;
-
     background: #000;
-
     border-radius: 8px;
 }
-
-
-/* Popup Image */
-
-.oc-popup-video-wrapper img {
-
-    display: block;
-
-    width: 100%;
-
-    height: 100%;
-
-    max-width: 100%;
-
-    max-height: 90vh;
-    max-height: 90dvh;
-
-    object-fit: contain;
-
-    object-position: center;
-
-    background: #000;
-
-    border-radius: 8px;
-}
-
-
-/* Popup Close Button */
 
 #ocPopupCloseBtn {
-
     position: absolute;
-
     top: 18px;
-
     right: 18px;
-
     z-index: 100002;
-
     width: 44px;
-
     height: 44px;
-
-    border:
-        1px solid rgba(255, 255, 255, 0.2);
-
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
-
-    background:
-        rgba(30, 27, 48, 0.9);
-
+    background: rgba(30, 27, 48, 0.9);
     color: #fff;
-
     font-size: 27px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     cursor: pointer;
 }
-
-
-/* ============================================================
-   13. BOTTOM ACTION BAR
-   ============================================================ */
 
 .oc-bottom-actions {
-
     position: relative;
-
     flex: 0 0 auto;
-
     z-index: 30;
-
     width: 100%;
-
-    padding:
-        12px 16px
-        calc(12px + env(safe-area-inset-bottom, 0px));
-
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
     display: flex;
-
     gap: 12px;
-
     align-items: center;
-
-    background:
-        rgba(15, 23, 42, 0.88);
-
+    background: rgba(15, 23, 42, 0.88);
     backdrop-filter: blur(16px);
-
     -webkit-backdrop-filter: blur(16px);
-
-    border-top:
-        1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
-
-
-/* Search Button */
-
-.oc-bottom-actions .oc-search-btn {
-
-    flex: 0 0 48px;
-
-    width: 48px;
-
-    height: 48px;
-
-    padding: 0;
-
-    border:
-        1px solid rgba(168, 85, 247, 0.2);
-
-    border-radius: 50%;
-
-    background:
-        rgba(30, 27, 48, 0.9);
-
-    color: #c4b5fd;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    cursor: pointer;
-}
-
-
-/* Unmute Button */
 
 .oc-unmute-btn {
-
     flex: 1;
-
     min-width: 0;
-
     height: 48px;
-
     padding: 0 18px;
-
-    border:
-        1px solid rgba(168, 85, 247, 0.25);
-
+    border: 1px solid rgba(168, 85, 247, 0.25);
     border-radius: 25px;
-
-    background:
-        rgba(30, 27, 48, 0.9);
-
+    background: rgba(30, 27, 48, 0.9);
     color: #f8fafc;
-
     font-size: 15px;
-
     font-weight: 600;
-
     cursor: pointer;
 }
 
-
-/* ============================================================
-   14. MENU POPOVER
-   ============================================================ */
-
 .oc-menu-popover {
-
     display: none;
-
     position: absolute;
-
     top: 75px;
-
     right: 12px;
-
     z-index: 100;
-
     min-width: 170px;
-
     padding: 12px;
-
     flex-direction: column;
-
     gap: 8px;
-
-    background:
-        rgba(30, 27, 48, 0.97);
-
+    background: rgba(30, 27, 48, 0.97);
     backdrop-filter: blur(18px);
-
     -webkit-backdrop-filter: blur(18px);
-
     color: #f8fafc;
-
-    border:
-        1px solid rgba(168, 85, 247, 0.3);
-
+    border: 1px solid rgba(168, 85, 247, 0.3);
     border-radius: 16px;
-
-    box-shadow:
-        0 8px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
 
 .oc-menu-popover.open {
-
     display: flex;
 }
 
-.oc-menu-popover button {
-
-    width: 100%;
-
-    padding: 11px 12px;
-
-    border: none;
-
-    border-radius: 9px;
-
-    background:
-        rgba(51, 41, 75, 0.8);
-
-    color: #f8fafc;
-
-    font-family: inherit;
-
-    font-size: 13px;
-
-    text-align: left;
-
-    cursor: pointer;
-
-    transition: background 0.2s ease;
-}
-
-.oc-menu-popover button:hover {
-
-    background:
-        rgba(126, 34, 206, 0.5);
-}
-
-
-/* ============================================================
-   15. SEARCH PANEL
-   ============================================================ */
-
 .oc-search-panel {
-
     display: none;
-
     position: absolute;
-
     left: 12px;
-
     right: 12px;
-
     bottom: 82px;
-
     z-index: 100;
-
     padding: 12px 14px;
-
     align-items: center;
-
     gap: 10px;
-
-    background:
-        rgba(30, 27, 48, 0.97);
-
+    background: rgba(30, 27, 48, 0.97);
     backdrop-filter: blur(18px);
-
     -webkit-backdrop-filter: blur(18px);
-
-    border:
-        1px solid rgba(168, 85, 247, 0.3);
-
+    border: 1px solid rgba(168, 85, 247, 0.3);
     border-radius: 14px;
-
-    box-shadow:
-        0 8px 30px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
 }
 
 .oc-search-panel.open {
-
     display: flex;
 }
 
-
-/* Search Input */
-
 .oc-search-panel input {
-
     flex: 1;
-
     width: 100%;
-
     min-width: 0;
-
     padding: 8px 4px;
-
     border: none;
-
     outline: none;
-
     background: transparent;
-
     font-family: inherit;
-
     font-size: 14px;
-
     color: #f8fafc;
 }
+</style>
 
-.oc-search-panel input::placeholder {
+<!-- OC COLLECTION JAVASCRIPT -->
+<script>
+/* OC COLLECTION UNIVERSE — Telegram Media Feed
+   Original aspect ratios | 10-item batches | Infinite scroll */
+(function () {
+    'use strict';
 
-    color: #94a3b8;
-}
+    const CONFIG = {
+        containerId: 'channelPostsContainer',
+        channelId: 'ocChannelWindow',
+        popupId: 'ocVideoPopup',
+        popupWrapper: '.oc-popup-video-wrapper',
+        apiURL: '/api/channel/posts', // আপনার ব্যাকএন্ড রাউটের সাথে সামঞ্জস্য রাখা হয়েছে
+        refreshInterval: 30000,
+        batchSize: 10,
+        observerRootMargin: '400px 0px'
+    };
 
+    const mediaCards = new Map();
+    const knownMediaIds = new Set();
+    let pendingMedia = [];
+    let isFetchingMedia = false;
+    let isRenderingBatch = false;
+    let pollingTimer = null;
+    let feedObserver = null;
+    let previousBodyOverflow = '';
+    let lastFocusedCard = null;
+    let currentSearchQuery = '';
 
-/* Search Close Button */
+    const byId = id => document.getElementById(id);
+    const getContainer = () => byId(CONFIG.containerId);
 
-.oc-search-panel button {
-
-    flex: 0 0 32px;
-
-    width: 32px;
-
-    height: 32px;
-
-    border: none;
-
-    background: transparent;
-
-    font-size: 22px;
-
-    cursor: pointer;
-
-    color: #f8fafc;
-}
-
-
-/* ============================================================
-   16. SYSTEM BAR
-   ============================================================ */
-
-.oc-system-bar {
-
-    width: 100px;
-
-    height: 4px;
-
-    border-radius: 10px;
-
-    background:
-        rgba(255, 255, 255, 0.3);
-
-    margin: 6px auto;
-}
-
-
-/* ============================================================
-   17. ACCESSIBILITY AND FOCUS
-   ============================================================ */
-
-.oc-channel-window button:focus-visible,
-.media-card:focus-visible {
-
-    outline:
-        2px solid #c084fc;
-
-    outline-offset: 3px;
-}
-
-.media-card:focus-visible {
-
-    border-color: #c084fc !important;
-}
-
-
-/* ============================================================
-   18. TABLET AND DESKTOP RESPONSIVE
-   ============================================================ */
-
-@media (min-width: 768px) {
-
-    .oc-channel-header {
-
-        padding: 16px 22px;
+    function removeStatus() {
+        getContainer()?.querySelector('.oc-channel-status')?.remove();
     }
 
-    #channelPostsContainer,
-    .oc-channel-timeline,
-    #media-feed {
+    function showStatus(message, state) {
+        const container = getContainer();
+        if (!container) return;
 
-        padding: 20px 24px 30px;
+        let status = container.querySelector('.oc-channel-status');
 
-        gap: 18px;
+        if (!status) {
+            status = document.createElement('div');
+            status.className = 'oc-channel-status';
+            status.setAttribute('role', 'status');
+            container.appendChild(status);
+        }
+
+        status.dataset.state = state || 'info';
+        status.textContent = message;
     }
 
-    #channelPostsContainer > .media-card,
-    .oc-channel-timeline > .media-card,
-    #media-feed > .media-card {
+    /* SAFE MEDIA URL */
 
-        width: 100% !important;
-
-        max-width: 480px !important;
+    function getSafeMediaURL(post) {
+        const postId = post.message_id ?? post.id;
+        if (!postId) return null;
+        return `/api/chat/media/${postId}`;
     }
 
-}
+    /* MEDIA TYPE */
 
+    function getMediaType(post) {
+        const type = String(post.media_type || '').toLowerCase();
+        const mime = String(post.mime_type || '').toLowerCase();
 
-/* ============================================================
-   19. MOBILE RESPONSIVE
-   ============================================================ */
+        const video =
+            type === 'video' ||
+            mime.startsWith('video/') ||
+            (type === 'animation' && !mime.startsWith('image/'));
 
-@media (max-width: 600px) {
+        const image =
+            !video &&
+            (type === 'photo' || mime.startsWith('image/') || type === 'animation');
 
-    .oc-channel-header {
-
-        padding:
-            calc(12px + env(safe-area-inset-top, 0px))
-            10px
-            12px;
-
-        gap: 8px;
+        return video ? 'video' : image ? 'photo' : null;
     }
 
-    .oc-back-btn,
-    .oc-menu-btn,
-    .oc-search-btn {
+    /* SEARCH */
 
-        flex-basis: 46px;
+    function getSearchText(item) {
+        const post = item.post || {};
 
-        width: 46px;
-
-        height: 46px;
+        return [
+            post.text,
+            post.caption,
+            post.title,
+            item.mediaType,
+            item.id
+        ].map(value => String(value || '')).join(' ').toLowerCase();
     }
 
-    .oc-channel-title-pill {
-
-        height: 48px;
-
-        padding: 0 9px;
-
-        gap: 8px;
+    function matchesSearch(item, query) {
+        return !query || getSearchText(item).includes(query);
     }
 
-    .oc-channel-avatar {
+    function setCardVisibility(card, query) {
+        const visible =
+            !query ||
+            String(card.dataset.metadata || '').includes(query);
 
-        flex-basis: 36px;
+        card.hidden = !visible;
 
-        width: 36px;
-
-        height: 36px;
+        if (visible) {
+            card.style.removeProperty('display');
+        } else {
+            card.style.setProperty('display', 'none', 'important');
+        }
     }
 
-    #channelPostsContainer,
-    .oc-channel-timeline,
-    #media-feed {
+    /* CREATE MEDIA CARD */
 
-        padding: 12px 10px 22px;
+    function createMediaCard(item) {
+        const card = document.createElement('button');
 
-        gap: 12px;
+        card.type = 'button';
+        card.className = 'media-card';
+        card.dataset.mediaId = item.id;
+        card.dataset.metadata = getSearchText(item);
+
+        card.setAttribute(
+            'aria-label',
+            item.mediaType === 'video' ? 'Play video' : 'View photo'
+        );
+
+        if (item.mediaType === 'video') {
+            const video = document.createElement('video');
+
+            video.src = item.mediaURL;
+            video.muted = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.tabIndex = -1;
+
+            video.setAttribute('aria-hidden', 'true');
+
+            video.addEventListener('loadedmetadata', function () {
+                if (video.videoWidth && video.videoHeight) {
+                    video.setAttribute('width', video.videoWidth);
+                    video.setAttribute('height', video.videoHeight);
+
+                    card.dataset.aspectRatio =
+                        video.videoWidth + ':' + video.videoHeight;
+                }
+            }, { once: true });
+
+            video.addEventListener(
+                'error',
+                () => card.classList.add('media-load-error'),
+                { once: true }
+            );
+
+            card.appendChild(video);
+
+            const playIcon = document.createElement('span');
+
+            playIcon.className = 'video-overlay-icon';
+            playIcon.setAttribute('aria-hidden', 'true');
+
+            card.appendChild(playIcon);
+
+        } else {
+            const img = document.createElement('img');
+
+            img.src = item.mediaURL;
+            img.alt = 'OC Collection photo';
+            img.loading = 'lazy';
+            img.decoding = 'async';
+
+            img.addEventListener('load', function () {
+                if (img.naturalWidth && img.naturalHeight) {
+                    img.setAttribute('width', img.naturalWidth);
+                    img.setAttribute('height', img.naturalHeight);
+
+                    card.dataset.aspectRatio =
+                        img.naturalWidth + ':' + img.naturalHeight;
+                }
+
+                // আপনার দেওয়া ডিবাগিং স্ক্রিপ্ট এখানে সঠিকভাবে সংযুক্ত করা হয়েছে
+                console.log('OC PHOTO DIMENSIONS:', {
+                    originalWidth: img.naturalWidth,
+                    originalHeight: img.naturalHeight,
+                    originalRatio: (
+                        img.naturalWidth / img.naturalHeight
+                    ).toFixed(3),
+                    displayedWidth: img.getBoundingClientRect().width,
+                    displayedHeight: img.getBoundingClientRect().height
+                });
+            }, { once: true });
+
+            img.addEventListener(
+                'error',
+                () => card.classList.add('media-load-error'),
+                { once: true }
+            );
+
+            card.appendChild(img);
+        }
+
+        card.addEventListener('click', function () {
+            lastFocusedCard = card;
+            openPopupPlayer(item.mediaURL, item.mediaType);
+        });
+
+        setCardVisibility(card, currentSearchQuery);
+
+        return card;
     }
 
-    #channelPostsContainer > .media-card,
-    .oc-channel-timeline > .media-card,
-    #media-feed > .media-card {
+    /* INFINITE SCROLL SENTINEL */
 
-        width: 100% !important;
+    function ensureSentinel() {
+        const container = getContainer();
+        if (!container) return null;
 
-        max-width: 100% !important;
+        let sentinel = container.querySelector('.oc-feed-sentinel');
 
-        height: auto !important;
+        if (!sentinel) {
+            sentinel = document.createElement('div');
 
-        padding: 0 !important;
+            sentinel.className = 'oc-feed-sentinel';
+
+            sentinel.setAttribute('role', 'status');
+            sentinel.setAttribute('aria-live', 'polite');
+
+            sentinel.style.cssText =
+                'width:100%;padding:16px 10px;text-align:center;' +
+                'font-size:12px;color:#b6a2d4;flex:0 0 auto;';
+        }
+
+        if (
+            sentinel.parentNode !== container ||
+            container.lastElementChild !== sentinel
+        ) {
+            container.appendChild(sentinel);
+        }
+
+        return sentinel;
     }
 
-    .video-overlay-icon {
+    function setupFeedObserver() {
+        const container = getContainer();
+        const sentinel = ensureSentinel();
 
-        width: 54px !important;
+        if (!container || !sentinel) return;
 
-        height: 54px !important;
+        if ('IntersectionObserver' in window) {
+            if (!feedObserver) {
+                feedObserver = new IntersectionObserver(entries => {
+                    if (entries.some(entry => entry.isIntersecting)) {
+                        renderNextBatch();
+                    }
+                }, {
+                    root: container,
+                    rootMargin: CONFIG.observerRootMargin,
+                    threshold: 0
+                });
+            }
+
+            feedObserver.observe(sentinel);
+
+        } else if (
+            container.dataset.ocScrollInitialized !== 'true'
+        ) {
+            container.dataset.ocScrollInitialized = 'true';
+
+            container.addEventListener(
+                'scroll',
+                handleFeedScroll,
+                { passive: true }
+            );
+        }
     }
 
-}
+    function handleFeedScroll() {
+        const container = getContainer();
 
+        if (!container || !pendingMedia.length) return;
 
-/* ============================================================
-   20. SMALL MOBILE
-   ============================================================ */
+        const distance =
+            container.scrollHeight -
+            container.scrollTop -
+            container.clientHeight;
 
-@media (max-width: 380px) {
-
-    .oc-channel-header {
-
-        padding:
-            calc(10px + env(safe-area-inset-top, 0px))
-            8px
-            10px;
-
-        gap: 6px;
+        if (distance < 500) {
+            renderNextBatch();
+        }
     }
 
-    .oc-back-btn,
-    .oc-menu-btn,
-    .oc-search-btn {
+    function updateLoadMoreUI() {
+        const sentinel = ensureSentinel();
 
-        flex-basis: 42px;
+        if (!sentinel) return;
 
-        width: 42px;
+        const hasMoreMatches = pendingMedia.some(item =>
+            matchesSearch(item, currentSearchQuery)
+        );
 
-        height: 42px;
+        sentinel.hidden = !hasMoreMatches;
+
+        sentinel.style.display =
+            hasMoreMatches ? 'block' : 'none';
+
+        sentinel.textContent = hasMoreMatches
+            ? 'Scroll down to load more media...'
+            : '';
+
+        setupFeedObserver();
     }
 
-    .oc-channel-title-pill {
+    /* INSERT MEDIA CARDS */
 
-        height: 44px;
+    function prependBatch(items) {
+        const container = getContainer();
 
-        padding: 0 7px;
+        if (!container || !items.length) return;
 
-        gap: 7px;
+        const wasScrolled = container.scrollTop > 0;
+        const oldHeight = container.scrollHeight;
+
+        const fragment = document.createDocumentFragment();
+
+        items.forEach(item => {
+            const card = createMediaCard(item);
+
+            mediaCards.set(item.id, card);
+
+            fragment.appendChild(card);
+        });
+
+        container.prepend(fragment);
+
+        if (wasScrolled) {
+            container.scrollTop +=
+                container.scrollHeight - oldHeight;
+        }
     }
 
-    .oc-channel-avatar {
+    function appendBatch(items) {
+        const container = getContainer();
 
-        flex-basis: 32px;
+        if (!container || !items.length) return;
 
-        width: 32px;
+        const fragment = document.createDocumentFragment();
 
-        height: 32px;
+        items.forEach(item => {
+            const card = createMediaCard(item);
 
-        font-size: 14px;
+            mediaCards.set(item.id, card);
+
+            fragment.appendChild(card);
+        });
+
+        container.insertBefore(fragment, ensureSentinel());
     }
 
-    #channelPostsContainer > .media-card,
-    .oc-channel-timeline > .media-card,
-    #media-feed > .media-card {
+    /* LOAD NEXT 10 ITEMS */
 
-        border-radius: 13px !important;
+    function renderNextBatch() {
+        if (isRenderingBatch || !pendingMedia.length) {
+            updateLoadMoreUI();
+            return 0;
+        }
+
+        if (!getContainer()) return 0;
+
+        isRenderingBatch = true;
+
+        try {
+            const batch = [];
+            const remaining = [];
+
+            pendingMedia.forEach(item => {
+                if (
+                    batch.length < CONFIG.batchSize &&
+                    matchesSearch(item, currentSearchQuery)
+                ) {
+                    batch.push(item);
+                } else {
+                    remaining.push(item);
+                }
+            });
+
+            pendingMedia = remaining;
+
+            if (batch.length) {
+                removeStatus();
+
+                appendBatch(batch);
+
+                filterOCPosts(currentSearchQuery);
+            }
+
+            updateLoadMoreUI();
+
+            return batch.length;
+
+        } finally {
+            isRenderingBatch = false;
+        }
     }
 
-    .video-overlay-icon {
+    /* PROCESS TELEGRAM POSTS & REMOVE DELETED */
 
-        width: 50px !important;
+    function renderTelegramPosts(posts) {
+        if (!Array.isArray(posts)) return 0;
 
-        height: 50px !important;
+        const incomingIds = new Set();
+        const incoming = [];
+
+        posts.forEach(post => {
+            if (!post) return;
+
+            const id = String(post.message_id ?? post.id ?? '');
+            if (!id) return;
+
+            incomingIds.add(id);
+
+            const mediaURL = getSafeMediaURL(post);
+            const mediaType = getMediaType(post);
+
+            if (!mediaURL || !mediaType) return;
+
+            if (knownMediaIds.has(id)) return;
+
+            knownMediaIds.add(id);
+
+            incoming.push({
+                id,
+                post,
+                mediaURL,
+                mediaType
+            });
+        });
+
+        // চ্যানেল থেকে কোনো পোস্ট ডিলিট হলে ওয়েবসাইট বা পপআপ থেকেও রিমুভ করার লজিক
+        mediaCards.forEach((card, id) => {
+            if (!incomingIds.has(id)) {
+                card.remove();
+                mediaCards.delete(id);
+                knownMediaIds.delete(id);
+            }
+        });
+
+        pendingMedia = pendingMedia.filter(item => incomingIds.has(item.id));
+
+        if (!incoming.length) {
+            updateLoadMoreUI();
+            return 0;
+        }
+
+        removeStatus();
+
+        const firstBatch =
+            incoming.slice(0, CONFIG.batchSize);
+
+        const overflow =
+            incoming.slice(CONFIG.batchSize);
+
+        if (overflow.length) {
+            pendingMedia = overflow.concat(pendingMedia);
+        }
+
+        prependBatch(firstBatch);
+
+        filterOCPosts(currentSearchQuery);
+        updateLoadMoreUI();
+
+        return incoming.length;
     }
 
-}
+    /* FETCH TELEGRAM MEDIA */
 
+    async function fetchTelegramMedia() {
+        const container = getContainer();
 
-/* ============================================================
-   21. REDUCED MOTION
-   ============================================================ */
+        if (!container || isFetchingMedia) return;
 
-@media (prefers-reduced-motion: reduce) {
+        isFetchingMedia = true;
 
-    *,
-    *::before,
-    *::after {
+        container.setAttribute('aria-busy', 'true');
 
-        scroll-behavior: auto !important;
+        if (!mediaCards.size && !pendingMedia.length) {
+            showStatus(
+                'Loading photos and videos...',
+                'loading'
+            );
+        }
 
-        transition-duration: 0.01ms !important;
+        try {
+            const response = await fetch(CONFIG.apiURL, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                cache: 'no-store'
+            });
 
-        animation-duration: 0.01ms !important;
+            if (!response.ok) {
+                throw new Error(
+                    'Telegram API HTTP error: ' + response.status
+                );
+            }
+
+            const data = await response.json();
+
+            if (
+                data.ok !== true ||
+                !Array.isArray(data.posts)
+            ) {
+                throw new Error(
+                    data.error || 'Invalid Telegram API response.'
+                );
+            }
+
+            renderTelegramPosts(data.posts);
+
+            if (!mediaCards.size && !pendingMedia.length) {
+                showStatus(
+                    'No photos or videos have been published yet.',
+                    'empty'
+                );
+            }
+
+        } catch (error) {
+            console.error(
+                'OC Collection media loading error:',
+                error
+            );
+
+            if (!mediaCards.size && !pendingMedia.length) {
+                showStatus(
+                    'Unable to load media. Please try again later.',
+                    'error'
+                );
+            }
+
+        } finally {
+            isFetchingMedia = false;
+            container.removeAttribute('aria-busy');
+        }
     }
 
-}
+    window.fetchTelegramMedia = fetchTelegramMedia;
+    window.loadMoreOCMedia = renderNextBatch;
 
+    /* AUTOMATIC REFRESH */
 
-/* ============================================================
-   22. FINAL MEDIA FEED SAFETY
-   ============================================================ */
+    function startMediaPolling() {
+        stopMediaPolling();
 
-/*
-   Do not force a fixed card height.
-   Do not force 4:5.
-   Do not crop original media.
-   All loaded cards remain in the vertical feed.
-*/
+        pollingTimer = window.setInterval(() => {
+            const channel = byId(CONFIG.channelId);
 
-#channelPostsContainer > .media-card,
-.oc-channel-timeline > .media-card,
-#media-feed > .media-card {
+            if (channel?.classList.contains('open')) {
+                fetchTelegramMedia();
+            }
+        }, CONFIG.refreshInterval);
+    }
 
-    flex-shrink: 0;
+    function stopMediaPolling() {
+        if (pollingTimer !== null) {
+            window.clearInterval(pollingTimer);
+            pollingTimer = null;
+        }
+    }
 
-    box-sizing: border-box;
-}
+    /* SEARCH FILTER */
 
+    function filterOCPosts(query) {
+        currentSearchQuery =
+            String(query || '').trim().toLowerCase();
 
-/* ============================================================
-   END OF OC COLLECTION UNIVERSE STYLE.CSS
-   ============================================================ */
+        mediaCards.forEach(card => {
+            setCardVisibility(card, currentSearchQuery);
+        });
+
+        updateLoadMoreUI();
+    }
+
+    /* OPEN CHANNEL */
+
+    window.openOCChannel = function () {
+        initializeEvents();
+
+        const channel = byId(CONFIG.channelId);
+
+        if (!channel) {
+            console.error(
+                'OC Collection: Channel window not found.'
+            );
+            return;
+        }
+
+        if (!channel.classList.contains('open')) {
+            previousBodyOverflow =
+                document.body.style.overflow;
+        }
+
+        byId('naughtyWindow')?.classList.remove('open');
+
+        const profileModal = byId('profileModal');
+
+        if (profileModal) {
+            profileModal.style.display = 'none';
+        }
+
+        byId('ocMenuPopover')?.classList.remove('open');
+        byId('ocSearchPanel')?.classList.remove('open');
+
+        const input = byId('ocSearchInput');
+
+        if (input) input.value = '';
+
+        filterOCPosts('');
+
+        channel.classList.add('open');
+
+        channel.setAttribute('aria-hidden', 'false');
+
+        document.body.style.overflow = 'hidden';
+
+        closePopupPlayer();
+        fetchTelegramMedia();
+        startMediaPolling();
+    };
+
+    /* CLOSE CHANNEL */
+
+    window.closeOCChannel = function () {
+        const channel = byId(CONFIG.channelId);
+
+        if (!channel) return;
+
+        channel.classList.remove('open');
+
+        channel.setAttribute('aria-hidden', 'true');
+
+        byId('ocMenuPopover')?.classList.remove('open');
+        byId('ocSearchPanel')?.classList.remove('open');
+
+        const input = byId('ocSearchInput');
+
+        if (input) input.value = '';
+
+        filterOCPosts('');
+
+        closePopupPlayer();
+        stopMediaPolling();
+
+        document.body.style.overflow =
+            previousBodyOverflow;
+    };
+
+    /* MENU */
+
+    window.toggleOCMenu = function () {
+        const menu = byId('ocMenuPopover');
+
+        if (!menu) return;
+
+        const opening = !menu.classList.contains('open');
+
+        menu.classList.toggle('open', opening);
+
+        if (opening) {
+            byId('ocSearchPanel')?.classList.remove('open');
+        }
+    };
+
+    /* SEARCH PANEL */
+
+    window.toggleOCSearch = function () {
+        const panel = byId('ocSearchPanel');
+
+        if (!panel) return;
+
+        const opening = !panel.classList.contains('open');
+
+        panel.classList.toggle('open', opening);
+
+        if (opening) {
+            byId('ocMenuPopover')?.classList.remove('open');
+
+            byId('ocSearchInput')?.focus();
+
+        } else {
+            const input = byId('ocSearchInput');
+
+            if (input) input.value = '';
+
+            filterOCPosts('');
+        }
+    };
+
+    /* FULLSCREEN PLAYER */
+
+    function openPopupPlayer(src, type) {
+        const popup = byId(CONFIG.popupId);
+
+        if (!popup) {
+            console.error(
+                'OC Collection: Popup element not found.'
+            );
+            return;
+        }
+
+        const wrapper =
+            popup.querySelector(CONFIG.popupWrapper);
+
+        if (!wrapper) {
+            console.error(
+                'OC Collection: Popup media wrapper not found.'
+            );
+            return;
+        }
+
+        wrapper.replaceChildren();
+
+        if (type === 'video') {
+            const video = document.createElement('video');
+
+            video.id = 'ocPopupVideoPlayer';
+            video.src = src;
+            video.controls = true;
+            video.autoplay = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.className = 'oc-popup-media-video';
+
+            wrapper.appendChild(video);
+
+            popup.classList.add('open');
+
+            popup.setAttribute('aria-hidden', 'false');
+
+            const playPromise = video.play();
+
+            if (playPromise?.catch) {
+                playPromise.catch(() => {});
+            }
+
+        } else if (type === 'photo') {
+            const img = document.createElement('img');
+
+            img.src = src;
+            img.alt = 'OC Collection photo';
+            img.className = 'oc-popup-media-image';
+
+            wrapper.appendChild(img);
+
+            popup.classList.add('open');
+
+            popup.setAttribute('aria-hidden', 'false');
+        }
+    }
+
+    /* CLOSE PLAYER */
+
+    function closePopupPlayer() {
+        const popup = byId(CONFIG.popupId);
+
+        if (!popup) return;
+
+        const wrapper =
+            popup.querySelector(CONFIG.popupWrapper);
+
+        if (wrapper) {
+            const video = wrapper.querySelector('video');
+
+            if (video) {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+            }
+
+            wrapper.replaceChildren();
+        }
+
+        popup.classList.remove('open');
+
+        popup.setAttribute('aria-hidden', 'true');
+
+        if (
+            lastFocusedCard &&
+            document.contains(lastFocusedCard)
+        ) {
+            lastFocusedCard.focus();
+        }
+
+        lastFocusedCard = null;
+    }
+
+    /* INITIALIZE EVENTS */
+
+    function initializeEvents() {
+        const input = byId('ocSearchInput');
+
+        if (
+            input &&
+            input.dataset.ocInitialized !== 'true'
+        ) {
+            input.dataset.ocInitialized = 'true';
+
+            input.addEventListener('input', function () {
+                filterOCPosts(this.value);
+            });
+        }
+
+        const closeButton = byId('ocPopupCloseBtn');
+
+        if (
+            closeButton &&
+            closeButton.dataset.ocInitialized !== 'true'
+        ) {
+            closeButton.dataset.ocInitialized = 'true';
+
+            closeButton.addEventListener(
+                'click',
+                closePopupPlayer
+            );
+        }
+
+        const popup = byId(CONFIG.popupId);
+
+        if (
+            popup &&
+            popup.dataset.ocInitialized !== 'true'
+        ) {
+            popup.dataset.ocInitialized = 'true';
+
+            popup.addEventListener('click', event => {
+                if (event.target === popup) {
+                    closePopupPlayer();
+                }
+            });
+        }
+
+        const channel = byId(CONFIG.channelId);
+
+        if (
+            !channel ||
+            channel.dataset.ocEventsInitialized === 'true'
+        ) {
+            return;
+        }
+
+        channel.dataset.ocEventsInitialized = 'true';
+
+        document.addEventListener('click', event => {
+            if (!channel.classList.contains('open')) return;
+
+            const menu = byId('ocMenuPopover');
+
+            const menuButton = channel.querySelector(
+                '.oc-menu-btn, .oc-header-action-btn[aria-label="Menu"]'
+            );
+
+            if (
+                menu?.classList.contains('open') &&
+                !menu.contains(event.target) &&
+                !menuButton?.contains(event.target)
+            ) {
+                menu.classList.remove('open');
+            }
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') return;
+
+            const popupElement = byId(CONFIG.popupId);
+
+            if (popupElement?.classList.contains('open')) {
+                closePopupPlayer();
+                return;
+            }
+
+            if (!channel.classList.contains('open')) return;
+
+            const search = byId('ocSearchPanel');
+            const menu = byId('ocMenuPopover');
+
+            if (search?.classList.contains('open')) {
+                window.toggleOCSearch();
+
+            } else if (menu?.classList.contains('open')) {
+                menu.classList.remove('open');
+
+            } else {
+                window.closeOCChannel();
+            }
+        });
+    }
+
+    /* STARTUP */
+
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            initializeEvents
+        );
+    } else {
+        initializeEvents();
+    }
+
+})();
+</script>
