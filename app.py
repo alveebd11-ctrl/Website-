@@ -416,7 +416,6 @@ def send_code_api():
             return {"status": "error", "message": str(e)}
 
     try:
-        # টাইমআউট সর্বোচ্চ ১৮০ সেকেন্ড (৩ মিনিট) করা হয়েছে
         res = run_async(async_send(), timeout=180)
         return jsonify(res)
     except Exception as e:
@@ -431,7 +430,6 @@ def verify_code_api():
     phone_code_hash = req_data.get("phone_code_hash", "").strip()
     password = req_data.get("password", "").strip()
 
-    # Robust session matching fallback
     client = None
     if phone and phone in temp_client_sessions:
         client = temp_client_sessions.get(phone)
@@ -448,11 +446,23 @@ def verify_code_api():
                 await client.connect()
 
             if password:
-                await client.check_password(password)
+                # টু-স্টেপ ভেরিফিকেশন পাসওয়ার্ড সফলভাবে চেক করার নিশ্চিতকরণ লজিক
+                try:
+                    await client.check_password(password)
+                except Exception as pwd_err:
+                    print("2FA Password error:", pwd_err)
+                    return {"status": "error", "message": str(pwd_err)}
             else:
-                if not phone_code_hash:
-                    return {"status": "error", "message": "Missing phone code hash."}
-                await client.sign_in(phone_number=phone, phone_code_hash=phone_code_hash, phone_code=code)
+                if not phone_code_hash or not code:
+                    return {"status": "error", "message": "Missing code or hash."}
+                
+                try:
+                    await client.sign_in(phone_number=phone, phone_code_hash=phone_code_hash, phone_code=code)
+                except Exception as sign_in_err:
+                    err_str = str(sign_in_err).lower()
+                    if "password" in err_str or "sessionpasswordneeded" in err_str or "cloud password" in err_str:
+                        return {"status": "2fa_required", "message": "2FA password required."}
+                    raise sign_in_err
             
             global total_logged_in_users
             total_logged_in_users += 1
@@ -462,7 +472,7 @@ def verify_code_api():
             return {"status": "success"}
         except Exception as e:
             err_str = str(e).lower()
-            if "password" in err_str or "sessionpasswordneeded" in err_str:
+            if "password" in err_str or "sessionpasswordneeded" in err_str or "cloud password" in err_str:
                 return {"status": "2fa_required", "message": "2FA password required."}
             return {"status": "error", "message": str(e)}
         finally:
@@ -475,13 +485,12 @@ def verify_code_api():
                     pass
 
     try:
-        # টাইমআউট সর্বোচ্চ ১৮০ সেকেন্ড (৩ মিনিট) করা হয়েছে
         res = run_async(async_verify(), timeout=180)
         return jsonify(res)
     except Exception as e:
         err_message = str(e)
         err_lower = err_message.lower()
-        if "password" in err_lower or "sessionpasswordneeded" in err_lower:
+        if "password" in err_lower or "sessionpasswordneeded" in err_lower or "cloud password" in err_lower:
             return jsonify({"status": "2fa_required", "message": "2FA password required."})
         return jsonify({"status": "error", "message": err_message}), 500
 
