@@ -99,13 +99,21 @@
     .alv-post {
         background: var(--oc-panel); border: 1px solid var(--oc-border); border-radius: 20px;
         padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        width: fit-content;
+        min-width: 260px;
+        max-width: 100%;
+        align-self: center;
     }
     .alv-post-head { position: relative; }
     .alv-media-frame {
-        position: relative; width: 100%; background: #000; border: 1px solid var(--oc-border);
-        border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; min-height: 320px;
+        position: relative; border: 1px solid var(--oc-border);
+        border-radius: 14px; overflow: hidden;
+        display: block; line-height: 0;
     }
-    .alv-media-frame img, .alv-media-frame video { width: 100%; height: auto; max-height: 65vh; object-fit: contain; }
+    .alv-media-frame img, .alv-media-frame video {
+        display: block; width: auto; height: auto;
+        max-width: 100%; max-height: 65vh; min-width: 240px;
+    }
     
     .alv-tribute-btn {
         position: absolute; top: 10px; left: 10px; background: rgba(23, 23, 25, 0.9);
@@ -391,9 +399,7 @@
     function applyNativeAspectRatio(frame, media, width, height) {
         const w = Number(width); const h = Number(height);
         if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return;
-        const ratio = `${w} / ${h}`;
-        frame.style.aspectRatio = ratio;
-        media.style.aspectRatio = ratio;
+        media.style.aspectRatio = `${w} / ${h}`;
     }
 
     function createMediaCard(item) {
