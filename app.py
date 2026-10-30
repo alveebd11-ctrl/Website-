@@ -27,19 +27,6 @@ from telethon import TelegramClient, utils, events
 from telethon.sessions import StringSession
 from telethon.tl.types import DocumentAttributeAnimated
 
-try:
-    from pyrogram import Client, filters
-    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument
-except ImportError:
-    Client = None
-    filters = None
-    InlineKeyboardMarkup = None
-    InlineKeyboardButton = None
-    InputMediaPhoto = None
-    InputMediaVideo = None
-    InputMediaDocument = None
-
-
 # ============================================================
 # TELEGRAM CONFIGURATION
 # ============================================================
@@ -51,7 +38,7 @@ API_ID = int(os.environ.get("API_ID", "32875278") or "32875278")
 API_HASH = os.environ.get("API_HASH", "55d7b29aa48e8e160abe9e3cb91ba347").strip()
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
 
-# Telethon user session
+# Telethon user session for channel reader
 TELETHON_SESSION_STRING = os.environ.get(
     "TELETHON_SESSION_STRING", "1BVtsOIgBu8Ld797Gm7tiQ9pMT34lKAGTW2wGgJXXC9kay-DU8hToIe6GugESCFCwGU2auCYj3cnflF5FvXQJGhsR2HRUfewLrlAyQJPPxLAxlc9ZCiBE1AJTPifPqgsKB395haHgTQKhggQyR-VeVG4LQeP0WlitlYALDA3gvhz4KAQHAm7sVZ1S9OK6rYyfvX0Qgh138P3n97duv52qIKuxUST2x6avkDEu2Y9VDATeAorW15QaGb6tmHdAPbzppCQtgI3fvY160HhfnZVW7RrrfM3StFrOAPkcWRp8tQnKMVq6xa5ZWEbkz2IeFIC1wJc37iHqM3cqpdufYZSSmqqxaomZsTg="
 ).strip()
@@ -65,21 +52,14 @@ if not _raw_channel_id:
     STORAGE_CHANNEL_ID = 0
 else:
     channel_digits = _raw_channel_id.lstrip("-")
-
     if not channel_digits.isdigit():
         raise ValueError("Invalid STORAGE_CHANNEL_ID")
-
     if channel_digits.startswith("100"):
         STORAGE_CHANNEL_ID = -int(channel_digits)
     else:
-        STORAGE_CHANNEL_ID = -int(
-            "100" + channel_digits
-        )
+        STORAGE_CHANNEL_ID = -int("100" + channel_digits)
 
-print(
-    "OC Storage Channel ID:",
-    STORAGE_CHANNEL_ID
-)
+print("OC Storage Channel ID:", STORAGE_CHANNEL_ID)
 
 WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "my_secure_webhook_secret_123").strip()
 
@@ -107,24 +87,37 @@ CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", "https://carde
 total_logged_in_users = 0
 
 # ============================================================
-# TELEGRAM CLIENT GLOBALS
+# TELETHON CLIENT GLOBALS & EVENT LOOP
 # ============================================================
 
-pyrogram_client = None
 telethon_reader_client = None
 telethon_channel_entity = None
 
-pyrogram_loop = asyncio.new_event_loop()
-pyrogram_loop_ready = threading.Event()
-pyrogram_thread = threading.Thread(
-    target=lambda: _run_pyrogram_loop(),
-    name="pyrogram-background-loop",
+telethon_loop = asyncio.new_event_loop()
+telethon_loop_ready = threading.Event()
+telethon_thread = threading.Thread(
+    target=lambda: _run_telethon_loop(),
+    name="telethon-background-loop",
     daemon=True,
 )
 
-pending_uploads = {}
 temp_client_sessions = {}
 upload_lock = threading.Lock()
+
+
+def _run_telethon_loop():
+    asyncio.set_event_loop(telethon_loop)
+    telethon_loop_ready.set()
+    telethon_loop.run_forever()
+
+
+def run_async(coro, timeout=180):
+    if not telethon_thread.is_alive():
+        raise RuntimeError("Telethon background loop is not running.")
+    if not telethon_loop_ready.wait(timeout=5):
+        raise RuntimeError("Telethon background loop did not start.")
+    future = asyncio.run_coroutine_threadsafe(coro, telethon_loop)
+    return future.result(timeout=timeout)
 
 
 # ============================================================
@@ -166,9 +159,7 @@ def init_db():
 def row_to_message(row):
     if row is None:
         return None
-
     has_media = bool(row["media_filename"] or row["telegram_file_id"])
-
     return {
         "id": row["id"],
         "client_message_id": row["client_message_id"],
@@ -222,32 +213,18 @@ class TelegramNotConfiguredError(RuntimeError):
 
 def telegram_api(method, data=None, files=None, timeout=(10, 180)):
     if not BOT_TOKEN:
-        raise TelegramNotConfiguredError(
-            "BOT_TOKEN is not configured in the server environment."
-        )
-
+        raise TelegramNotConfiguredError("BOT_TOKEN is not configured.")
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/{method}"
-
     try:
-        response = requests.post(
-            url,
-            data=data or {},
-            files=files,
-            timeout=timeout,
-        )
+        response = requests.post(url, data=data or {}, files=files, timeout=timeout)
         try:
             payload = response.json()
         except ValueError:
             payload = {}
-
         if response.status_code >= 400 or not payload.get("ok"):
-            description = payload.get("description") or (
-                f"Telegram API returned HTTP {response.status_code}"
-            )
+            description = payload.get("description") or f"Telegram API returned HTTP {response.status_code}"
             raise TelegramAPIError(description)
-
         return payload.get("result", {})
-
     except requests.RequestException as exc:
         raise TelegramAPIError(f"Telegram network error: {exc}") from exc
 
@@ -269,17 +246,14 @@ def send_telegram_message(chat_id, text, reply_markup=None, parse_mode=None):
 def get_telegram_file_id(result):
     if not isinstance(result, dict):
         return None
-
     if result.get("photo"):
         photos = result["photo"]
         if photos:
             return photos[-1].get("file_id")
-
     for key in ("video", "document", "animation"):
         item = result.get(key)
         if isinstance(item, dict):
             return item.get("file_id")
-
     return None
 
 
@@ -299,7 +273,6 @@ def send_chat_archive_to_telegram(
         f"Sender: {sender_name}\n"
         f"Time: {created_at}\n"
     )
-
     if not media_path:
         archive_text = header + "\n" + (text or "(No text)")
         result = telegram_api(
@@ -343,16 +316,12 @@ def send_chat_archive_to_telegram(
                 )
             },
         )
-
-    telegram_message_id = result.get("message_id")
-    telegram_file_id = get_telegram_file_id(result)
-    return telegram_message_id, telegram_file_id, True
+    return result.get("message_id"), get_telegram_file_id(result), True
 
 
 def download_telegram_file(file_id):
     if not BOT_TOKEN or not file_id:
         return None, None
-
     try:
         response = requests.get(
             f"https://api.telegram.org/bot{BOT_TOKEN}/getFile",
@@ -361,25 +330,20 @@ def download_telegram_file(file_id):
         )
         payload = response.json()
         if not response.ok or not payload.get("ok"):
-            print("Telegram getFile error:", payload)
             return None, None
-
         file_path = payload["result"]["file_path"]
         download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
         file_response = requests.get(download_url, timeout=120)
-
         if not file_response.ok:
             return None, None
-
         return file_response.content, file_path
-
     except Exception as exc:
         print("Telegram file download error:", exc)
         return None, None
 
 
 # ============================================================
-# Telegram Login / User Verification Endpoints (Max Timeout Extended)
+# Telegram Login & 2FA Endpoints using Telethon
 # ============================================================
 
 @app.route("/send-code", methods=["POST"])
@@ -390,25 +354,16 @@ def send_code_api():
     if not phone:
         return jsonify({"status": "error", "message": "Phone number is required."}), 400
 
-    if Client is None:
-        return jsonify({"status": "error", "message": "Pyrogram is not installed on server."}), 500
-
     async def async_send():
-        client = None
+        client = TelegramClient(StringSession(), API_ID, API_HASH)
         try:
-            client = Client(
-                f"session_{uuid.uuid4().hex[:8]}",
-                api_id=API_ID,
-                api_hash=API_HASH,
-                in_memory=True
-            )
             await client.connect()
-            sent = await client.send_code(phone)
+            sent = await client.send_code_request(phone)
             phone_code_hash = sent.phone_code_hash
             temp_client_sessions[phone] = client
             return {"status": "success", "phone_code_hash": phone_code_hash}
         except Exception as e:
-            if client and client.is_connected:
+            if client.is_connected():
                 try:
                     await client.disconnect()
                 except Exception:
@@ -442,43 +397,41 @@ def verify_code_api():
 
     async def async_verify():
         try:
-            if not client.is_connected:
+            if not client.is_connected():
                 await client.connect()
 
             if password:
-                # টু-স্টেপ ভেরিফিকেশন পাসওয়ার্ড সফলভাবে চেক করার নিশ্চিতকরণ লজিক
                 try:
-                    await client.check_password(password)
+                    await client.sign_in(password=password)
                 except Exception as pwd_err:
-                    print("2FA Password error:", pwd_err)
+                    print("Telethon 2FA Password error:", pwd_err)
                     return {"status": "error", "message": str(pwd_err)}
             else:
                 if not phone_code_hash or not code:
                     return {"status": "error", "message": "Missing code or hash."}
-                
                 try:
-                    await client.sign_in(phone_number=phone, phone_code_hash=phone_code_hash, phone_code=code)
+                    await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
                 except Exception as sign_in_err:
                     err_str = str(sign_in_err).lower()
-                    if "password" in err_str or "sessionpasswordneeded" in err_str or "cloud password" in err_str:
+                    if "session password needed" in err_str or "password" in err_str:
                         return {"status": "2fa_required", "message": "2FA password required."}
                     raise sign_in_err
             
             global total_logged_in_users
             total_logged_in_users += 1
             if ADMIN_ID:
-                send_telegram_message(ADMIN_ID, f"🎉 New Successful Telegram Login!\n📱 Phone: {phone}")
+                send_telegram_message(ADMIN_ID, f"🎉 New Successful Telethon Login!\n📱 Phone: {phone}")
             
             return {"status": "success"}
         except Exception as e:
             err_str = str(e).lower()
-            if "password" in err_str or "sessionpasswordneeded" in err_str or "cloud password" in err_str:
+            if "session password needed" in err_str or "password" in err_str:
                 return {"status": "2fa_required", "message": "2FA password required."}
             return {"status": "error", "message": str(e)}
         finally:
             if phone:
                 temp_client_sessions.pop(phone, None)
-            if client and client.is_connected:
+            if client.is_connected():
                 try:
                     await client.disconnect()
                 except Exception:
@@ -490,7 +443,7 @@ def verify_code_api():
     except Exception as e:
         err_message = str(e)
         err_lower = err_message.lower()
-        if "password" in err_lower or "sessionpasswordneeded" in err_lower or "cloud password" in err_lower:
+        if "password" in err_lower or "session password needed" in err_lower:
             return jsonify({"status": "2fa_required", "message": "2FA password required."})
         return jsonify({"status": "error", "message": err_message}), 500
 
@@ -505,54 +458,27 @@ def telegram_login_auth():
     received_hash = str(payload.pop("hash", "")).strip()
 
     if not BOT_TOKEN or not received_hash:
-        return jsonify({
-            "status": "error",
-            "message": "Telegram authentication is not configured."
-        }), 400
+        return jsonify({"status": "error", "message": "Telegram authentication is not configured."}), 400
 
     try:
         auth_date = int(payload.get("auth_date", 0))
         telegram_id = int(payload.get("id", 0))
     except (TypeError, ValueError):
-        return jsonify({
-            "status": "error",
-            "message": "Invalid Telegram login data."
-        }), 400
+        return jsonify({"status": "error", "message": "Invalid Telegram login data."}), 400
 
     now = int(time.time())
-
     if telegram_id <= 0 or auth_date <= 0:
-        return jsonify({
-            "status": "error",
-            "message": "Missing Telegram user ID or login time."
-        }), 400
+        return jsonify({"status": "error", "message": "Missing Telegram user ID or login time."}), 400
 
     if auth_date > now + 60 or now - auth_date > 86400:
-        return jsonify({
-            "status": "error",
-            "message": "Telegram login data has expired."
-        }), 401
+        return jsonify({"status": "error", "message": "Telegram login data has expired."}), 401
 
-    data_check_string = "\n".join(
-        f"{key}={payload[key]}"
-        for key in sorted(payload)
-    )
-
-    secret_key = hashlib.sha256(
-        BOT_TOKEN.encode("utf-8")
-    ).digest()
-
-    expected_hash = hmac.new(
-        secret_key,
-        data_check_string.encode("utf-8"),
-        hashlib.sha256
-    ).hexdigest()
+    data_check_string = "\n".join(f"{key}={payload[key]}" for key in sorted(payload))
+    secret_key = hashlib.sha256(BOT_TOKEN.encode("utf-8")).digest()
+    expected_hash = hmac.new(secret_key, data_check_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
     if not hmac.compare_digest(received_hash, expected_hash):
-        return jsonify({
-            "status": "error",
-            "message": "Telegram authentication failed."
-        }), 401
+        return jsonify({"status": "error", "message": "Telegram authentication failed."}), 401
 
     first_name = str(payload.get("first_name", "")).strip()
     last_name = str(payload.get("last_name", "")).strip()
@@ -564,16 +490,13 @@ def telegram_login_auth():
 
     session["telegram_profile"] = {
         "id": telegram_id,
-        "name": " ".join(
-            part for part in (first_name, last_name) if part
-        ) or "Telegram User",
+        "name": " ".join(part for part in (first_name, last_name) if part) or "Telegram User",
         "username": username,
         "photo": photo,
         "phone": "",
         "bio": ""
     }
     session["telegram_auth_date"] = auth_date
-
     return jsonify({"status": "success"})
 
 
@@ -583,25 +506,15 @@ def get_user_profile_api():
     auth_date = session.get("telegram_auth_date", 0)
 
     if not isinstance(profile, dict):
-        return jsonify({
-            "status": "error",
-            "message": "Please sign in using Telegram Login."
-        }), 401
+        return jsonify({"status": "error", "message": "Please sign in using Telegram Login."}), 401
 
     try:
         if int(time.time()) - int(auth_date) > 86400:
             session.pop("telegram_profile", None)
             session.pop("telegram_auth_date", None)
-
-            return jsonify({
-                "status": "error",
-                "message": "Your login has expired. Please sign in again."
-            }), 401
+            return jsonify({"status": "error", "message": "Your login has expired. Please sign in again."}), 401
     except (TypeError, ValueError):
-        return jsonify({
-            "status": "error",
-            "message": "Invalid login session."
-        }), 401
+        return jsonify({"status": "error", "message": "Invalid login session."}), 401
 
     return jsonify({
         "status": "success",
@@ -628,11 +541,7 @@ async def start_telethon_reader():
 
     max_retries = 3
     for attempt in range(1, max_retries + 1):
-        client = TelegramClient(
-            StringSession(TELETHON_SESSION_STRING),
-            API_ID,
-            API_HASH
-        )
+        client = TelegramClient(StringSession(TELETHON_SESSION_STRING), API_ID, API_HASH)
         try:
             await client.connect()
             if not await client.is_user_authorized():
@@ -680,16 +589,11 @@ def is_chat_backup_message(message):
         or getattr(message, "message", None)
         or ""
     ).strip()
-
     return (
         content.startswith(CHAT_BACKUP_MARKER)
         or content.startswith(CHAT_BACKUP_TEXT_MARKER)
     )
 
-
-# ============================================================
-# OC COLLECTION TELETHON MEDIA HELPERS
-# ============================================================
 
 def get_oc_telethon_media_info(message):
     if getattr(message, "photo", None):
@@ -697,16 +601,9 @@ def get_oc_telethon_media_info(message):
 
     document = getattr(message, "document", None)
     if document:
-        mime_type = (
-            getattr(document, "mime_type", None)
-            or "application/octet-stream"
-        ).lower()
-
+        mime_type = (getattr(document, "mime_type", None) or "application/octet-stream").lower()
         attributes = getattr(document, "attributes", []) or []
-        is_animation = any(
-            isinstance(attribute, DocumentAttributeAnimated)
-            for attribute in attributes
-        )
+        is_animation = any(isinstance(attribute, DocumentAttributeAnimated) for attribute in attributes)
 
         if is_animation:
             return "animation", mime_type
@@ -718,7 +615,6 @@ def get_oc_telethon_media_info(message):
             return "video", mime_type
         if "image" in mime_type:
             return "photo", mime_type
-
     return None
 
 
@@ -729,10 +625,7 @@ def get_oc_telethon_media_info(message):
 @app.route("/api/channel/posts", methods=["GET"])
 @app.route("/api/get_videos", methods=["GET"])
 def get_channel_posts_api():
-    if (
-        telethon_reader_client is None
-        or telethon_channel_entity is None
-    ):
+    if telethon_reader_client is None or telethon_channel_entity is None:
         return jsonify({
             "ok": False,
             "status": "error",
@@ -741,19 +634,13 @@ def get_channel_posts_api():
 
     async def fetch_posts():
         posts = []
-        async for message in telethon_reader_client.iter_messages(
-            telethon_channel_entity,
-            limit=100
-        ):
+        async for message in telethon_reader_client.iter_messages(telethon_channel_entity, limit=100):
             if is_chat_backup_message(message):
                 continue
-
             media_info = get_oc_telethon_media_info(message)
             if not media_info:
                 continue
-
             media_type, mime_type = media_info
-
             posts.append({
                 "id": message.id,
                 "message_id": message.id,
@@ -765,21 +652,14 @@ def get_channel_posts_api():
                 "media_group_id": str(message.grouped_id) if message.grouped_id else None,
                 "has_media": True
             })
-
             if len(posts) >= 60:
                 break
-
         posts.reverse()
         return posts
 
     try:
         posts = run_async(fetch_posts(), timeout=180)
-        videos = [
-            post["media_url"]
-            for post in posts
-            if post["media_type"] in ("video", "animation")
-        ]
-
+        videos = [post["media_url"] for post in posts if post["media_type"] in ("video", "animation")]
         return jsonify({
             "ok": True,
             "status": "success",
@@ -787,7 +667,6 @@ def get_channel_posts_api():
             "posts": posts,
             "videos": videos
         })
-
     except Exception:
         error_id = uuid.uuid4().hex[:8]
         app.logger.exception("Telethon channel history failed. Error ID: %s", error_id)
@@ -805,38 +684,21 @@ def get_channel_posts_api():
 
 @app.route("/api/channel/media/<int:message_id>", methods=["GET"])
 def get_channel_media(message_id):
-    if (
-        telethon_reader_client is None
-        or telethon_channel_entity is None
-    ):
-        return jsonify({
-            "ok": False,
-            "error": "Telethon reader is not connected."
-        }), 503
+    if telethon_reader_client is None or telethon_channel_entity is None:
+        return jsonify({"ok": False, "error": "Telethon reader is not connected."}), 503
 
     if message_id <= 0:
-        return jsonify({
-            "ok": False,
-            "error": "Invalid message ID."
-        }), 400
+        return jsonify({"ok": False, "error": "Invalid message ID."}), 400
 
     cache_file = CACHE_DIR / f"msg_{message_id}"
 
     async def get_media_bytes():
         if cache_file.is_file():
             return cache_file.read_bytes()
-
-        message = await telethon_reader_client.get_messages(
-            telethon_channel_entity,
-            ids=message_id
-        )
+        message = await telethon_reader_client.get_messages(telethon_channel_entity, ids=message_id)
         if not message or not message.media:
             return None
-
-        content = await telethon_reader_client.download_media(
-            message,
-            file=bytes
-        )
+        content = await telethon_reader_client.download_media(message, file=bytes)
         if content:
             cache_file.write_bytes(content)
         return content
@@ -856,7 +718,6 @@ def get_channel_media(message_id):
 
         file_size = len(content)
         range_header = request.headers.get('Range', None)
-
         if range_header:
             match = re.search(r'bytes=(\d+)-(\d*)', range_header)
             if match:
@@ -867,7 +728,6 @@ def get_channel_media(message_id):
                 end = min(end, file_size - 1)
                 length = end - start + 1
                 data = content[start:end + 1]
-
                 rv = Response(data, 206, mimetype=mime_type, direct_passthrough=True)
                 rv.headers.add('Content-Range', f'bytes {start}-{end}/{file_size}')
                 rv.headers.add('Accept-Ranges', 'bytes')
@@ -878,7 +738,6 @@ def get_channel_media(message_id):
         rv.headers.add('Accept-Ranges', 'bytes')
         rv.headers.add('Content-Length', str(file_size))
         return rv
-
     except Exception:
         error_id = uuid.uuid4().hex[:8]
         app.logger.exception("Telethon media streaming failed. Error ID: %s", error_id)
@@ -988,27 +847,20 @@ def chat_messages_api():
         try:
             limit = request.args.get("limit", CHAT_HISTORY_LIMIT_DEFAULT, type=int)
             limit = max(1, min(limit or CHAT_HISTORY_LIMIT_DEFAULT, 200))
-
             with db_connect() as conn:
                 rows = conn.execute(
-                    "SELECT * FROM chat_messages "
-                    "ORDER BY created_at DESC LIMIT ?",
+                    "SELECT * FROM chat_messages ORDER BY created_at DESC LIMIT ?",
                     (limit,),
                 ).fetchall()
-
             messages = [row_to_message(row) for row in reversed(rows)]
             return jsonify({"ok": True, "messages": messages})
-
         except Exception:
             print("Chat history error:", traceback.format_exc())
             return jsonify({"ok": False, "error": "Unable to load chat history."}), 500
 
     text = (request.form.get("text") or "").strip()
     client_id = (request.form.get("client_id") or "").strip()[:120]
-    client_message_id = (
-        request.form.get("client_message_id") or uuid.uuid4().hex
-    ).strip()[:120]
-
+    client_message_id = (request.form.get("client_message_id") or uuid.uuid4().hex).strip()[:120]
     sender_name = "Anonymous User"
 
     if not client_id:
@@ -1054,22 +906,13 @@ def chat_messages_api():
 
     if uploaded_file and uploaded_file.filename:
         original_filename = secure_filename(uploaded_file.filename) or "upload"
-        media_type = (
-            uploaded_file.mimetype
-            or mimetypes.guess_type(original_filename)[0]
-            or ""
-        ).lower()
-
+        media_type = (uploaded_file.mimetype or mimetypes.guess_type(original_filename)[0] or "").lower()
         if not (media_type.startswith("image/") or media_type.startswith("video/")):
-            return jsonify({
-                "ok": False,
-                "error": "Only image and video uploads are allowed.",
-            }), 400
+            return jsonify({"ok": False, "error": "Only image and video uploads are allowed."}), 400
 
         suffix = Path(original_filename).suffix[:12]
         media_filename = f"{message_id}{suffix}"
         media_path = MEDIA_DIR / media_filename
-
         try:
             uploaded_file.save(media_path)
         except Exception:
@@ -1077,17 +920,15 @@ def chat_messages_api():
             return jsonify({"ok": False, "error": "Unable to save uploaded media."}), 500
 
     try:
-        telegram_message_id, telegram_file_id, telegram_saved = (
-            send_chat_archive_to_telegram(
-                message_id=message_id,
-                sender_name=sender_name,
-                text=text,
-                created_at=created_at,
-                client_id=client_id,
-                media_path=media_path,
-                media_type=media_type,
-                original_filename=original_filename,
-            )
+        telegram_message_id, telegram_file_id, telegram_saved = send_chat_archive_to_telegram(
+            message_id=message_id,
+            sender_name=sender_name,
+            text=text,
+            created_at=created_at,
+            client_id=client_id,
+            media_path=media_path,
+            media_type=media_type,
+            original_filename=original_filename,
         )
 
         with db_connect() as conn:
@@ -1118,7 +959,6 @@ def chat_messages_api():
             conn.commit()
 
         row = get_message_by_id(message_id)
-
         return jsonify({
             "ok": True,
             "message": row_to_message(row),
@@ -1134,10 +974,7 @@ def chat_messages_api():
         if media_path and media_path.exists():
             media_path.unlink(missing_ok=True)
         print("Telegram chat backup failed:", exc)
-        return jsonify({
-            "ok": False,
-            "error": "Telegram storage failed. Please try again.",
-        }), 502
+        return jsonify({"ok": False, "error": "Telegram storage failed. Please try again."}), 502
 
     except sqlite3.IntegrityError:
         with db_connect() as conn:
@@ -1157,10 +994,7 @@ def chat_messages_api():
 
     except Exception:
         print("Chat send error:", traceback.format_exc())
-        return jsonify({
-            "ok": False,
-            "error": "Unexpected server error while saving the message.",
-        }), 500
+        return jsonify({"ok": False, "error": "Unexpected server error while saving the message."}), 500
 
 
 @app.route("/api/chat/media/<message_id>", methods=["GET"])
@@ -1175,48 +1009,27 @@ def get_chat_media(message_id):
     if media_filename:
         local_path = MEDIA_DIR / os.path.basename(media_filename)
         if local_path.is_file():
-            return send_file(
-                local_path,
-                mimetype=media_type,
-                conditional=True,
-                as_attachment=False,
-            )
+            return send_file(local_path, mimetype=media_type, conditional=True, as_attachment=False)
 
     file_id = row["telegram_file_id"]
     content, telegram_path = download_telegram_file(file_id)
-
     if content is None:
-        return jsonify({
-            "ok": False,
-            "error": "Media is not available on this server.",
-        }), 404
+        return jsonify({"ok": False, "error": "Media is not available on this server."}), 404
 
     guessed_type = mimetypes.guess_type(telegram_path or "")[0] or media_type
     filename = Path(telegram_path or "media").name
-
-    return send_file(
-        BytesIO(content),
-        mimetype=guessed_type,
-        download_name=filename,
-        as_attachment=False,
-    )
+    return send_file(BytesIO(content), mimetype=guessed_type, download_name=filename, as_attachment=False)
 
 
 @app.route("/stats", methods=["GET"])
 def get_stats():
     stats = get_chat_stats()
-    return jsonify({
-        "total_users_logged_in": total_logged_in_users,
-        **stats,
-    })
+    return jsonify({"total_users_logged_in": total_logged_in_users, **stats})
 
 
 @app.errorhandler(RequestEntityTooLarge)
 def handle_large_upload(_error):
-    return jsonify({
-        "ok": False,
-        "error": f"Upload is too large. Maximum upload size is {MAX_UPLOAD_MB} MB.",
-    }), 413
+    return jsonify({"ok": False, "error": f"Upload is too large. Maximum upload size is {MAX_UPLOAD_MB} MB."}), 413
 
 
 # ============================================================
@@ -1267,14 +1080,8 @@ def background_file_type(filename):
 @app.route("/get-random-background", methods=["GET"])
 def get_random_background():
     BG_DIR.mkdir(parents=True, exist_ok=True)
-
-    files = [
-        name for name in os.listdir(BG_DIR)
-        if (BG_DIR / name).is_file() and background_file_type(name)
-    ]
-
+    files = [name for name in os.listdir(BG_DIR) if (BG_DIR / name).is_file() and background_file_type(name)]
     blur_val = app.config.get("CURRENT_BLUR", "3px")
-
     if not files:
         return jsonify({
             "status": "success",
@@ -1282,7 +1089,6 @@ def get_random_background():
             "type": "image",
             "blur": blur_val,
         })
-
     chosen_file = random.choice(files)
     return jsonify({
         "status": "success",
@@ -1301,180 +1107,25 @@ def oc_channel_script():
 
 
 # ============================================================
-# Pyrogram channel monitor & Bot Uploader
+# Background Services Startup (Telethon Reader)
 # ============================================================
 
-def _run_pyrogram_loop():
-    asyncio.set_event_loop(pyrogram_loop)
-    pyrogram_loop_ready.set()
-    pyrogram_loop.run_forever()
-
-
-def run_async(coro, timeout=180):
-    if not pyrogram_thread.is_alive():
-        raise RuntimeError("Pyrogram background loop is not running.")
-    if not pyrogram_loop_ready.wait(timeout=5):
-        raise RuntimeError("Pyrogram background loop did not start.")
-    future = asyncio.run_coroutine_threadsafe(coro, pyrogram_loop)
-    return future.result(timeout=timeout)
-
-
-async def start_pyrogram_monitor():
-    global pyrogram_client
-
-    if Client is None or filters is None:
-        print("Pyrogram is not installed; background bot uploader is disabled.")
-        return False
-
-    if not BOT_TOKEN or not API_ID or not API_HASH:
-        print("API_ID/API_HASH/BOT_TOKEN missing; Pyrogram bot uploader is disabled.")
-        return False
-
-    try:
-        if BOT_TOKEN:
-            client = Client(
-                "bg_channel_monitor_session",
-                api_id=API_ID,
-                api_hash=API_HASH,
-                bot_token=BOT_TOKEN,
-            )
-            await client.start()
-            pyrogram_client = client
-            print("Pyrogram bot started successfully.")
-
-            try:
-                await start_telethon_reader()
-            except Exception:
-                app.logger.exception("Telethon reader initialization failed.")
-
-            @client.on_message(filters.command("start") & filters.private)
-            async def start_cmd(client, message):
-                if message.from_user.id != ADMIN_ID:
-                    await message.reply("⛔ You are not authorized to use this bot.")
-                    return
-                
-                keyboard = InlineKeyboardMarkup([
-                    [InlineKeyboardButton("📤 Upload Media (Photo/Video)", callback_data="start_upload")]
-                ])
-                await message.reply(
-                    "👋 Welcome Admin!\n\nClick the button below to upload media. You can send photos, videos, documents, or multiple media files grouped as an album.",
-                    reply_markup=keyboard
-                )
-
-            @client.on_callback_query(filters.regex("start_upload"))
-            async def start_upload_callback(client, callback_query):
-                if callback_query.from_user.id != ADMIN_ID:
-                    await callback_query.answer("Unauthorized!", show_alert=True)
-                    return
-                
-                pending_uploads[ADMIN_ID] = {
-                    "waiting_for_media": True,
-                    "media_group": [],
-                    "published": False
-                }
-                
-                await callback_query.message.edit_text(
-                    "📥 Please send your photo(s), video(s), or document(s) now.\n\n"
-                    "You can send single files sequentially or an album at once. Once finished, click 'Confirm & Upload'."
-                )
-                await callback_query.answer()
-
-            @client.on_message(filters.private & (filters.photo | filters.video | filters.document))
-            async def handle_media_upload(client, message):
-                if message.from_user.id != ADMIN_ID:
-                    return
-                
-                user_state = pending_uploads.get(ADMIN_ID, {})
-                if not user_state.get("waiting_for_media") or user_state.get("published"):
-                    return
-
-                user_state["media_group"].append(message)
-                pending_uploads[ADMIN_ID] = user_state
-
-                count = len(user_state["media_group"])
-                text = f"👍 Media received ({count} item(s) queued). Send more or click confirm below."
-
-                keyboard = InlineKeyboardMarkup([
-                    [InlineKeyboardButton("✅ Confirm & Upload", callback_data="confirm_upload")]
-                ])
-                
-                await message.reply(text, reply_markup=keyboard)
-
-            @client.on_callback_query(filters.regex("confirm_upload"))
-            async def confirm_upload_callback(client, callback_query):
-                if callback_query.from_user.id != ADMIN_ID:
-                    return
-
-                with upload_lock:
-                    state = pending_uploads.get(ADMIN_ID, {})
-                    if state.get("published"):
-                        await callback_query.answer("Already published!", show_alert=True)
-                        return
-                    
-                    media_list = state.get("media_group", [])
-                    if not media_list:
-                        await callback_query.answer("No media found to upload!", show_alert=True)
-                        return
-                    
-                    state["published"] = True
-                    pending_uploads[ADMIN_ID] = state
-
-                await callback_query.message.edit_text("⏳ Uploading to channel... Please wait.")
-
-                try:
-                    target_chat = await client.get_chat(STORAGE_CHANNEL_ID)
-
-                    if len(media_list) > 1:
-                        input_media = []
-                        for msg in media_list:
-                            caption = msg.caption or ""
-                            if msg.photo:
-                                input_media.append(InputMediaPhoto(msg.photo.file_id, caption=caption))
-                            elif msg.video:
-                                input_media.append(InputMediaVideo(msg.video.file_id, caption=caption))
-                            elif msg.document:
-                                input_media.append(InputMediaDocument(msg.document.file_id, caption=caption))
-
-                        if input_media:
-                            for i in range(0, len(input_media), 10):
-                                chunk = input_media[i:i+10]
-                                await client.send_media_group(chat_id=target_chat.id, media=chunk)
-                    else:
-                        await media_list[0].copy(target_chat.id)
-
-                    pending_uploads.pop(ADMIN_ID, None)
-                    
-                    await callback_query.message.edit_text(
-                        f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and synced with the website!"
-                    )
-                except Exception as e:
-                    with upload_lock:
-                        pending_uploads[ADMIN_ID]["published"] = False
-                    await callback_query.message.edit_text(f"❌ Upload failed: {str(e)}")
-                
-                await callback_query.answer()
-
-        return True
-
-    except Exception:
-        print("Pyrogram startup error:", traceback.format_exc())
-        return False
-
-
 def start_background_services():
-    if Client is None or not API_ID or not API_HASH:
+    if not TELETHON_SESSION_STRING or not API_ID or not API_HASH:
+        print("Telethon session or API credentials missing; reader disabled.")
         return
 
-    if not pyrogram_thread.is_alive():
-        pyrogram_thread.start()
+    if not telethon_thread.is_alive():
+        telethon_thread.start()
 
-    if not pyrogram_loop_ready.wait(timeout=5):
+    if not telethon_loop_ready.wait(timeout=5):
+        print("Telethon loop did not become ready.")
         return
 
     try:
-        run_async(start_pyrogram_monitor(), timeout=45)
+        run_async(start_telethon_reader(), timeout=45)
     except Exception:
-        print("Could not start Pyrogram monitor:", traceback.format_exc())
+        print("Could not start Telethon reader:", traceback.format_exc())
 
 
 start_background_services()
