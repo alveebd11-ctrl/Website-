@@ -1056,6 +1056,15 @@ def dashboard_page():
     return "dashboard.html not found", 404
 
 
+# New route added for the Premium Media Viewer page
+@app.route("/oc-collection.html", methods=["GET"])
+def oc_collection_page():
+    page_path = BASE_DIR / "oc-collection.html"
+    if page_path.is_file():
+        return send_file(page_path)
+    return "oc-collection.html not found", 404
+
+
 def background_file_type(filename):
     ext = Path(filename).suffix.lower()
     if ext in {".mp4", ".mov", ".webm", ".mkv", ".m4v"}:
