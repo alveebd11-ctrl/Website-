@@ -430,7 +430,6 @@ def verify_code_api():
     phone_code_hash = req_data.get("phone_code_hash", "").strip()
     password = req_data.get("password", "").strip()
 
-    # Fixed fallback: if phone is missing or expired, fetch the active session from temp_client_sessions
     client = None
     if phone and phone in temp_client_sessions:
         client = temp_client_sessions.get(phone)
