@@ -1,4 +1,3 @@
-
 /* OC COLLECTION UNIVERSE — Telegram Media Feed
    Original aspect ratios | 10-item batches | Infinite scroll */
 (function () {
@@ -9,7 +8,7 @@
         channelId: 'ocChannelWindow',
         popupId: 'ocVideoPopup',
         popupWrapper: '.oc-popup-video-wrapper',
-        apiURL: '/api/get_videos',
+        apiURL: '/api/channel/posts', // ব্যাকএন্ড রাউটের সাথে সামঞ্জস্য রাখা হয়েছে
         refreshInterval: 30000,
         batchSize: 10,
         observerRootMargin: '400px 0px'
@@ -53,21 +52,9 @@
     /* SAFE MEDIA URL */
 
     function getSafeMediaURL(post) {
-        if (!post || typeof post.media_url !== 'string') return null;
-
-        try {
-            const url = new URL(post.media_url, window.location.origin);
-
-            if (url.origin !== window.location.origin) return null;
-
-            if (!/^\/api\/channel\/media\/\d+\/?$/.test(url.pathname)) {
-                return null;
-            }
-
-            return url.href;
-        } catch (_) {
-            return null;
-        }
+        const postId = post.message_id ?? post.id;
+        if (!postId) return null;
+        return `/api/chat/media/${postId}`;
     }
 
     /* MEDIA TYPE */
@@ -188,6 +175,17 @@
                     card.dataset.aspectRatio =
                         img.naturalWidth + ':' + img.naturalHeight;
                 }
+
+                // আপনার দেওয়া ডিবাগিং স্ক্রিপ্ট এখানে সঠিকভাবে সংযুক্ত করা হয়েছে
+                console.log('OC PHOTO DIMENSIONS:', {
+                    originalWidth: img.naturalWidth,
+                    originalHeight: img.naturalHeight,
+                    originalRatio: (
+                        img.naturalWidth / img.naturalHeight
+                    ).toFixed(3),
+                    displayedWidth: img.getBoundingClientRect().width,
+                    displayedHeight: img.getBoundingClientRect().height
+                });
             }, { once: true });
 
             img.addEventListener(
@@ -332,7 +330,6 @@
 
         container.prepend(fragment);
 
-        // Preserve the reader's scroll position when new posts arrive.
         if (wasScrolled) {
             container.scrollTop +=
                 container.scrollHeight - oldHeight;
@@ -403,24 +400,26 @@
         }
     }
 
-    /* PROCESS TELEGRAM POSTS */
+    /* PROCESS TELEGRAM POSTS & REMOVE DELETED */
 
     function renderTelegramPosts(posts) {
         if (!Array.isArray(posts)) return 0;
 
+        const incomingIds = new Set();
         const incoming = [];
 
         posts.forEach(post => {
             if (!post) return;
 
+            const id = String(post.message_id ?? post.id ?? '');
+            if (!id) return;
+
+            incomingIds.add(id);
+
             const mediaURL = getSafeMediaURL(post);
             const mediaType = getMediaType(post);
 
             if (!mediaURL || !mediaType) return;
-
-            const id = String(
-                post.message_id ?? post.id ?? mediaURL
-            );
 
             if (knownMediaIds.has(id)) return;
 
@@ -433,6 +432,17 @@
                 mediaType
             });
         });
+
+        // চ্যানেল থেকে কোনো পোস্ট ডিলিট হলে ওয়েবসাইট বা পপআপ থেকেও রিমুভ করার লজিক
+        mediaCards.forEach((card, id) => {
+            if (!incomingIds.has(id)) {
+                card.remove();
+                mediaCards.delete(id);
+                knownMediaIds.delete(id);
+            }
+        });
+
+        pendingMedia = pendingMedia.filter(item => incomingIds.has(item.id));
 
         if (!incoming.length) {
             updateLoadMoreUI();
@@ -451,7 +461,6 @@
             pendingMedia = overflow.concat(pendingMedia);
         }
 
-        // API posts must be ordered newest first.
         prependBatch(firstBatch);
 
         filterOCPosts(currentSearchQuery);
@@ -497,7 +506,7 @@
             const data = await response.json();
 
             if (
-                data.status !== 'success' ||
+                data.ok !== true ||
                 !Array.isArray(data.posts)
             ) {
                 throw new Error(
