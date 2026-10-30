@@ -394,6 +394,64 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
+# Telethon Media Cache Helper (NEW)
+# ============================================================
+
+async def cache_channel_media_telethon(message_id: int) -> bool:
+    """Download media from channel using Telethon and save to CACHE_DIR.
+    Supports files far larger than 20 MB (up to \~2GB / 4GB).
+    """
+    global telethon_reader_client, telethon_channel_entity
+
+    if not telethon_reader_client or not telethon_channel_entity:
+        print(f"[Cache] Telethon not ready for message {message_id}")
+        return False
+
+    try:
+        msgs = await telethon_reader_client.get_messages(telethon_channel_entity, ids=message_id)
+        msg = msgs[0] if isinstance(msgs, (list, tuple)) else msgs
+
+        if not msg or not getattr(msg, "media", None):
+            print(f"[Cache] No media found for message {message_id}")
+            return False
+
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Clean any previous partial files for this message_id
+        for old in CACHE_DIR.glob(f"{message_id}*"):
+            try:
+                old.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        target = CACHE_DIR / str(message_id)
+        downloaded_path = await telethon_reader_client.download_media(msg, file=str(target))
+
+        if downloaded_path:
+            print(f"[Cache] Successfully cached message {message_id} → {downloaded_path}")
+            return True
+
+        print(f"[Cache] download_media returned None for {message_id}")
+        return False
+
+    except Exception as e:
+        print(f"[Cache] Telethon error for message {message_id}: {e}")
+        traceback.print_exc()
+        return False
+
+
+def find_cached_media(message_id: int) -> Optional[Path]:
+    """Find the cached file for a given message_id (handles any extension)."""
+    if not CACHE_DIR.exists():
+        return None
+    matches = list(CACHE_DIR.glob(f"{message_id}*"))
+    # Prefer the largest file if multiple (rare)
+    if not matches:
+        return None
+    return max(matches, key=lambda p: p.stat().st_size if p.is_file() else 0)
+
+
+# ============================================================
 # Telegram Login Endpoints
 # ============================================================
 
@@ -676,7 +734,7 @@ def get_channel_posts_api():
 
 
 # ============================================================
-# API: STREAM TELEGRAM MEDIA VIA BOT API
+# API: STREAM TELEGRAM MEDIA VIA CACHE / BOT API (UPDATED)
 # ============================================================
 
 @app.route("/api/channel/media/<int:message_id>", methods=["GET"])
@@ -688,24 +746,50 @@ def get_channel_media(message_id):
                 (message_id,)
             ).fetchone()
 
-        if not row or not row["telegram_file_id"]:
+        if not row:
             return jsonify({"ok": False, "error": "Media not found."}), 404
 
-        file_id = row["telegram_file_id"]
-        content, telegram_path = download_telegram_file(file_id)
+        media_type = (row["media_type"] or "photo").lower()
+        if media_type in ("video", "animation"):
+            default_mime = "video/mp4"
+        else:
+            default_mime = "image/jpeg"
 
+        # ---------- 1. Prefer local Telethon cache ----------
+        cached_path = find_cached_media(message_id)
+        if cached_path and cached_path.is_file():
+            mime_type = mimetypes.guess_type(str(cached_path))[0] or default_mime
+            return send_file(
+                cached_path,
+                mimetype=mime_type,
+                conditional=True,
+                as_attachment=False
+            )
+
+        # ---------- 2. Fallback: Bot API download + cache it ----------
+        file_id = row["telegram_file_id"]
+        if not file_id:
+            return jsonify({"ok": False, "error": "Media not found."}), 404
+
+        content, telegram_path = download_telegram_file(file_id)
         if content is None:
             return jsonify({"ok": False, "error": "Telegram media download failed."}), 404
 
-        media_type = row["media_type"] or "image/jpeg"
-        if media_type == "video":
-            mime_type = "video/mp4"
-        elif media_type == "animation":
-            mime_type = "video/mp4"
-        else:
-            mime_type = "image/jpeg"
+        # Save to cache for next time (even if it came from Bot API)
+        try:
+            CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            # Try to keep a sensible extension
+            ext = Path(telegram_path or "").suffix or (".mp4" if media_type in ("video", "animation") else ".jpg")
+            cache_file = CACHE_DIR / f"{message_id}{ext}"
+            with open(cache_file, "wb") as f:
+                f.write(content)
+            print(f"[Cache] Saved Bot-API fallback for {message_id} → {cache_file}")
+        except Exception as e:
+            print(f"[Cache] Failed to write fallback cache: {e}")
 
+        mime_type = mimetypes.guess_type(telegram_path or "")[0] or default_mime
         file_size = len(content)
+
         range_header = request.headers.get('Range', None)
         if range_header:
             match = re.search(r'bytes=(\d+)-(\d*)', range_header)
@@ -727,6 +811,7 @@ def get_channel_media(message_id):
         rv.headers.add('Accept-Ranges', 'bytes')
         rv.headers.add('Content-Length', str(file_size))
         return rv
+
     except Exception:
         error_id = uuid.uuid4().hex[:8]
         app.logger.exception("Media streaming failed. Error ID: %s", error_id)
@@ -1268,10 +1353,19 @@ async def start_pyrogram_monitor():
                             )
                         conn.commit()
 
+                    # ---------- NEW: Cache every uploaded media via Telethon ----------
+                    for s_msg in sent_msgs:
+                        try:
+                            # Large timeout for big files
+                            run_async(cache_channel_media_telethon(s_msg.id), timeout=600)
+                        except Exception as cache_err:
+                            print(f"[Cache] Failed to cache message {s_msg.id}: {cache_err}")
+
                     pending_uploads.pop(ADMIN_ID, None)
                     
                     await callback_query.message.edit_text(
-                        f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and synced with the website!"
+                        f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and synced with the website!\n"
+                        f"(Media also cached locally via Telethon)"
                     )
                 except Exception as e:
                     with upload_lock:
