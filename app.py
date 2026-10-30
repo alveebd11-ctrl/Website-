@@ -25,7 +25,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 # Telethon imports
 from telethon import TelegramClient, events, utils
 from telethon.sessions import StringSession
-from telethon.tl.types import DocumentAttributeAnimated, InputMediaPhoto, InputMediaVideo, InputMediaDocument
+from telethon.tl.types import DocumentAttributeAnimated
 from telethon.tl.custom import Button
 
 # ============================================================
@@ -651,7 +651,6 @@ async def start_telethon_services():
                     if len(media_list) > 1:
                         files_to_send = []
                         for msg in media_list:
-                            caption = msg.text or ""
                             file_downloaded = await msg.download_media()
                             files_to_send.append(file_downloaded)
                         
@@ -663,7 +662,7 @@ async def start_telethon_services():
                         await bot_client.send_file(STORAGE_CHANNEL_ID, media_list[0], caption=media_list[0].text or "")
 
                     pending_uploads.pop(ADMIN_ID, None)
-                    await event.edit(f"🎉 Successfully published {len(media_list)} file(s) to the Telegram channel and synced with the website!")
+                    await event.edit(f"🎉 Successfully published {len(media_list)} file(s) toканале and synced with the website!")
                 except Exception as e:
                     with upload_lock:
                         pending_uploads[ADMIN_ID]["published"] = False
