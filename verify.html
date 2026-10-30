@@ -657,7 +657,6 @@
                 if(res.ok && data.status === "success") {
                     startSuccessAnimation();
                 } else {
-                    alert("Incorrect Password! Please try again.");
                     passwordInputEl.classList.add('error-shake');
                     setTimeout(() => {
                         passwordInputEl.classList.remove('error-shake');
@@ -668,7 +667,6 @@
             })
             .catch(err => {
                 verifyPassBtn.classList.remove('loading');
-                alert("Password verification connection error!");
                 passwordInputEl.classList.add('error-shake');
                 setTimeout(() => {
                     passwordInputEl.classList.remove('error-shake');
