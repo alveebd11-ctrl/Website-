@@ -1,6 +1,8 @@
+
 Flask
 flask-cors
 requests
-Telethon>=1.40,<2
+Pyrogram==2.0.106
 TgCrypto
-werkzeug
+Telethon>=1.40,<2
+Werkzeug
