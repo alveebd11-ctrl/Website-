@@ -379,7 +379,7 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telegram Login / User Verification Endpoints (Fixed & Robust)
+# Telegram Login / User Verification Endpoints (Fixed 2FA Logic)
 # ============================================================
 
 @app.route("/send-code", methods=["POST"])
@@ -430,6 +430,7 @@ def verify_code_api():
     phone_code_hash = req_data.get("phone_code_hash", "").strip()
     password = req_data.get("password", "").strip()
 
+    # Robust session matching fallback
     client = None
     if phone and phone in temp_client_sessions:
         client = temp_client_sessions.get(phone)
