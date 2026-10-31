@@ -24,6 +24,11 @@ except RuntimeError:
   _main_loop = asyncio.new_event_loop()
   asyncio.set_event_loop(_main_loop)
 
+try:
+  import fcntl  # Linux (Render) — একই সার্ভারে একাধিক worker হলে সেশন ডুপ্লিকেট রোধ
+except ImportError:
+  fcntl = None
+
 import requests
 from flask import Flask, request, jsonify, send_file, abort, session, redirect, url_for, render_template_string, Response
 from flask_cors import CORS
@@ -55,24 +60,29 @@ except ImportError:
 
 # ============================================================
 # TELEGRAM CONFIGURATION
+# (Secrets এখন কোডে নেই — Render > Environment এ সেট করুন)
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
 
-BOT_TOKEN = os.environ.get(
-    "BOT_TOKEN", "8613982412:AAGEdvZdzjK3Eli_vIYoEtXnsxZgwodqnVE"
-).strip()
-API_ID = int(os.environ.get("API_ID", "32875278") or "32875278")
-API_HASH = os.environ.get(
-    "API_HASH", "55d7b29aa48e8e160abe9e3cb91ba347"
-).strip()
-ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
+def _env_int(name):
+  raw = os.environ.get(name, "").strip()
+  if not raw:
+    return 0
+  try:
+    return int(raw)
+  except ValueError:
+    print(f"[Config] WARNING: {name} must be a number")
+    return 0
+
+
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
+API_ID = _env_int("API_ID")
+API_HASH = os.environ.get("API_HASH", "").strip()
+ADMIN_ID = _env_int("ADMIN_ID")
 
 # Telethon user session for channel reader
-TELETHON_SESSION_STRING = os.environ.get(
-    "TELETHON_SESSION_STRING",
-    "1BVtsOIgBu7whPX9TmEg75UiEb9ds3G_cTcYtZFzN_G1xMUC7peySK-vCRXBUfGZzFrthCA0oVHLW6rDytPGSuG63vhaixAqRDyk3uJ3rHfxy1oy5mNSZ97A5eEIM5eEYaxjQRl9b2BSYOZG7M4ftHQBIiJOgxT9LxRU0gFrb4Tb5oO6N8To1d7JbiOx0JGZO2xiWS-0NzapAfJob05AStlL9V6hfEGkYtU2X9cyedFzVi7T7n31CSNtQ3zS3oWRD9rEhwdVPm3uekNsC4ZVmehBebiGZ50-NPOHvkAKppjV_lDojlL1w91fsVIcULovQaOHjPzhKfVT3DLoD8_ZQEBb_0LGxYs0=",
-).strip()
+TELETHON_SESSION_STRING = os.environ.get("TELETHON_SESSION_STRING", "").strip()
 
 # Storage channel ID normalization (-1004322205565)
 _raw_channel_id = os.environ.get("STORAGE_CHANNEL_ID", "-1004322205565").strip()
@@ -97,18 +107,27 @@ DEFAULT_STORY_THUMB = "https://carder.top/imagens/1792065174675-662575987.jpg"
 # Story চ্যানেল আলাদা হলে True (ডিফল্টে দুটোই একই চ্যানেল)
 SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
 
-# Scan ও Streaming সেটিংস
+# Scan সেটিংস
+# COLLECTION_INCLUDE_CAPTIONED=1 দিলে ক্যাপশনওয়ালা (#STORY ছাড়া) মিডিয়াও oc-collection এ আসবে।
+# ডিফল্ট (0): শুধু ক্যাপশনহীন মিডিয়া → oc-collection
 COLLECTION_INCLUDE_CAPTIONED = (
     os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "0").strip() == "1"
 )
+# PRECACHE_MEDIA=1 দিলে স্টার্টআপে সব মিডিয়া ডিস্কে ক্যাশ হবে (ভারী — সাধারণত দরকার নেই, কারণ এখন সরাসরি স্ট্রিম হয়)
 PRECACHE_MEDIA = os.environ.get("PRECACHE_MEDIA", "0").strip() == "1"
 STREAM_REQUEST_SIZE = 512 * 1024  # Telethon download chunk (512 KB)
 MSG_CACHE_TTL = 600  # সেকেন্ড
+# নতুন ডিপ্লয়ের সময় পুরনো ও নতুন ইনস্ট্যান্স কিছুক্ষণ একসাথে চলে; একই Telethon সেশন
+# দুই জায়গায় একসাথে চললে Telegram সেশন বাতিল করে দেয় (AuthKeyDuplicatedError)।
+# তাই Telethon চালুর আগে এই সময় (সেকেন্ড) অপেক্ষা করা হয়।
+TELETHON_START_DELAY = float(os.environ.get("TELETHON_START_DELAY", "40") or 0)
 
 print("OC & Story Storage Channel ID:", STORAGE_CHANNEL_ID)
 for _name, _val in (
     ("BOT_TOKEN", BOT_TOKEN),
+    ("API_ID", API_ID),
     ("API_HASH", API_HASH),
+    ("ADMIN_ID", ADMIN_ID),
     ("TELETHON_SESSION_STRING", TELETHON_SESSION_STRING),
 ):
   if not _val:
@@ -143,9 +162,9 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get(
-    "FLASK_SECRET_KEY", "alvee_super_secret_key_12345"
-)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY") or hashlib.sha256(
+    ("alvee-secret-" + (BOT_TOKEN or "dev")).encode("utf-8")
+).hexdigest()
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 CORS(
     app,
@@ -196,9 +215,11 @@ pyrogram_thread = threading.Thread(
 pending_uploads = {}
 temp_client_sessions = {}
 upload_lock = threading.Lock()
+
+# Scan লক (একসাথে একটাই স্ক্যান চলবে)
 scan_lock = threading.Lock()
 
-# Telethon সংযোগের অবস্থা (ডায়াগনস্টিকের জন্য)
+# Telethon সংযোগের অবস্থা (ডায়াগনস্টিকের জন্য, কোনো গোপন তথ্য নেই)
 telethon_status = {
     "state": "starting" if TELETHON_SESSION_STRING else "not_configured",
     "last_error": (
@@ -350,6 +371,8 @@ init_db()
 
 
 def find_media_row(message_id, kind=""):
+  """channel_posts / stories টেবিল থেকে মিডিয়া রো খুঁজে বের করে।
+  returns (row, 'post' | 'story') অথবা (None, None)"""
   if kind == "story":
     order = (("stories", "story"), ("channel_posts", "post"))
   else:
@@ -514,11 +537,11 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telethon helpers (entity, message cache, streaming & disk cache)
+# Telethon helpers (entity, message cache, disk cache)
 # ============================================================
 
-_msg_cache = {}
-_photo_cache = {}
+_msg_cache = {}  # (kind, message_id) -> (timestamp, message)   [শুধু telethon loop থেকে ব্যবহার]
+_photo_cache = {}  # (kind, message_id) -> bytes                  [শুধু telethon loop থেকে ব্যবহার]
 
 
 def _entity_for_kind(kind):
@@ -539,6 +562,7 @@ async def _find_entity_in_dialogs(client, channel_id):
 
 
 async def get_cached_message(message_id, kind="post", fresh=False):
+  """চ্যানেল থেকে মেসেজ আনে (১০ মিনিট ক্যাশ)।"""
   if not telethon_reader_client:
     return None
   entity = _entity_for_kind(kind)
@@ -564,6 +588,7 @@ async def get_cached_message(message_id, kind="post", fresh=False):
 
 
 async def get_media_info(message_id, kind="post"):
+  """size / mime / photo কিনা — স্ট্রিমিং শুরুর আগে দরকার।"""
   msg = await get_cached_message(message_id, kind)
   if not msg or not getattr(msg, "media", None):
     return None
@@ -618,6 +643,7 @@ async def get_telethon_thumb_bytes(message_id, kind="story"):
 async def telegram_stream_producer(
     q, stop, message_id, kind, aligned_offset, n_chunks, file_size
 ):
+  """Telegram থেকে চাঙ্ক ডাউনলোড করে queue তে রাখে (Flask thread এটা পড়ে)।"""
   loop = asyncio.get_running_loop()
 
   def put(item):
@@ -665,9 +691,7 @@ async def telegram_stream_producer(
       pass
 
 
-async def cache_channel_media_telethon(
-    message_id: int, kind: str = "post"
-) -> bool:
+async def cache_channel_media_telethon(message_id: int, kind: str = "post") -> bool:
   if not telethon_reader_client:
     print(f"[Cache] Telethon not ready for message {message_id}")
     return False
@@ -727,10 +751,13 @@ def find_cached_media(message_id: int) -> Optional[Path]:
 
 # ============================================================
 # Channel scanning (Posts / OC Collection + Stories)
+#   - Story      : ক্যাপশনে #STORY আছে       -> stories টেবিল  -> dashboard.html
+#   - Collection : ক্যাপশন নেই (ভ্লগ ভিডিও)   -> channel_posts   -> oc-collection.html
 # ============================================================
 
 
 def _classify_media_for_scan(msg):
+  """(media_type, mime_type) অথবা None"""
   media = getattr(msg, "media", None)
   if not isinstance(media, (MessageMediaPhoto, MessageMediaDocument)):
     return None
@@ -793,13 +820,10 @@ async def _scan_one_channel(entity, progress=None):
 
 
 def _split_records(records):
+  """রেকর্ডগুলোকে stories / posts এ ভাগ করে। Album এর ক্যাপশন সব আইটেমে প্রযোজ্য।"""
   group_caps = {}
   for r in records:
-    if (
-        r["group"]
-        and (r["text"] or "").strip()
-        and r["group"] not in group_caps
-    ):
+    if r["group"] and (r["text"] or "").strip() and r["group"] not in group_caps:
       group_caps[r["group"]] = r["text"]
 
   stories, posts, story_ids = [], [], set()
@@ -843,8 +867,7 @@ def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
         story_type = "photo" if s["media_type"] == "photo" else "video"
         if s["id"] in existing:
           conn.execute(
-              "UPDATE stories SET media_type = ?, mime_type = ? WHERE"
-              " message_id = ?",
+              "UPDATE stories SET media_type = ?, mime_type = ? WHERE message_id = ?",
               (story_type, s["mime"], s["id"]),
           )
           stats["stories_updated"] += 1
@@ -855,15 +878,7 @@ def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
                   message_id, media_type, mime_type, telegram_file_id, thumb_file_id, ts, created_at
               ) VALUES (?, ?, ?, ?, ?, ?, ?)
               """,
-              (
-                  s["id"],
-                  story_type,
-                  s["mime"],
-                  None,
-                  None,
-                  s["ts"],
-                  s["created_at"],
-              ),
+              (s["id"], story_type, s["mime"], None, None, s["ts"], s["created_at"]),
           )
           stats["stories_added"] += 1
 
@@ -884,8 +899,7 @@ def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
       for p in posts:
         if p["id"] in existing:
           conn.execute(
-              "UPDATE channel_posts SET text = ?, media_type = ?, mime_type = ?"
-              " WHERE message_id = ?",
+              "UPDATE channel_posts SET text = ?, media_type = ?, mime_type = ? WHERE message_id = ?",
               (p["text"], p["media_type"], p["mime"], p["id"]),
           )
           stats["posts_updated"] += 1
@@ -896,14 +910,7 @@ def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
                   message_id, text, media_type, mime_type, telegram_file_id, created_at
               ) VALUES (?, ?, ?, ?, ?, ?)
               """,
-              (
-                  p["id"],
-                  p["text"],
-                  p["media_type"],
-                  p["mime"],
-                  None,
-                  p["created_at"],
-              ),
+              (p["id"], p["text"], p["media_type"], p["mime"], None, p["created_at"]),
           )
           stats["posts_added"] += 1
 
@@ -925,14 +932,13 @@ def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
 
 
 async def scan_channel(mode="all", progress=None):
+  """mode: 'story' | 'collection' | 'all'"""
   if not telethon_reader_client or not telethon_channel_entity:
     raise RuntimeError(
         "Telethon reader is not connected (check TELETHON_SESSION_STRING)."
     )
-  if (
-      mode in ("story", "all")
-      and SEPARATE_STORY_CHANNEL
-      and (telethon_story_entity is None)
+  if mode in ("story", "all") and SEPARATE_STORY_CHANNEL and (
+      telethon_story_entity is None
   ):
     raise RuntimeError(
         "Story channel is not accessible by the Telethon session."
@@ -1006,6 +1012,7 @@ async def recache_missing_media(items):
 
 
 async def sync_posts_from_channel():
+  """স্টার্টআপে ডাটাবেস রিস্টোর (ডিপ্লয়ের পর SQLite খালি হলে চ্যানেল থেকে ফিরিয়ে আনে)।"""
   if not telethon_reader_client or not telethon_channel_entity:
     return
 
@@ -1020,8 +1027,7 @@ async def sync_posts_from_channel():
             for r in conn.execute("SELECT message_id FROM channel_posts")
         ]
         story_ids = [
-            r["message_id"]
-            for r in conn.execute("SELECT message_id FROM stories")
+            r["message_id"] for r in conn.execute("SELECT message_id FROM stories")
         ]
       to_cache = [(m, "post") for m in post_ids if not find_cached_media(m)]
       to_cache += [(m, "story") for m in story_ids if not find_cached_media(m)]
@@ -1303,9 +1309,7 @@ async def start_telethon_reader():
       try:
         channel_entity = await client.get_entity(STORAGE_CHANNEL_ID)
       except Exception:
-        channel_entity = await _find_entity_in_dialogs(
-            client, STORAGE_CHANNEL_ID
-        )
+        channel_entity = await _find_entity_in_dialogs(client, STORAGE_CHANNEL_ID)
 
       if channel_entity is None:
         telethon_status["last_error"] = (
@@ -1317,6 +1321,7 @@ async def start_telethon_reader():
         await asyncio.sleep(3)
         continue
 
+      # Story চ্যানেল (ডিফল্টে storage চ্যানেলের মতোই)
       story_entity = channel_entity
       if SEPARATE_STORY_CHANNEL:
         story_entity = None
@@ -1352,6 +1357,14 @@ async def start_telethon_reader():
           await client.disconnect()
         except Exception:
           pass
+      if type(e).__name__ == "AuthKeyDuplicatedError":
+        telethon_status["last_error"] = (
+            "AuthKeyDuplicatedError: Telegram invalidated this session because"
+            " it was used from two places at once. Generate a NEW"
+            " TELETHON_SESSION_STRING and use it only on this server."
+        )
+        telethon_status["state"] = "failed"
+        return False
       await asyncio.sleep(5)
 
   telethon_status["state"] = "failed"
@@ -1418,6 +1431,7 @@ def get_story_thumb(message_id):
     if row["thumb_file_id"]:
       content, _ = download_telegram_file(row["thumb_file_id"])
 
+    # স্ক্যান করে আনা স্টোরির থাম্বনেইল Telethon দিয়ে আনা হয়
     if not content and telethon_reader_client is not None:
       try:
         content = run_async(
@@ -1508,11 +1522,12 @@ def get_channel_posts_api():
 
 
 # ============================================================
-# API: STREAM TELEGRAM MEDIA (Direct Stream + Range Support)
+# API: STREAM TELEGRAM MEDIA (সরাসরি Telegram থেকে, Range সাপোর্টসহ)
 # ============================================================
 
 
 def _parse_range_header(range_header, size):
+  """(start, end) অথবা None; অগ্রহণযোগ্য রেঞ্জে ValueError।"""
   if not range_header or not size:
     return None
   match = re.match(r"^\s*bytes=(\d*)-(\d*)\s*$", range_header)
@@ -1592,9 +1607,7 @@ def stream_telegram_media(message_id, kind, size, mime):
 
   aligned = (start // STREAM_REQUEST_SIZE) * STREAM_REQUEST_SIZE
   skip = start - aligned
-  n_chunks = (
-      end + 1 - aligned + STREAM_REQUEST_SIZE - 1
-  ) // STREAM_REQUEST_SIZE
+  n_chunks = (end + 1 - aligned + STREAM_REQUEST_SIZE - 1) // STREAM_REQUEST_SIZE
 
   def generate():
     q = queue.Queue(maxsize=6)
@@ -1653,7 +1666,7 @@ def get_channel_media(message_id):
     else:
       default_mime = "image/jpeg"
 
-    # 1) Local Cache Check
+    # 1) লোকাল ক্যাশ থাকলে সেটাই দেওয়া হবে (দ্রুত)
     cached_path = find_cached_media(message_id)
     if cached_path and cached_path.is_file():
       mime_type = mimetypes.guess_type(str(cached_path))[0] or default_mime
@@ -1661,7 +1674,7 @@ def get_channel_media(message_id):
           cached_path, mimetype=mime_type, conditional=True, as_attachment=False
       )
 
-    # 2) Direct Stream via Telethon
+    # 2) সরাসরি Telegram থেকে স্ট্রিম (ডিপ্লয়ের পরও ফাইল হারায় না, বড় ভিডিওও চলে)
     info = None
     if telethon_reader_client is not None:
       try:
@@ -1679,15 +1692,13 @@ def get_channel_media(message_id):
         except Exception:
           photo_data = None
         if photo_data:
-          return _ranged_bytes_response(
-              photo_data, info["mime"] or default_mime
-          )
+          return _ranged_bytes_response(photo_data, info["mime"] or default_mime)
       elif info["size"] > 0:
         return stream_telegram_media(
             message_id, row_kind, info["size"], info["mime"] or default_mime
         )
 
-    # 3) Fallback: Cache download or Bot API
+    # 3) ফলব্যাক: পুরনো পদ্ধতি (Telethon ক্যাশ ডাউনলোড → Bot API)
     try:
       cached_ok = run_async(
           cache_channel_media_telethon(message_id, row_kind), timeout=120
@@ -2206,7 +2217,7 @@ def telegram_status_api():
 
 
 # ============================================================
-# Pyrogram Bot & Media / Story Uploader & Scanner Initialization
+# Pyrogram Bot & Media / Story Uploader Initialization
 # ============================================================
 
 
@@ -2719,7 +2730,26 @@ async def start_pyrogram_monitor():
 
 
 def _init_background_services_worker():
+  # 1) Pyrogram বট (আগে চালু হয়, যাতে ডিপ্লয়ের পরই বট সাড়া দেয়)
+  if Client and BOT_TOKEN and API_ID and API_HASH:
+    if not pyrogram_thread.is_alive():
+      pyrogram_thread.start()
+    if pyrogram_loop_ready.wait(timeout=10):
+      try:
+        run_pyrogram_async(start_pyrogram_monitor(), timeout=120)
+      except Exception:
+        print("Could not start Pyrogram monitor:", traceback.format_exc())
+
+  # 2) Telethon রিডার (ডুপ্লিকেট সেশন এড়াতে সামান্য অপেক্ষার পর)
   if TELETHON_SESSION_STRING and API_ID and API_HASH:
+    if TELETHON_START_DELAY > 0:
+      telethon_status["state"] = "waiting"
+      print(
+          f"[Telethon] waiting {TELETHON_START_DELAY:.0f}s before connecting"
+          " (avoids duplicate-session errors during deploy)..."
+      )
+      time.sleep(TELETHON_START_DELAY)
+      telethon_status["state"] = "starting"
     if not telethon_thread.is_alive():
       telethon_thread.start()
     if telethon_loop_ready.wait(timeout=10):
@@ -2737,14 +2767,22 @@ def _init_background_services_worker():
         except Exception:
           pass
 
-  if Client and BOT_TOKEN and API_ID and API_HASH:
-    if not pyrogram_thread.is_alive():
-      pyrogram_thread.start()
-    if pyrogram_loop_ready.wait(timeout=10):
-      try:
-        run_pyrogram_async(start_pyrogram_monitor(), timeout=120)
-      except Exception:
-        print("Could not start Pyrogram monitor:", traceback.format_exc())
+
+_instance_lock_file = None
+
+
+def _acquire_single_instance_lock():
+  """একই সার্ভারে একাধিক worker থাকলে শুধু একটি Telegram সার্ভিস চালাবে।"""
+  global _instance_lock_file
+  if fcntl is None:
+    return True
+  try:
+    lock_file = open("/tmp/alvee_telegram_services.lock", "w")
+    fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    _instance_lock_file = lock_file
+    return True
+  except Exception:
+    return False
 
 
 def start_background_services():
@@ -2753,6 +2791,10 @@ def start_background_services():
     if _services_started:
       return
     _services_started = True
+
+  if not _acquire_single_instance_lock():
+    print("[Startup] Another worker already runs Telegram services; skipping.")
+    return
 
   startup_thread = threading.Thread(
       target=_init_background_services_worker,
