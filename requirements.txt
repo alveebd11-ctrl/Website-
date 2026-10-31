@@ -6,3 +6,4 @@ TgCrypto
 Telethon>=1.40,<2
 Werkzeug
 gunicorn
+SQLAlchemy
