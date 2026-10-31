@@ -7,6 +7,10 @@
     --oc-text: #f8fafc;
     --oc-muted: #94a3b8;
     --oc-border: rgba(255, 255, 255, 0.12);
+
+    /* ১ নম্বর কোড থেকে যুক্ত করা: সাগরের ঢেউ (লোডিং অ্যানিমেশন) — SVG টাইল, ৬০০px চওড়া */
+    --alv-wave-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'%3E%3Cpath d='M0 60 C150 0 150 120 300 60 S450 120 600 60 V120 H0 Z' fill='%2338bdf8' fill-opacity='.42'/%3E%3C/svg%3E");
+    --alv-wave-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'%3E%3Cpath d='M0 60 C150 0 150 120 300 60 S450 120 600 60 V120 H0 Z' fill='%230ea5e9' fill-opacity='.55'/%3E%3C/svg%3E");
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
