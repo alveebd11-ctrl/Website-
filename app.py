@@ -96,7 +96,7 @@ DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "alvee_super_secret_key_12345")
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
-CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", "https://carder.top"]}})
+CORS(app, resources={r"/*": {"origins": ["http://localhost:8080", "https://carder.top", "https://alveecommunity.com", "http://alveecommunity.com", "*"]}})
 
 total_logged_in_users = 0
 
@@ -107,6 +107,8 @@ total_logged_in_users = 0
 telethon_reader_client = None
 telethon_channel_entity = None
 pyrogram_client = None
+_services_started = False
+_services_lock = threading.Lock()
 
 # Telethon Background Loop
 telethon_loop = asyncio.new_event_loop()
@@ -399,7 +401,7 @@ def download_telegram_file(file_id):
 
 async def cache_channel_media_telethon(message_id: int) -> bool:
     """Download media from channel using Telethon and save to CACHE_DIR.
-    Supports files far larger than 20 MB (up to \~2GB / 4GB).
+    Supports files far larger than 20 MB (up to ~2GB / 4GB).
     """
     global telethon_reader_client, telethon_channel_entity
 
@@ -1238,7 +1240,7 @@ def home():
     index_path = BASE_DIR / "index.html"
     if index_path.is_file():
         return send_file(index_path)
-    return "index.html not found", 404
+    return "Alvee Community Server is Running! (index.html not found)", 200
 
 
 @app.route("/naughty.html", methods=["GET"])
@@ -1333,6 +1335,7 @@ async def start_pyrogram_monitor():
                 api_id=API_ID,
                 api_hash=API_HASH,
                 bot_token=BOT_TOKEN,
+                in_memory=True,
             )
             await client.start()
             pyrogram_client = client
@@ -1505,41 +1508,60 @@ async def start_pyrogram_monitor():
 
 
 # ============================================================
-# Background Services Startup
+# Background Services Startup (Non-Blocking for Render Port Scan)
 # ============================================================
 
-def start_background_services():
+def _init_background_services_worker():
+    """ব্যাকগ্রাউন্ড থ্রেডে টেলিথন ও পাইরোগ্রাম চালু করে, যাতে ফ্লাস্ক সার্ভারের পোর্ট
+    ওপেন হতে এক সেকেন্ডও দেরি না হয় এবং Render-এ Port Scan Timeout না আসে।"""
     if TELETHON_SESSION_STRING and API_ID and API_HASH:
         if not telethon_thread.is_alive():
             telethon_thread.start()
-        if telethon_loop_ready.wait(timeout=5):
+        if telethon_loop_ready.wait(timeout=10):
             try:
-                reader_ok = run_async(start_telethon_reader(), timeout=60)
+                reader_ok = run_async(start_telethon_reader(), timeout=120)
             except Exception:
                 reader_ok = False
                 print("Could not start Telethon reader:", traceback.format_exc())
 
-            # ---------- NEW: সার্ভার চালু হলে টেলিগ্রাম চ্যানেলের পুরো হিস্ট্রি
-            # আবার স্ক্যান করে channel_posts টেবিল ও মিডিয়া ক্যাশ পুনরুদ্ধার করা ----------
+            # ---------- সার্ভার চালু হলে টেলিগ্রাম চ্যানেলের পুরো হিস্ট্রি
+            # ব্যাকগ্রাউন্ডে স্ক্যান করে channel_posts টেবিল ও মিডিয়া ক্যাশ পুনরুদ্ধার করা ----------
             if reader_ok:
                 try:
-                    run_async(sync_posts_from_channel(), timeout=180)
+                    asyncio.run_coroutine_threadsafe(sync_posts_from_channel(), telethon_loop)
                 except Exception:
-                    print("Channel history sync failed (will retry on next restart):", traceback.format_exc())
+                    print("Channel history sync schedule failed:", traceback.format_exc())
 
     if Client and BOT_TOKEN and API_ID and API_HASH:
         if not pyrogram_thread.is_alive():
             pyrogram_thread.start()
-        if pyrogram_loop_ready.wait(timeout=5):
+        if pyrogram_loop_ready.wait(timeout=10):
             try:
-                run_pyrogram_async(start_pyrogram_monitor(), timeout=60)
+                run_pyrogram_async(start_pyrogram_monitor(), timeout=120)
             except Exception:
                 print("Could not start Pyrogram monitor:", traceback.format_exc())
+
+
+def start_background_services():
+    global _services_started
+    with _services_lock:
+        if _services_started:
+            return
+        _services_started = True
+
+    # আলাদা ডায়মন থ্রেডে সার্ভিসগুলো স্টার্ট করা হচ্ছে যেন ওয়েব সার্ভার সাথে সাথে চালু হয়
+    startup_thread = threading.Thread(
+        target=_init_background_services_worker,
+        name="background-services-initializer",
+        daemon=True,
+    )
+    startup_thread.start()
 
 
 start_background_services()
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "8080"))
-    app.run(host="0.0.0.0", port=port, threaded=True, debug=False)
+    port = int(os.environ.get("PORT", "10000"))
+    print(f"Starting Flask Web Server on 0.0.0.0:{port}...")
+    app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
