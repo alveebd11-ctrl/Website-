@@ -7,6 +7,7 @@ import json
 import mimetypes
 import os
 from pathlib import Path
+import queue
 import random
 import re
 import sqlite3
@@ -32,7 +33,11 @@ from werkzeug.exceptions import RequestEntityTooLarge
 # Telethon imports (Used for Login & Channel Reading)
 from telethon import TelegramClient, utils, events as telethon_events
 from telethon.sessions import StringSession
-from telethon.tl.types import DocumentAttributeAnimated
+from telethon.tl.types import (
+    DocumentAttributeAnimated,
+    MessageMediaDocument,
+    MessageMediaPhoto,
+)
 
 # Pyrogram imports (Used exclusively for Bot & Media Upload Handling)
 try:
@@ -63,7 +68,7 @@ API_HASH = os.environ.get(
 ).strip()
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
 
-# Telethon user session for channel reader (Updated with your new session string)
+# Telethon user session for channel reader
 TELETHON_SESSION_STRING = os.environ.get(
     "TELETHON_SESSION_STRING",
     "1BVtsOIgBu7whPX9TmEg75UiEb9ds3G_cTcYtZFzN_G1xMUC7peySK-vCRXBUfGZzFrthCA0oVHLW6rDytPGSuG63vhaixAqRDyk3uJ3rHfxy1oy5mNSZ97A5eEIM5eEYaxjQRl9b2BSYOZG7M4ftHQBIiJOgxT9LxRU0gFrb4Tb5oO6N8To1d7JbiOx0JGZO2xiWS-0NzapAfJob05AStlL9V6hfEGkYtU2X9cyedFzVi7T7n31CSNtQ3zS3oWRD9rEhwdVPm3uekNsC4ZVmehBebiGZ50-NPOHvkAKppjV_lDojlL1w91fsVIcULovQaOHjPzhKfVT3DLoD8_ZQEBb_0LGxYs0=",
@@ -88,6 +93,17 @@ STORY_BACKUP_CHANNEL_ID = int(
 )
 STORY_MARKER = "#STORY"
 DEFAULT_STORY_THUMB = "https://carder.top/imagens/1792065174675-662575987.jpg"
+
+# Story চ্যানেল আলাদা হলে True (ডিফল্টে দুটোই একই চ্যানেল)
+SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
+
+# Scan ও Streaming সেটিংস
+COLLECTION_INCLUDE_CAPTIONED = (
+    os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "0").strip() == "1"
+)
+PRECACHE_MEDIA = os.environ.get("PRECACHE_MEDIA", "0").strip() == "1"
+STREAM_REQUEST_SIZE = 512 * 1024  # Telethon download chunk (512 KB)
+MSG_CACHE_TTL = 600  # সেকেন্ড
 
 print("OC & Story Storage Channel ID:", STORAGE_CHANNEL_ID)
 
@@ -147,6 +163,7 @@ total_logged_in_users = 0
 
 telethon_reader_client = None
 telethon_channel_entity = None
+telethon_story_entity = None
 pyrogram_client = None
 _services_started = False
 _services_lock = threading.Lock()
@@ -172,6 +189,11 @@ pyrogram_thread = threading.Thread(
 pending_uploads = {}
 temp_client_sessions = {}
 upload_lock = threading.Lock()
+scan_lock = threading.Lock()
+
+
+class ScanBusyError(RuntimeError):
+  pass
 
 
 def _run_telethon_loop():
@@ -188,8 +210,10 @@ def _run_pyrogram_loop():
 
 def run_async(coro, timeout=180):
   if not telethon_thread.is_alive():
+    coro.close()
     raise RuntimeError("Telethon background loop is not running.")
   if not telethon_loop_ready.wait(timeout=5):
+    coro.close()
     raise RuntimeError("Telethon background loop did not start.")
   future = asyncio.run_coroutine_threadsafe(coro, telethon_loop)
   return future.result(timeout=timeout)
@@ -197,8 +221,10 @@ def run_async(coro, timeout=180):
 
 def run_pyrogram_async(coro, timeout=180):
   if not pyrogram_thread.is_alive():
+    coro.close()
     raise RuntimeError("Pyrogram background loop is not running.")
   if not pyrogram_loop_ready.wait(timeout=5):
+    coro.close()
     raise RuntimeError("Pyrogram background loop did not start.")
   future = asyncio.run_coroutine_threadsafe(coro, pyrogram_loop)
   return future.result(timeout=timeout)
@@ -302,6 +328,21 @@ def get_chat_stats():
 
 
 init_db()
+
+
+def find_media_row(message_id, kind=""):
+  if kind == "story":
+    order = (("stories", "story"), ("channel_posts", "post"))
+  else:
+    order = (("channel_posts", "post"), ("stories", "story"))
+  with db_connect() as conn:
+    for table, row_kind in order:
+      row = conn.execute(
+          f"SELECT * FROM {table} WHERE message_id = ?", (message_id,)
+      ).fetchone()
+      if row:
+        return row, row_kind
+  return None, None
 
 
 # ============================================================
@@ -454,21 +495,171 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telethon Media Cache Helper
+# Telethon helpers (entity, message cache, streaming & disk cache)
 # ============================================================
 
+_msg_cache = {}
+_photo_cache = {}
 
-async def cache_channel_media_telethon(message_id: int) -> bool:
-  global telethon_reader_client, telethon_channel_entity
 
-  if not telethon_reader_client or not telethon_channel_entity:
+def _entity_for_kind(kind):
+  if kind == "story":
+    return telethon_story_entity
+  return telethon_channel_entity
+
+
+async def _find_entity_in_dialogs(client, channel_id):
+  async for dialog in client.iter_dialogs(limit=None):
+    try:
+      resolved_id = utils.get_peer_id(dialog.entity)
+      if int(resolved_id) == int(channel_id):
+        return dialog.entity
+    except (TypeError, ValueError):
+      continue
+  return None
+
+
+async def get_cached_message(message_id, kind="post", fresh=False):
+  if not telethon_reader_client:
+    return None
+  entity = _entity_for_kind(kind)
+  if entity is None:
+    return None
+
+  key = (kind, int(message_id))
+  now = time.time()
+  hit = _msg_cache.get(key)
+  if hit and not fresh and now - hit[0] < MSG_CACHE_TTL:
+    return hit[1]
+
+  msgs = await telethon_reader_client.get_messages(entity, ids=int(message_id))
+  msg = msgs[0] if isinstance(msgs, (list, tuple)) else msgs
+  if not msg:
+    return None
+
+  _msg_cache[key] = (now, msg)
+  if len(_msg_cache) > 200:
+    oldest = min(_msg_cache, key=lambda k: _msg_cache[k][0])
+    _msg_cache.pop(oldest, None)
+  return msg
+
+
+async def get_media_info(message_id, kind="post"):
+  msg = await get_cached_message(message_id, kind)
+  if not msg or not getattr(msg, "media", None):
+    return None
+  is_photo = bool(getattr(msg, "photo", None))
+  file_obj = getattr(msg, "file", None)
+  size = int(getattr(file_obj, "size", 0) or 0)
+  mime = getattr(file_obj, "mime_type", None) or (
+      "image/jpeg" if is_photo else "video/mp4"
+  )
+  return {"size": size, "mime": mime, "is_photo": is_photo}
+
+
+async def get_photo_bytes(message_id, kind="post"):
+  key = (kind, int(message_id))
+  data = _photo_cache.get(key)
+  if data:
+    return data
+
+  data = None
+  for attempt in (0, 1):
+    try:
+      msg = await get_cached_message(message_id, kind, fresh=attempt > 0)
+      if not msg or not getattr(msg, "media", None):
+        return None
+      data = await telethon_reader_client.download_media(msg, file=bytes)
+      if data:
+        break
+    except Exception as exc:
+      print(f"[Photo] attempt {attempt} failed for {message_id}: {exc}")
+
+  if data:
+    _photo_cache[key] = data
+    while len(_photo_cache) > 40:
+      _photo_cache.pop(next(iter(_photo_cache)), None)
+  return data
+
+
+async def get_telethon_thumb_bytes(message_id, kind="story"):
+  try:
+    msg = await get_cached_message(message_id, kind)
+    if not msg or not getattr(msg, "media", None):
+      return None
+    data = await telethon_reader_client.download_media(
+        msg, file=bytes, thumb=-1
+    )
+    return data or None
+  except Exception as exc:
+    print(f"[Thumb] Telethon thumb failed for {message_id}: {exc}")
+    return None
+
+
+async def telegram_stream_producer(
+    q, stop, message_id, kind, aligned_offset, n_chunks, file_size
+):
+  loop = asyncio.get_running_loop()
+
+  def put(item):
+    while not stop.is_set():
+      try:
+        q.put(item, timeout=0.5)
+        return True
+      except queue.Full:
+        continue
+    return False
+
+  sent = 0
+  try:
+    for attempt in (0, 1):
+      msg = await get_cached_message(message_id, kind, fresh=attempt > 0)
+      if not msg or not getattr(msg, "media", None):
+        break
+      try:
+        async for chunk in telethon_reader_client.iter_download(
+            msg.media,
+            offset=aligned_offset,
+            limit=n_chunks,
+            chunk_size=STREAM_REQUEST_SIZE,
+            request_size=STREAM_REQUEST_SIZE,
+            file_size=file_size,
+        ):
+          if stop.is_set():
+            return
+          data = bytes(chunk)
+          ok = await loop.run_in_executor(None, put, data)
+          if not ok:
+            return
+          sent += len(data)
+        break
+      except Exception:
+        if sent or attempt:
+          raise
+        print(f"[Stream] retrying message {message_id} with fresh reference")
+  except Exception:
+    print("[Stream] producer error:", traceback.format_exc())
+  finally:
+    try:
+      await loop.run_in_executor(None, put, None)
+    except Exception:
+      pass
+
+
+async def cache_channel_media_telethon(
+    message_id: int, kind: str = "post"
+) -> bool:
+  if not telethon_reader_client:
     print(f"[Cache] Telethon not ready for message {message_id}")
     return False
 
+  entity = _entity_for_kind(kind)
+  if entity is None:
+    print(f"[Cache] Telethon entity not ready for message {message_id}")
+    return False
+
   try:
-    msgs = await telethon_reader_client.get_messages(
-        telethon_channel_entity, ids=message_id
-    )
+    msgs = await telethon_reader_client.get_messages(entity, ids=message_id)
     msg = msgs[0] if isinstance(msgs, (list, tuple)) else msgs
 
     if not msg or not getattr(msg, "media", None):
@@ -516,151 +707,311 @@ def find_cached_media(message_id: int) -> Optional[Path]:
 
 
 # ============================================================
-# Channel History Auto-Recovery (Posts & Stories)
+# Channel scanning (Posts / OC Collection + Stories)
 # ============================================================
 
 
-async def sync_posts_from_channel():
-  global telethon_reader_client, telethon_channel_entity
+def _classify_media_for_scan(msg):
+  media = getattr(msg, "media", None)
+  if not isinstance(media, (MessageMediaPhoto, MessageMediaDocument)):
+    return None
 
-  if not telethon_reader_client or not telethon_channel_entity:
-    return
+  if getattr(msg, "photo", None):
+    return "photo", "image/jpeg"
+  if getattr(msg, "video", None):
+    return "video", getattr(msg.video, "mime_type", None) or "video/mp4"
+  if getattr(msg, "document", None):
+    doc_mime = (msg.document.mime_type or "").lower()
+    is_animated = any(
+        isinstance(a, DocumentAttributeAnimated)
+        for a in (msg.document.attributes or [])
+    )
+    if doc_mime.startswith("video/"):
+      media_type = "video"
+    elif is_animated:
+      media_type = "animation"
+    elif doc_mime.startswith("image/"):
+      media_type = "photo"
+    else:
+      return None
+    return media_type, doc_mime or "application/octet-stream"
+  return None
 
-  try:
-    with db_connect() as conn:
-      existing_post_ids = {
+
+async def _scan_one_channel(entity, progress=None):
+  records = []
+  all_ids = set()
+  total = 0
+  found = 0
+
+  async for msg in telethon_reader_client.iter_messages(
+      entity, limit=None, wait_time=0.5
+  ):
+    total += 1
+    all_ids.add(msg.id)
+
+    info = _classify_media_for_scan(msg)
+    if info:
+      found += 1
+      dt = msg.date or datetime.now(timezone.utc)
+      records.append({
+          "id": msg.id,
+          "media_type": info[0],
+          "mime": info[1],
+          "text": msg.message or "",
+          "group": getattr(msg, "grouped_id", None),
+          "ts": int(dt.timestamp()),
+          "created_at": dt.isoformat(),
+      })
+
+    if progress and total % 200 == 0:
+      try:
+        progress(total, found)
+      except Exception:
+        pass
+
+  return records, all_ids, total
+
+
+def _split_records(records):
+  group_caps = {}
+  for r in records:
+    if (
+        r["group"]
+        and (r["text"] or "").strip()
+        and r["group"] not in group_caps
+    ):
+      group_caps[r["group"]] = r["text"]
+
+  stories, posts, story_ids = [], [], set()
+  for r in records:
+    text = r["text"] or ""
+    if not text.strip() and r["group"]:
+      text = group_caps.get(r["group"], "")
+    stripped = text.strip()
+
+    if stripped.startswith(CHAT_BACKUP_MARKER) or stripped.startswith(
+        CHAT_BACKUP_TEXT_MARKER
+    ):
+      continue
+
+    item = dict(r, text=text)
+    if STORY_MARKER.upper() in text.upper():
+      story_ids.add(r["id"])
+      stories.append(item)
+    elif not stripped or COLLECTION_INCLUDE_CAPTIONED:
+      posts.append(item)
+
+  return stories, posts, story_ids
+
+
+def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
+  stats = {
+      "stories_added": 0,
+      "stories_updated": 0,
+      "posts_added": 0,
+      "posts_updated": 0,
+      "removed": 0,
+  }
+
+  with db_connect() as conn:
+    if do_story:
+      existing = {
+          row["message_id"]
+          for row in conn.execute("SELECT message_id FROM stories").fetchall()
+      }
+      for s in stories:
+        story_type = "photo" if s["media_type"] == "photo" else "video"
+        if s["id"] in existing:
+          conn.execute(
+              "UPDATE stories SET media_type = ?, mime_type = ? WHERE"
+              " message_id = ?",
+              (story_type, s["mime"], s["id"]),
+          )
+          stats["stories_updated"] += 1
+        else:
+          conn.execute(
+              """
+              INSERT OR IGNORE INTO stories (
+                  message_id, media_type, mime_type, telegram_file_id, thumb_file_id, ts, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?, ?)
+              """,
+              (
+                  s["id"],
+                  story_type,
+                  s["mime"],
+                  None,
+                  None,
+                  s["ts"],
+                  s["created_at"],
+              ),
+          )
+          stats["stories_added"] += 1
+
+      if all_ids:
+        keep = {s["id"] for s in stories}
+        stale = [(mid,) for mid in existing if mid not in keep]
+        if stale:
+          conn.executemany("DELETE FROM stories WHERE message_id = ?", stale)
+          stats["removed"] += len(stale)
+
+    if do_posts:
+      existing = {
           row["message_id"]
           for row in conn.execute(
               "SELECT message_id FROM channel_posts"
           ).fetchall()
       }
-      existing_story_ids = {
-          row["message_id"]
-          for row in conn.execute("SELECT message_id FROM stories").fetchall()
-      }
-
-    synced_posts = 0
-    synced_stories = 0
-    to_cache = []
-
-    async for msg in telethon_reader_client.iter_messages(
-        telethon_channel_entity, limit=None
-    ):
-      if not getattr(msg, "media", None):
-        continue
-
-      text_msg = msg.message or ""
-      if text_msg.startswith(CHAT_BACKUP_MARKER) or text_msg.startswith(
-          CHAT_BACKUP_TEXT_MARKER
-      ):
-        continue
-
-      media_type = None
-      mime_type = None
-
-      if getattr(msg, "photo", None):
-        media_type = "photo"
-        mime_type = "image/jpeg"
-      elif getattr(msg, "video", None):
-        media_type = "video"
-        mime_type = getattr(msg.video, "mime_type", None) or "video/mp4"
-      elif getattr(msg, "document", None):
-        doc_mime = (msg.document.mime_type or "").lower()
-        is_animated = any(
-            isinstance(a, DocumentAttributeAnimated)
-            for a in (msg.document.attributes or [])
-        )
-        if doc_mime.startswith("video/"):
-          media_type = "video"
-        elif is_animated:
-          media_type = "animation"
-        elif doc_mime.startswith("image/"):
-          media_type = "photo"
+      for p in posts:
+        if p["id"] in existing:
+          conn.execute(
+              "UPDATE channel_posts SET text = ?, media_type = ?, mime_type = ?"
+              " WHERE message_id = ?",
+              (p["text"], p["media_type"], p["mime"], p["id"]),
+          )
+          stats["posts_updated"] += 1
         else:
-          continue
-        mime_type = doc_mime or "application/octet-stream"
-      else:
-        continue
+          conn.execute(
+              """
+              INSERT OR IGNORE INTO channel_posts (
+                  message_id, text, media_type, mime_type, telegram_file_id, created_at
+              ) VALUES (?, ?, ?, ?, ?, ?)
+              """,
+              (
+                  p["id"],
+                  p["text"],
+                  p["media_type"],
+                  p["mime"],
+                  None,
+                  p["created_at"],
+              ),
+          )
+          stats["posts_added"] += 1
 
-      dt = msg.date or datetime.now(timezone.utc)
-      created_at = dt.isoformat()
-      ts_val = int(dt.timestamp())
+      if all_ids:
+        stale = [
+            (mid,)
+            for mid in existing
+            if (mid not in all_ids) or (mid in story_ids)
+        ]
+        if stale:
+          conn.executemany(
+              "DELETE FROM channel_posts WHERE message_id = ?", stale
+          )
+          stats["removed"] += len(stale)
 
-      # Check if this message is a Story
-      if STORY_MARKER in text_msg:
-        if msg.id not in existing_story_ids:
-          story_type = "photo" if media_type == "photo" else "video"
-          try:
-            with db_connect() as conn:
-              conn.execute(
-                  """
-                                INSERT OR IGNORE INTO stories (
-                                    message_id, media_type, mime_type, telegram_file_id, thumb_file_id, ts, created_at
-                                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                                """,
-                  (
-                      msg.id,
-                      story_type,
-                      mime_type,
-                      None,
-                      None,
-                      ts_val,
-                      created_at,
-                  ),
-              )
-              conn.commit()
-            existing_story_ids.add(msg.id)
-            synced_stories += 1
-          except Exception as err:
-            print(f"[Sync] Could not insert story {msg.id}: {err}")
-      else:
-        if msg.id not in existing_post_ids:
-          try:
-            with db_connect() as conn:
-              conn.execute(
-                  """
-                                INSERT OR IGNORE INTO channel_posts (
-                                    message_id, text, media_type, mime_type, telegram_file_id, created_at
-                                ) VALUES (?, ?, ?, ?, ?, ?)
-                                """,
-                  (
-                      msg.id,
-                      text_msg,
-                      media_type,
-                      mime_type,
-                      None,
-                      created_at,
-                  ),
-              )
-              conn.commit()
-            existing_post_ids.add(msg.id)
-            synced_posts += 1
-          except Exception as insert_err:
-            print(f"[Sync] Could not insert message {msg.id}: {insert_err}")
+    conn.commit()
 
-      if not find_cached_media(msg.id):
-        to_cache.append(msg.id)
+  return stats
 
-    if synced_posts or synced_stories:
-      print(
-          f"[Sync] Restored {synced_posts} post(s) and {synced_stories}"
-          " story(s) from Telegram channel history."
+
+async def scan_channel(mode="all", progress=None):
+  if not telethon_reader_client or not telethon_channel_entity:
+    raise RuntimeError(
+        "Telethon reader is not connected (check TELETHON_SESSION_STRING)."
+    )
+  if (
+      mode in ("story", "all")
+      and SEPARATE_STORY_CHANNEL
+      and (telethon_story_entity is None)
+  ):
+    raise RuntimeError(
+        "Story channel is not accessible by the Telethon session."
+    )
+  if not scan_lock.acquire(blocking=False):
+    raise ScanBusyError("A scan is already running.")
+
+  try:
+    plan = []
+    if not SEPARATE_STORY_CHANNEL:
+      plan.append((
+          telethon_channel_entity,
+          mode in ("story", "all"),
+          mode in ("collection", "all"),
+      ))
+    else:
+      if mode in ("story", "all"):
+        plan.append((telethon_story_entity, True, False))
+      if mode in ("collection", "all"):
+        plan.append((telethon_channel_entity, False, True))
+
+    summary = {
+        "checked": 0,
+        "stories_found": 0,
+        "posts_found": 0,
+        "stories_added": 0,
+        "stories_updated": 0,
+        "posts_added": 0,
+        "posts_updated": 0,
+        "removed": 0,
+    }
+
+    for entity, do_story, do_posts in plan:
+      records, all_ids, total = await _scan_one_channel(entity, progress)
+      stories, posts, story_ids = _split_records(records)
+      stats = await asyncio.to_thread(
+          save_scan_results,
+          stories if do_story else [],
+          posts if do_posts else [],
+          all_ids,
+          story_ids,
+          do_story,
+          do_posts,
       )
+      summary["checked"] += total
+      if do_story:
+        summary["stories_found"] += len(stories)
+      if do_posts:
+        summary["posts_found"] += len(posts)
+      for key in (
+          "stories_added",
+          "stories_updated",
+          "posts_added",
+          "posts_updated",
+          "removed",
+      ):
+        summary[key] += stats[key]
 
-    if to_cache:
-      asyncio.create_task(recache_missing_media(to_cache))
-
-  except Exception:
-    print("[Sync] Channel sync failed:", traceback.format_exc())
+    return summary
+  finally:
+    scan_lock.release()
 
 
-async def recache_missing_media(message_ids):
-  for mid in message_ids:
+async def recache_missing_media(items):
+  for mid, kind in items:
     try:
-      await cache_channel_media_telethon(mid)
+      await cache_channel_media_telethon(mid, kind)
     except Exception as e:
       print(f"[Sync] Failed to re-cache message {mid}: {e}")
     await asyncio.sleep(0.5)
+
+
+async def sync_posts_from_channel():
+  if not telethon_reader_client or not telethon_channel_entity:
+    return
+
+  try:
+    result = await scan_channel("all")
+    print("[Sync] Channel restore complete:", result)
+
+    if PRECACHE_MEDIA:
+      with db_connect() as conn:
+        post_ids = [
+            r["message_id"]
+            for r in conn.execute("SELECT message_id FROM channel_posts")
+        ]
+        story_ids = [
+            r["message_id"]
+            for r in conn.execute("SELECT message_id FROM stories")
+        ]
+      to_cache = [(m, "post") for m in post_ids if not find_cached_media(m)]
+      to_cache += [(m, "story") for m in story_ids if not find_cached_media(m)]
+      if to_cache:
+        asyncio.create_task(recache_missing_media(to_cache))
+  except ScanBusyError:
+    pass
+  except Exception:
+    print("[Sync] Channel sync failed:", traceback.format_exc())
 
 
 # ============================================================
@@ -905,7 +1256,7 @@ def get_user_profile_api():
 
 
 async def start_telethon_reader():
-  global telethon_reader_client, telethon_channel_entity
+  global telethon_reader_client, telethon_channel_entity, telethon_story_entity
 
   if not TELETHON_SESSION_STRING:
     return False
@@ -926,28 +1277,42 @@ async def start_telethon_reader():
       try:
         channel_entity = await client.get_entity(STORAGE_CHANNEL_ID)
       except Exception:
-        async for dialog in client.iter_dialogs(limit=None):
-          try:
-            resolved_id = utils.get_peer_id(dialog.entity)
-            if int(resolved_id) == int(STORAGE_CHANNEL_ID):
-              channel_entity = dialog.entity
-              break
-          except (TypeError, ValueError):
-            continue
+        channel_entity = await _find_entity_in_dialogs(
+            client, STORAGE_CHANNEL_ID
+        )
 
       if channel_entity is None:
         await client.disconnect()
         await asyncio.sleep(3)
         continue
 
+      story_entity = channel_entity
+      if SEPARATE_STORY_CHANNEL:
+        story_entity = None
+        try:
+          story_entity = await client.get_entity(STORY_BACKUP_CHANNEL_ID)
+        except Exception:
+          try:
+            story_entity = await _find_entity_in_dialogs(
+                client, STORY_BACKUP_CHANNEL_ID
+            )
+          except Exception:
+            story_entity = None
+        if story_entity is None:
+          print(
+              "[Telethon] WARNING: story backup channel could not be resolved."
+          )
+
       telethon_reader_client = client
       telethon_channel_entity = channel_entity
+      telethon_story_entity = story_entity
       print(
           "Telethon reader connected and channel entity resolved successfully."
       )
       return True
 
     except Exception as e:
+      print(f"[Telethon] start attempt {attempt} failed: {e}")
       if client.is_connected():
         try:
           await client.disconnect()
@@ -976,15 +1341,13 @@ def get_stories_api():
       mid = row["message_id"]
       m_type = "photo" if row["media_type"] == "photo" else "video"
       media_url = f"/api/channel/media/{mid}"
+      if SEPARATE_STORY_CHANNEL:
+        media_url += "?kind=story"
 
       if m_type == "photo":
         thumb_url = media_url
       else:
-        thumb_url = (
-            f"/api/stories/thumb/{mid}"
-            if row["thumb_file_id"]
-            else DEFAULT_STORY_THUMB
-        )
+        thumb_url = f"/api/stories/thumb/{mid}"
 
       stories_list.append({
           "id": str(mid),
@@ -1013,10 +1376,21 @@ def get_story_thumb(message_id):
           (message_id,),
       ).fetchone()
 
-    if not row or not row["thumb_file_id"]:
+    if not row:
       return redirect(DEFAULT_STORY_THUMB)
 
-    content, _ = download_telegram_file(row["thumb_file_id"])
+    content = None
+    if row["thumb_file_id"]:
+      content, _ = download_telegram_file(row["thumb_file_id"])
+
+    if not content and telethon_reader_client is not None:
+      try:
+        content = run_async(
+            get_telethon_thumb_bytes(message_id, "story"), timeout=60
+        )
+      except Exception:
+        content = None
+
     if not content:
       return redirect(DEFAULT_STORY_THUMB)
 
@@ -1027,7 +1401,12 @@ def get_story_thumb(message_id):
     except Exception:
       pass
 
-    return Response(content, status=200, mimetype="image/jpeg")
+    return Response(
+        content,
+        status=200,
+        mimetype="image/jpeg",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
   except Exception:
     return redirect(DEFAULT_STORY_THUMB)
 
@@ -1041,9 +1420,16 @@ def get_story_thumb(message_id):
 @app.route("/api/get_videos", methods=["GET"])
 def get_channel_posts_api():
   try:
+    limit = request.args.get("limit", 1000, type=int) or 1000
+    limit = max(1, min(limit, 5000))
     with db_connect() as conn:
       rows = conn.execute(
-          "SELECT * FROM channel_posts ORDER BY message_id ASC LIMIT 100"
+          """
+          SELECT * FROM (
+              SELECT * FROM channel_posts ORDER BY message_id DESC LIMIT ?
+          ) ORDER BY message_id ASC
+          """,
+          (limit,),
       ).fetchall()
 
     posts = []
@@ -1087,21 +1473,141 @@ def get_channel_posts_api():
 
 
 # ============================================================
-# API: STREAM TELEGRAM MEDIA VIA CACHE / BOT API
+# API: STREAM TELEGRAM MEDIA (Direct Stream + Range Support)
 # ============================================================
 
 
-@app.route("/api/channel/media/<int:message_id>", methods=["GET"])
+def _parse_range_header(range_header, size):
+  if not range_header or not size:
+    return None
+  match = re.match(r"^\s*bytes=(\d*)-(\d*)\s*$", range_header)
+  if not match:
+    return None
+  a, b = match.group(1), match.group(2)
+  if a == "" and b == "":
+    return None
+  if a == "":
+    length = int(b)
+    if length <= 0:
+      raise ValueError("unsatisfiable")
+    start = max(0, size - length)
+    end = size - 1
+  else:
+    start = int(a)
+    end = int(b) if b else size - 1
+    end = min(end, size - 1)
+  if start >= size or start > end:
+    raise ValueError("unsatisfiable")
+  return start, end
+
+
+def _ranged_bytes_response(content, mime_type):
+  file_size = len(content)
+  range_header = request.headers.get("Range", None)
+  if range_header:
+    match = re.search(r"bytes=(\d+)-(\d*)", range_header)
+    if match:
+      start = int(match.group(1))
+      end = int(match.group(2)) if match.group(2) else file_size - 1
+      if start >= file_size:
+        return Response(
+            status=416, headers={"Content-Range": f"bytes */{file_size}"}
+        )
+      end = min(end, file_size - 1)
+      length = end - start + 1
+      data = content[start : end + 1]
+      rv = Response(data, 206, mimetype=mime_type, direct_passthrough=True)
+      rv.headers.add("Content-Range", f"bytes {start}-{end}/{file_size}")
+      rv.headers.add("Accept-Ranges", "bytes")
+      rv.headers.add("Content-Length", str(length))
+      rv.headers.add("Cache-Control", "public, max-age=3600")
+      return rv
+
+  rv = Response(content, 200, mimetype=mime_type, direct_passthrough=True)
+  rv.headers.add("Accept-Ranges", "bytes")
+  rv.headers.add("Content-Length", str(file_size))
+  rv.headers.add("Cache-Control", "public, max-age=3600")
+  return rv
+
+
+def stream_telegram_media(message_id, kind, size, mime):
+  try:
+    rng = _parse_range_header(request.headers.get("Range"), size)
+  except ValueError:
+    return Response(status=416, headers={"Content-Range": f"bytes */{size}"})
+
+  if rng:
+    start, end = rng
+    status = 206
+  else:
+    start, end = 0, size - 1
+    status = 200
+  length = end - start + 1
+
+  headers = {
+      "Accept-Ranges": "bytes",
+      "Content-Length": str(length),
+      "Cache-Control": "public, max-age=3600",
+  }
+  if status == 206:
+    headers["Content-Range"] = f"bytes {start}-{end}/{size}"
+
+  if request.method == "HEAD":
+    return Response(status=status, mimetype=mime, headers=headers)
+
+  aligned = (start // STREAM_REQUEST_SIZE) * STREAM_REQUEST_SIZE
+  skip = start - aligned
+  n_chunks = (
+      end + 1 - aligned + STREAM_REQUEST_SIZE - 1
+  ) // STREAM_REQUEST_SIZE
+
+  def generate():
+    q = queue.Queue(maxsize=6)
+    stop = threading.Event()
+    asyncio.run_coroutine_threadsafe(
+        telegram_stream_producer(
+            q, stop, message_id, kind, aligned, n_chunks, size
+        ),
+        telethon_loop,
+    )
+    remaining = length
+    to_skip = skip
+    try:
+      while remaining > 0:
+        try:
+          chunk = q.get(timeout=120)
+        except queue.Empty:
+          print(f"[Stream] timeout waiting for data (message {message_id})")
+          break
+        if chunk is None:
+          break
+        if to_skip:
+          if len(chunk) <= to_skip:
+            to_skip -= len(chunk)
+            continue
+          chunk = chunk[to_skip:]
+          to_skip = 0
+        if len(chunk) > remaining:
+          chunk = chunk[:remaining]
+        remaining -= len(chunk)
+        yield chunk
+    finally:
+      stop.set()
+
+  return Response(
+      generate(),
+      status=status,
+      mimetype=mime,
+      headers=headers,
+      direct_passthrough=True,
+  )
+
+
+@app.route("/api/channel/media/<int:message_id>", methods=["GET", "HEAD"])
 def get_channel_media(message_id):
   try:
-    with db_connect() as conn:
-      row = conn.execute(
-          "SELECT * FROM channel_posts WHERE message_id = ?", (message_id,)
-      ).fetchone()
-      if not row:
-        row = conn.execute(
-            "SELECT * FROM stories WHERE message_id = ?", (message_id,)
-        ).fetchone()
+    kind_hint = (request.args.get("kind") or "").strip().lower()
+    row, row_kind = find_media_row(message_id, kind_hint)
 
     if not row:
       return jsonify({"ok": False, "error": "Media not found."}), 404
@@ -1112,6 +1618,7 @@ def get_channel_media(message_id):
     else:
       default_mime = "image/jpeg"
 
+    # 1) Local Cache Check
     cached_path = find_cached_media(message_id)
     if cached_path and cached_path.is_file():
       mime_type = mimetypes.guess_type(str(cached_path))[0] or default_mime
@@ -1119,9 +1626,36 @@ def get_channel_media(message_id):
           cached_path, mimetype=mime_type, conditional=True, as_attachment=False
       )
 
+    # 2) Direct Stream via Telethon
+    info = None
+    if telethon_reader_client is not None:
+      try:
+        info = run_async(get_media_info(message_id, row_kind), timeout=60)
+      except Exception:
+        info = None
+
+    if info:
+      if info["is_photo"]:
+        photo_data = None
+        try:
+          photo_data = run_async(
+              get_photo_bytes(message_id, row_kind), timeout=120
+          )
+        except Exception:
+          photo_data = None
+        if photo_data:
+          return _ranged_bytes_response(
+              photo_data, info["mime"] or default_mime
+          )
+      elif info["size"] > 0:
+        return stream_telegram_media(
+            message_id, row_kind, info["size"], info["mime"] or default_mime
+        )
+
+    # 3) Fallback: Cache download or Bot API
     try:
       cached_ok = run_async(
-          cache_channel_media_telethon(message_id), timeout=120
+          cache_channel_media_telethon(message_id, row_kind), timeout=120
       )
     except Exception:
       cached_ok = False
@@ -1160,29 +1694,7 @@ def get_channel_media(message_id):
       pass
 
     mime_type = mimetypes.guess_type(telegram_path or "")[0] or default_mime
-    file_size = len(content)
-
-    range_header = request.headers.get("Range", None)
-    if range_header:
-      match = re.search(r"bytes=(\d+)-(\d*)", range_header)
-      if match:
-        start = int(match.group(1))
-        end = int(match.group(2)) if match.group(2) else file_size - 1
-        if start >= file_size:
-          abort(416)
-        end = min(end, file_size - 1)
-        length = end - start + 1
-        data = content[start : end + 1]
-        rv = Response(data, 206, mimetype=mime_type, direct_passthrough=True)
-        rv.headers.add("Content-Range", f"bytes {start}-{end}/{file_size}")
-        rv.headers.add("Accept-Ranges", "bytes")
-        rv.headers.add("Content-Length", str(length))
-        return rv
-
-    rv = Response(content, 200, mimetype=mime_type, direct_passthrough=True)
-    rv.headers.add("Accept-Ranges", "bytes")
-    rv.headers.add("Content-Length", str(file_size))
-    return rv
+    return _ranged_bytes_response(content, mime_type)
 
   except Exception:
     error_id = uuid.uuid4().hex[:8]
@@ -1631,9 +2143,147 @@ def oc_channel_script():
   return "oc-channel.js not found", 404
 
 
+@app.route("/health", methods=["GET"])
+def health_check():
+  return "ok", 200
+
+
 # ============================================================
-# Pyrogram Bot & Media / Story Uploader Initialization
+# Pyrogram Bot & Media / Story Uploader & Scanner Initialization
 # ============================================================
+
+
+def build_main_keyboard():
+  return InlineKeyboardMarkup([
+      [
+          InlineKeyboardButton(
+              "📤 Upload Media (Photo/Video)",
+              callback_data="start_upload",
+          )
+      ],
+      [InlineKeyboardButton("➕ Add Story", callback_data="add_story")],
+      [
+          InlineKeyboardButton(
+              "📡 Scan Channel Media", callback_data="scan_media_channel"
+          )
+      ],
+      [
+          InlineKeyboardButton(
+              "🎬 Story Scan Media", callback_data="story_scan_media"
+          )
+      ],
+  ])
+
+
+async def _safe_edit(message, text, reply_markup=None):
+  try:
+    await message.edit_text(text, reply_markup=reply_markup)
+  except Exception as exc:
+    print("[Bot] edit_text skipped:", exc)
+
+
+def _scan_error_hint(exc):
+  text = str(exc)
+  low = text.lower()
+  if "not connected" in low or "telethon" in low:
+    return (
+        "Telethon session connect হয়নি। TELETHON_SESSION_STRING ঠিক আছে কিনা"
+        " এবং ওই অ্যাকাউন্ট চ্যানেলের মেম্বার কিনা দেখুন।"
+    )
+  if "story channel" in low:
+    return "Story চ্যানেলে Telethon অ্যাকাউন্টের অ্যাক্সেস নেই।"
+  if "flood" in low:
+    return "Telegram সাময়িকভাবে সীমা দিয়েছে, কিছুক্ষণ পরে আবার চেষ্টা করুন।"
+  return text[:300]
+
+
+async def _handle_scan_callback(callback_query, mode):
+  if callback_query.from_user.id != ADMIN_ID:
+    await callback_query.answer("Unauthorized!", show_alert=True)
+    return
+
+  if scan_lock.locked():
+    await callback_query.answer(
+        "⏳ A scan is already running. Please wait.", show_alert=True
+    )
+    return
+
+  label = (
+      "Story Media (#STORY)"
+      if mode == "story"
+      else "Channel Media (OC Collection)"
+  )
+  message = callback_query.message
+
+  try:
+    await callback_query.answer("Scan started...")
+  except Exception:
+    pass
+
+  if (
+      not telethon_thread.is_alive()
+      or telethon_reader_client is None
+      or telethon_channel_entity is None
+  ):
+    await _safe_edit(
+        message,
+        "❌ Scan failed: Telethon reader is not connected.\n\n"
+        + _scan_error_hint(RuntimeError("Telethon reader is not connected")),
+        reply_markup=build_main_keyboard(),
+    )
+    return
+
+  await _safe_edit(message, f"⏳ Scanning {label}...\nPlease wait.")
+
+  pg_loop = asyncio.get_running_loop()
+  last_update = {"t": 0.0}
+
+  def on_progress(total, found):
+    now = time.time()
+    if now - last_update["t"] < 5:
+      return
+    last_update["t"] = now
+    asyncio.run_coroutine_threadsafe(
+        _safe_edit(
+            message,
+            f"⏳ Scanning {label}...\nChecked: {total} | Media found: {found}",
+        ),
+        pg_loop,
+    )
+
+  try:
+    fut = asyncio.run_coroutine_threadsafe(
+        scan_channel(mode, on_progress), telethon_loop
+    )
+    result = await asyncio.wait_for(asyncio.wrap_future(fut), timeout=3600)
+
+    if mode == "story":
+      body = (
+          f"🎬 Stories found: {result['stories_found']}\n"
+          f"➕ New: {result['stories_added']} | ♻️ Updated:"
+          f" {result['stories_updated']}"
+      )
+    else:
+      body = (
+          f"📡 Media found: {result['posts_found']}\n"
+          f"➕ New: {result['posts_added']} | ♻️ Updated:"
+          f" {result['posts_updated']}"
+      )
+    text = (
+        f"✅ Scan complete — {label}\n\n"
+        f"📨 Messages checked: {result['checked']}\n"
+        f"{body}\n"
+        f"🧹 Removed (deleted/changed): {result['removed']}\n\n"
+        "Website now updated. ✔️"
+    )
+  except ScanBusyError:
+    text = "⏳ A scan is already running. Please wait."
+  except Exception as exc:
+    print("[Scan] failed:", traceback.format_exc())
+    text = f"❌ Scan failed: {type(exc).__name__}\n\n{_scan_error_hint(exc)}"
+
+  await asyncio.sleep(1)
+  await _safe_edit(message, text, reply_markup=build_main_keyboard())
 
 
 async def start_pyrogram_monitor():
@@ -1664,20 +2314,19 @@ async def start_pyrogram_monitor():
           await message.reply("⛔ You are not authorized to use this bot.")
           return
 
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(
-                    "📤 Upload Media (Photo/Video)",
-                    callback_data="start_upload",
-                )
-            ],
-            [InlineKeyboardButton("➕ Add Story", callback_data="add_story")],
-        ])
         await message.reply(
             "👋 Welcome Admin!\n\nChoose an option below to upload channel"
-            " media or add a new story to the dashboard:",
-            reply_markup=keyboard,
+            " media, add a new story, or scan the channel to sync the website:",
+            reply_markup=build_main_keyboard(),
         )
+
+      @client.on_callback_query(filters.regex("^scan_media_channel$"))
+      async def scan_media_channel_callback(client, callback_query):
+        await _handle_scan_callback(callback_query, "collection")
+
+      @client.on_callback_query(filters.regex("^story_scan_media$"))
+      async def story_scan_media_callback(client, callback_query):
+        await _handle_scan_callback(callback_query, "story")
 
       @client.on_callback_query(filters.regex("^start_upload$"))
       async def start_upload_callback(client, callback_query):
@@ -1845,7 +2494,10 @@ async def start_pyrogram_monitor():
 
             for s_msg in sent_msgs:
               try:
-                run_async(cache_channel_media_telethon(s_msg.id), timeout=600)
+                run_async(
+                    cache_channel_media_telethon(s_msg.id, "story"),
+                    timeout=600,
+                )
               except Exception as cache_err:
                 print(
                     f"[Cache] Failed to cache story message {s_msg.id}:"
@@ -1856,7 +2508,8 @@ async def start_pyrogram_monitor():
             await callback_query.message.edit_text(
                 f"🎉 Successfully added {len(sent_msgs)} story(s) to Backup"
                 f" Channel ({STORY_BACKUP_CHANNEL_ID}) and live on Website"
-                " Dashboard!"
+                " Dashboard!",
+                reply_markup=build_main_keyboard(),
             )
 
           else:
@@ -1932,7 +2585,10 @@ async def start_pyrogram_monitor():
 
             for s_msg in sent_msgs:
               try:
-                run_async(cache_channel_media_telethon(s_msg.id), timeout=600)
+                run_async(
+                    cache_channel_media_telethon(s_msg.id, "post"),
+                    timeout=600,
+                )
               except Exception as cache_err:
                 print(
                     f"[Cache] Failed to cache message {s_msg.id}: {cache_err}"
@@ -1943,13 +2599,17 @@ async def start_pyrogram_monitor():
             await callback_query.message.edit_text(
                 f"🎉 Successfully published {len(media_list)} file(s) to the"
                 " Telegram channel and synced with the website!\n(Media also"
-                " cached locally via Telethon)"
+                " cached locally via Telethon)",
+                reply_markup=build_main_keyboard(),
             )
         except Exception as e:
           with upload_lock:
             if ADMIN_ID in pending_uploads:
               pending_uploads[ADMIN_ID]["published"] = False
-          await callback_query.message.edit_text(f"❌ Upload failed: {str(e)}")
+          await callback_query.message.edit_text(
+              f"❌ Upload failed: {str(e)}",
+              reply_markup=build_main_keyboard(),
+          )
 
         await callback_query.answer()
 
@@ -1971,7 +2631,7 @@ def _init_background_services_worker():
       telethon_thread.start()
     if telethon_loop_ready.wait(timeout=10):
       try:
-        reader_ok = run_async(start_telethon_reader(), timeout=120)
+        reader_ok = run_async(start_telethon_reader(), timeout=180)
       except Exception:
         reader_ok = False
         print("Could not start Telethon reader:", traceback.format_exc())
