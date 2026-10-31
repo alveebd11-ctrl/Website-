@@ -4,6 +4,5 @@ requests
 Pyrogram==2.0.106
 TgCrypto
 Telethon>=1.40,<2
-cryptg
 Werkzeug
 gunicorn
