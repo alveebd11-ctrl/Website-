@@ -98,12 +98,9 @@ DEFAULT_STORY_THUMB = "https://carder.top/imagens/1792065174675-662575987.jpg"
 SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
 
 # Scan ও Streaming সেটিংস
-# COLLECTION_INCLUDE_CAPTIONED=1 দিলে ক্যাপশনওয়ালা (#STORY ছাড়া) মিডিয়াও oc-collection এ আসবে।
-# ডিফল্ট (0): শুধু ক্যাপশনহীন মিডিয়া → oc-collection
 COLLECTION_INCLUDE_CAPTIONED = (
     os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "0").strip() == "1"
 )
-# PRECACHE_MEDIA=1 দিলে স্টার্টআপে সব মিডিয়া ডিস্কে ক্যাশ হবে (ভারী — সাধারণত দরকার নেই, কারণ এখন সরাসরি স্ট্রিম হয়)
 PRECACHE_MEDIA = os.environ.get("PRECACHE_MEDIA", "0").strip() == "1"
 STREAM_REQUEST_SIZE = 512 * 1024  # Telethon download chunk (512 KB)
 MSG_CACHE_TTL = 600  # সেকেন্ড
@@ -199,11 +196,9 @@ pyrogram_thread = threading.Thread(
 pending_uploads = {}
 temp_client_sessions = {}
 upload_lock = threading.Lock()
-
-# Scan লক (একসাথে একটাই স্ক্যান চলবে)
 scan_lock = threading.Lock()
 
-# Telethon সংযোগের অবস্থা (ডায়াগনস্টিকের জন্য, কোনো গোপন তথ্য নেই)
+# Telethon সংযোগের অবস্থা (ডায়াগনস্টিকের জন্য)
 telethon_status = {
     "state": "starting" if TELETHON_SESSION_STRING else "not_configured",
     "last_error": (
@@ -355,8 +350,6 @@ init_db()
 
 
 def find_media_row(message_id, kind=""):
-  """channel_posts / stories টেবিল থেকে মিডিয়া রো খুঁজে বের করে।
-  returns (row, 'post' | 'story') অথবা (None, None)"""
   if kind == "story":
     order = (("stories", "story"), ("channel_posts", "post"))
   else:
@@ -524,8 +517,8 @@ def download_telegram_file(file_id):
 # Telethon helpers (entity, message cache, streaming & disk cache)
 # ============================================================
 
-_msg_cache = {}  # (kind, message_id) -> (timestamp, message)   [শুধু telethon loop থেকে ব্যবহার]
-_photo_cache = {}  # (kind, message_id) -> bytes                  [শুধু telethon loop থেকে ব্যবহার]
+_msg_cache = {}
+_photo_cache = {}
 
 
 def _entity_for_kind(kind):
@@ -546,7 +539,6 @@ async def _find_entity_in_dialogs(client, channel_id):
 
 
 async def get_cached_message(message_id, kind="post", fresh=False):
-  """চ্যানেল থেকে মেসেজ আনে (১০ মিনিট ক্যাশ)।"""
   if not telethon_reader_client:
     return None
   entity = _entity_for_kind(kind)
@@ -572,7 +564,6 @@ async def get_cached_message(message_id, kind="post", fresh=False):
 
 
 async def get_media_info(message_id, kind="post"):
-  """size / mime / photo কিনা — স্ট্রিমিং শুরুর আগে দরকার।"""
   msg = await get_cached_message(message_id, kind)
   if not msg or not getattr(msg, "media", None):
     return None
@@ -627,7 +618,6 @@ async def get_telethon_thumb_bytes(message_id, kind="story"):
 async def telegram_stream_producer(
     q, stop, message_id, kind, aligned_offset, n_chunks, file_size
 ):
-  """Telegram থেকে চাঙ্ক ডাউনলোড করে queue তে রাখে (Flask thread এটা পড়ে)।"""
   loop = asyncio.get_running_loop()
 
   def put(item):
@@ -737,13 +727,10 @@ def find_cached_media(message_id: int) -> Optional[Path]:
 
 # ============================================================
 # Channel scanning (Posts / OC Collection + Stories)
-#   - Story      : ক্যাপশনে #STORY আছে       -> stories টেবিল  -> dashboard.html
-#   - Collection : ক্যাপশন নেই (ভ্লগ ভিডিও)   -> channel_posts   -> oc-collection.html
 # ============================================================
 
 
 def _classify_media_for_scan(msg):
-  """(media_type, mime_type) অথবা None"""
   media = getattr(msg, "media", None)
   if not isinstance(media, (MessageMediaPhoto, MessageMediaDocument)):
     return None
@@ -806,7 +793,6 @@ async def _scan_one_channel(entity, progress=None):
 
 
 def _split_records(records):
-  """রেকর্ডগুলোকে stories / posts এ ভাগ করে। Album এর ক্যাপশন সব আইটেমে প্রযোজ্য।"""
   group_caps = {}
   for r in records:
     if (
@@ -939,7 +925,6 @@ def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
 
 
 async def scan_channel(mode="all", progress=None):
-  """mode: 'story' | 'collection' | 'all'"""
   if not telethon_reader_client or not telethon_channel_entity:
     raise RuntimeError(
         "Telethon reader is not connected (check TELETHON_SESSION_STRING)."
@@ -1021,7 +1006,6 @@ async def recache_missing_media(items):
 
 
 async def sync_posts_from_channel():
-  """স্টার্টআপে ডাটাবেস রিস্টোর (ডিপ্লয়ের পর SQLite খালি হলে চ্যানেল থেকে ফিরিয়ে আনে)।"""
   if not telethon_reader_client or not telethon_channel_entity:
     return
 
@@ -1333,7 +1317,6 @@ async def start_telethon_reader():
         await asyncio.sleep(3)
         continue
 
-      # Story চ্যানেল (ডিফল্টে storage চ্যানেলের মতোই)
       story_entity = channel_entity
       if SEPARATE_STORY_CHANNEL:
         story_entity = None
@@ -1376,7 +1359,7 @@ async def start_telethon_reader():
 
 
 # ============================================================
-# API: STORIES ENDPOINTS (FOR DASHBOARD.HTML)
+# API: STORIES ENDPOINTS (FOR DASHBOARD.HTML - UNLIMITED)
 # ============================================================
 
 
@@ -1385,7 +1368,7 @@ def get_stories_api():
   try:
     with db_connect() as conn:
       rows = conn.execute(
-          "SELECT * FROM stories ORDER BY ts DESC LIMIT 40"
+          "SELECT * FROM stories ORDER BY ts DESC"
       ).fetchall()
 
     stories_list = []
@@ -1435,7 +1418,6 @@ def get_story_thumb(message_id):
     if row["thumb_file_id"]:
       content, _ = download_telegram_file(row["thumb_file_id"])
 
-    # স্ক্যান করে আনা স্টোরির থাম্বনেইল Telethon দিয়ে আনা হয়
     if not content and telethon_reader_client is not None:
       try:
         content = run_async(
@@ -1526,12 +1508,11 @@ def get_channel_posts_api():
 
 
 # ============================================================
-# API: STREAM TELEGRAM MEDIA (সরাসরি Telegram থেকে, Range সাপোর্টসহ)
+# API: STREAM TELEGRAM MEDIA (Direct Stream + Range Support)
 # ============================================================
 
 
 def _parse_range_header(range_header, size):
-  """(start, end) অথবা None; অগ্রহণযোগ্য রেঞ্জে ValueError।"""
   if not range_header or not size:
     return None
   match = re.match(r"^\s*bytes=(\d*)-(\d*)\s*$", range_header)
@@ -1672,7 +1653,7 @@ def get_channel_media(message_id):
     else:
       default_mime = "image/jpeg"
 
-    # 1) লোকাল ক্যাশ থাকলে সেটাই দেওয়া হবে (দ্রুত)
+    # 1) Local Cache Check
     cached_path = find_cached_media(message_id)
     if cached_path and cached_path.is_file():
       mime_type = mimetypes.guess_type(str(cached_path))[0] or default_mime
@@ -1680,7 +1661,7 @@ def get_channel_media(message_id):
           cached_path, mimetype=mime_type, conditional=True, as_attachment=False
       )
 
-    # 2) সরাসরি Telegram থেকে স্ট্রিম (ডিপ্লয়ের পরও ফাইল হারায় না, বড় ভিডিওও চলে)
+    # 2) Direct Stream via Telethon
     info = None
     if telethon_reader_client is not None:
       try:
@@ -1706,7 +1687,7 @@ def get_channel_media(message_id):
             message_id, row_kind, info["size"], info["mime"] or default_mime
         )
 
-    # 3) ফলব্যাক: পুরনো পদ্ধতি (Telethon ক্যাশ ডাউনলোড → Bot API)
+    # 3) Fallback: Cache download or Bot API
     try:
       cached_ok = run_async(
           cache_channel_media_telethon(message_id, row_kind), timeout=120
@@ -2375,11 +2356,7 @@ async def _flood_retry(func, *args, **kwargs):
     try:
       return await func(*args, **kwargs)
     except Exception as exc:
-      wait = (
-          getattr(exc, "value", None)
-          if type(exc).__name__ == "FloodWait"
-          else None
-      )
+      wait = getattr(exc, "value", None) if type(exc).__name__ == "FloodWait" else None
       if wait is None or attempt == 5:
         raise
       print(f"[Upload] FloodWait {wait}s — waiting then retrying...")
