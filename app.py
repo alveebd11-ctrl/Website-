@@ -1,13 +1,14 @@
 """
 Telegram-backed media server with OTP Login & Channel Sync
-- মিডিয়া ফাইল সার্ভারে সেভ হয় না; শুধু মেটাডাটা DB-তে থাকে, ভিডিও/ফটো সরাসরি Telegram থেকে স্ট্রিম হয়।
-- Pyrogram User Session (SESSION_STRING) দিয়ে চ্যানেল স্ক্যান + স্ট্রিম
-- Pyrogram Bot দিয়ে বাটন: "Scan Channel Media" ও "Story Scan Media"
-- Telethon & Telegram Login OTP API (/send-code, /verify-code)
-- API: /api/stories, /api/collection, /media/<id>, /thumb/<id>, /api/status
 """
 import os, re, time, math, asyncio, logging, threading
 from collections import OrderedDict
+
+# Python 3.12+ Event Loop Fix (মেইন থ্রেডে লুপ সংক্রান্ত এরর রোধ করতে)
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 from flask import Flask, jsonify, request, Response, abort, send_from_directory, session
 from sqlalchemy import (create_engine, Column, Integer, BigInteger, String, Text,
@@ -105,7 +106,6 @@ def _apply(row, info):
         setattr(row, k, v)
 
 def save_scan(infos, mode, seen_ids):
-    """upsert + (স্ক্যান সম্পূর্ণ হলে) মুছে ফেলা মেসেজ prune"""
     added = updated = removed = 0
     with Session() as s:
         existing = {r.message_id: r for r in s.query(Media).all()}
@@ -154,7 +154,6 @@ def run(coro, timeout=60):
     return asyncio.run_coroutine_threadsafe(coro, LOOP).result(timeout)
 
 async def scan(mode, progress=None):
-    """mode: 'story' বা 'collection'"""
     infos, seen, total = [], set(), 0
     async for msg in USER.get_chat_history(CHANNEL):
         total += 1
@@ -217,7 +216,6 @@ async def on_cb(c, q):
             await q.message.reply_text(text, reply_markup=KB)
 
 async def on_channel_msg(c, msg):
-    """চ্যানেলে নতুন/এডিট পোস্ট এলে অটো সিঙ্ক"""
     try:
         await asyncio.to_thread(sync_one, msg.id, classify(msg))
     except Exception:
