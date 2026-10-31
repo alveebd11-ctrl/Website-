@@ -63,10 +63,10 @@ API_HASH = os.environ.get(
 ).strip()
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
 
-# Telethon user session for channel reader
+# Telethon user session for channel reader (Updated with your new session string)
 TELETHON_SESSION_STRING = os.environ.get(
     "TELETHON_SESSION_STRING",
-    "1BVtsOIgBu8Ld797Gm7tiQ9pMT34lKAGTW2wGgJXXC9kay-DU8hToIe6GugESCFCwGU2auCYj3cnflF5FvXQJGhsR2HRUfewLrlAyQJPPxLAxlc9ZCiBE1AJTPifPqgsKB395haHgTQKhggQyR-VeVG4LQeP0WlitlYALDA3gvhz4KAQHAm7sVZ1S9OK6rYyfvX0Qgh138P3n97duv52qIKuxUST2x6avkDEu2Y9VDATeAorW15QaGb6tmHdAPbzppCQtgI3fvY160HhfnZVW7RrrfM3StFrOAPkcWRp8tQnKMVq6xa5ZWEbkz2IeFIC1wJc37iHqM3cqpdufYZSSmqqxaomZsTg=",
+    "1BVtsOIgBu7whPX9TmEg75UiEb9ds3G_cTcYtZFzN_G1xMUC7peySK-vCRXBUfGZzFrthCA0oVHLW6rDytPGSuG63vhaixAqRDyk3uJ3rHfxy1oy5mNSZ97A5eEIM5eEYaxjQRl9b2BSYOZG7M4ftHQBIiJOgxT9LxRU0gFrb4Tb5oO6N8To1d7JbiOx0JGZO2xiWS-0NzapAfJob05AStlL9V6hfEGkYtU2X9cyedFzVi7T7n31CSNtQ3zS3oWRD9rEhwdVPm3uekNsC4ZVmehBebiGZ50-NPOHvkAKppjV_lDojlL1w91fsVIcULovQaOHjPzhKfVT3DLoD8_ZQEBb_0LGxYs0=",
 ).strip()
 
 # Storage channel ID normalization (-1004322205565)
