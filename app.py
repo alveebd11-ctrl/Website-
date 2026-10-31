@@ -1565,14 +1565,6 @@ def home():
   return "Alvee Community Server is Running! (index.html not found)", 200
 
 
-@app.route("/naughty.html", methods=["GET"])
-def naughty_page():
-  page_path = BASE_DIR / "naughty.html"
-  if page_path.is_file():
-    return send_file(page_path)
-  return "naughty.html not found", 404
-
-
 @app.route("/verify.html", methods=["GET"])
 def verify_page():
   page_path = BASE_DIR / "verify.html"
