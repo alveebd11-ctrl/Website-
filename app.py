@@ -16,7 +16,7 @@ import traceback
 from typing import Optional, Tuple
 import uuid
 
-# Python 3.12+ Event Loop Fix (Fixes "There is no current event loop in thread 'MainThread'")
+# Python 3.12+ Event Loop Fix
 try:
   asyncio.get_event_loop()
 except RuntimeError:
@@ -29,12 +29,12 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
-# Telethon imports (Used for Login & Channel Reading)
+# Telethon imports
 from telethon import TelegramClient, utils, events as telethon_events
 from telethon.sessions import StringSession
 from telethon.tl.types import DocumentAttributeAnimated
 
-# Pyrogram imports (Used exclusively for Bot & Media Upload Handling)
+# Pyrogram imports
 try:
   from pyrogram import Client, filters
   from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument
@@ -63,13 +63,11 @@ API_HASH = os.environ.get(
 ).strip()
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "6034439625") or "6034439625")
 
-# Telethon user session for channel reader
 TELETHON_SESSION_STRING = os.environ.get(
     "TELETHON_SESSION_STRING",
     "1BVtsOIgBu8Ld797Gm7tiQ9pMT34lKAGTW2wGgJXXC9kay-DU8hToIe6GugESCFCwGU2auCYj3cnflF5FvXQJGhsR2HRUfewLrlAyQJPPxLAxlc9ZCiBE1AJTPifPqgsKB395haHgTQKhggQyR-VeVG4LQeP0WlitlYALDA3gvhz4KAQHAm7sVZ1S9OK6rYyfvX0Qgh138P3n97duv52qIKuxUST2x6avkDEu2Y9VDATeAorW15QaGb6tmHdAPbzppCQtgI3fvY160HhfnZVW7RrrfM3StFrOAPkcWRp8tQnKMVq6xa5ZWEbkz2IeFIC1wJc37iHqM3cqpdufYZSSmqqxaomZsTg=",
 ).strip()
 
-# Storage channel ID normalization (-1004322205565)
 _raw_channel_id = os.environ.get("STORAGE_CHANNEL_ID", "-1004322205565").strip()
 
 if not _raw_channel_id:
@@ -94,7 +92,6 @@ print("OC & Story Storage Channel ID:", STORAGE_CHANNEL_ID)
 WEBHOOK_SECRET = os.environ.get(
     "TELEGRAM_WEBHOOK_SECRET", "my_secure_webhook_secret_123"
 ).strip()
-
 MAX_UPLOAD_MB = max(1, int(os.environ.get("MAX_UPLOAD_MB", "50")))
 MAX_CHAT_TEXT_CHARS = 3000
 CHAT_HISTORY_LIMIT_DEFAULT = 100
@@ -141,17 +138,12 @@ CORS(
 
 total_logged_in_users = 0
 
-# ============================================================
-# TELEGRAM CLIENT GLOBALS & EVENT LOOPS
-# ============================================================
-
 telethon_reader_client = None
 telethon_channel_entity = None
 pyrogram_client = None
 _services_started = False
 _services_lock = threading.Lock()
 
-# Telethon Background Loop
 telethon_loop = asyncio.new_event_loop()
 telethon_loop_ready = threading.Event()
 telethon_thread = threading.Thread(
@@ -160,7 +152,6 @@ telethon_thread = threading.Thread(
     daemon=True,
 )
 
-# Pyrogram Background Loop (For Bot Handling)
 pyrogram_loop = asyncio.new_event_loop()
 pyrogram_loop_ready = threading.Event()
 pyrogram_thread = threading.Thread(
@@ -202,11 +193,6 @@ def run_pyrogram_async(coro, timeout=180):
     raise RuntimeError("Pyrogram background loop did not start.")
   future = asyncio.run_coroutine_threadsafe(coro, pyrogram_loop)
   return future.result(timeout=timeout)
-
-
-# ============================================================
-# SQLite chat, channel posts & stories storage
-# ============================================================
 
 
 def db_connect():
@@ -302,11 +288,6 @@ def get_chat_stats():
 
 
 init_db()
-
-
-# ============================================================
-# Telegram Bot API helpers
-# ============================================================
 
 
 class TelegramAPIError(RuntimeError):
@@ -453,16 +434,10 @@ def download_telegram_file(file_id):
     return None, None
 
 
-# ============================================================
-# Telethon Media Cache Helper
-# ============================================================
-
-
 async def cache_channel_media_telethon(message_id: int) -> bool:
   global telethon_reader_client, telethon_channel_entity
 
   if not telethon_reader_client or not telethon_channel_entity:
-    print(f"[Cache] Telethon not ready for message {message_id}")
     return False
 
   try:
@@ -472,7 +447,6 @@ async def cache_channel_media_telethon(message_id: int) -> bool:
     msg = msgs[0] if isinstance(msgs, (list, tuple)) else msgs
 
     if not msg or not getattr(msg, "media", None):
-      print(f"[Cache] No media found for message {message_id}")
       return False
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -489,10 +463,6 @@ async def cache_channel_media_telethon(message_id: int) -> bool:
     )
 
     if downloaded_path:
-      print(
-          f"[Cache] Successfully cached message {message_id} ->"
-          f" {downloaded_path}"
-      )
       return True
 
     return False
@@ -513,11 +483,6 @@ def find_cached_media(message_id: int) -> Optional[Path]:
   if not matches:
     return None
   return max(matches, key=lambda p: p.stat().st_size)
-
-
-# ============================================================
-# Channel History Auto-Recovery (Posts & Stories)
-# ============================================================
 
 
 async def sync_posts_from_channel():
@@ -586,7 +551,6 @@ async def sync_posts_from_channel():
       created_at = dt.isoformat()
       ts_val = int(dt.timestamp())
 
-      # Check if this message is a Story
       if STORY_MARKER in text_msg:
         if msg.id not in existing_story_ids:
           story_type = "photo" if media_type == "photo" else "video"
@@ -641,12 +605,6 @@ async def sync_posts_from_channel():
       if not find_cached_media(msg.id):
         to_cache.append(msg.id)
 
-    if synced_posts or synced_stories:
-      print(
-          f"[Sync] Restored {synced_posts} post(s) and {synced_stories}"
-          " story(s) from Telegram channel history."
-      )
-
     if to_cache:
       asyncio.create_task(recache_missing_media(to_cache))
 
@@ -661,11 +619,6 @@ async def recache_missing_media(message_ids):
     except Exception as e:
       print(f"[Sync] Failed to re-cache message {mid}: {e}")
     await asyncio.sleep(0.5)
-
-
-# ============================================================
-# Telegram Login Endpoints
-# ============================================================
 
 
 @app.route("/send-code", methods=["POST"])
@@ -767,11 +720,6 @@ def verify_code_api():
     return jsonify(res)
   except Exception as e:
     return jsonify({"status": "error", "message": str(e)}), 500
-
-
-# ============================================================
-# Secure Telegram Profile API
-# ============================================================
 
 
 @app.route("/auth/telegram", methods=["POST"])
@@ -899,11 +847,6 @@ def get_user_profile_api():
   })
 
 
-# ============================================================
-# TELETHON READER INITIALIZATION
-# ============================================================
-
-
 async def start_telethon_reader():
   global telethon_reader_client, telethon_channel_entity
 
@@ -942,9 +885,6 @@ async def start_telethon_reader():
 
       telethon_reader_client = client
       telethon_channel_entity = channel_entity
-      print(
-          "Telethon reader connected and channel entity resolved successfully."
-      )
       return True
 
     except Exception as e:
@@ -956,11 +896,6 @@ async def start_telethon_reader():
       await asyncio.sleep(5)
 
   return False
-
-
-# ============================================================
-# API: STORIES ENDPOINTS (FOR DASHBOARD.HTML)
-# ============================================================
 
 
 @app.route("/api/stories", methods=["GET"])
@@ -1032,11 +967,6 @@ def get_story_thumb(message_id):
     return redirect(DEFAULT_STORY_THUMB)
 
 
-# ============================================================
-# API: GET TELEGRAM CHANNEL POSTS FROM SQLITE
-# ============================================================
-
-
 @app.route("/api/channel/posts", methods=["GET"])
 @app.route("/api/get_videos", methods=["GET"])
 def get_channel_posts_api():
@@ -1084,11 +1014,6 @@ def get_channel_posts_api():
         }),
         502,
     )
-
-
-# ============================================================
-# API: STREAM TELEGRAM MEDIA VIA CACHE / BOT API
-# ============================================================
 
 
 @app.route("/api/channel/media/<int:message_id>", methods=["GET"])
@@ -1195,10 +1120,6 @@ def get_channel_media(message_id):
     )
 
 
-# ============================================================
-# Admin Panel Routes
-# ============================================================
-
 ADMIN_USER = os.environ.get("ADMIN_USER", "@alvee")
 ADMIN_PASS = os.environ.get("ADMIN_PASS", "@alvee")
 
@@ -1289,11 +1210,6 @@ def admin_panel():
 def admin_logout():
   session.pop("admin_logged_in", None)
   return redirect(url_for("admin_panel"))
-
-
-# ============================================================
-# Chat API
-# ============================================================
 
 
 @app.route("/api/chat/messages", methods=["GET", "POST"])
@@ -1552,11 +1468,6 @@ def handle_large_upload(_error):
   )
 
 
-# ============================================================
-# Website pages and background media
-# ============================================================
-
-
 @app.route("/", methods=["GET"])
 def home():
   index_path = BASE_DIR / "index.html"
@@ -1640,7 +1551,7 @@ def oc_channel_script():
 
 
 # ============================================================
-# Pyrogram Bot & Media / Story Uploader Initialization
+# Pyrogram Bot & Inline Menus (Scan Command & Back Button)
 # ============================================================
 
 
@@ -1666,13 +1577,8 @@ async def start_pyrogram_monitor():
       pyrogram_client = client
       print("Pyrogram bot started successfully.")
 
-      @client.on_message(filters.command("start") & filters.private)
-      async def start_cmd(client, message):
-        if message.from_user.id != ADMIN_ID:
-          await message.reply("⛔ You are not authorized to use this bot.")
-          return
-
-        keyboard = InlineKeyboardMarkup([
+      def get_main_menu_markup():
+        return InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(
                     "📤 Upload Media (Photo/Video)",
@@ -1680,12 +1586,73 @@ async def start_pyrogram_monitor():
                 )
             ],
             [InlineKeyboardButton("➕ Add Story", callback_data="add_story")],
+            [InlineKeyboardButton("🔄 Scan Channel Media", callback_data="run_scan")]
         ])
+
+      @client.on_message(filters.command("start") & filters.private)
+      async def start_cmd(client, message):
+        if message.from_user.id != ADMIN_ID:
+          await message.reply("⛔ You are not authorized to use this bot.")
+          return
+
+        pending_uploads.pop(ADMIN_ID, None)
+
         await message.reply(
             "👋 Welcome Admin!\n\nChoose an option below to upload channel"
-            " media or add a new story to the dashboard:",
-            reply_markup=keyboard,
+            " media, add a new story, or scan channel media:",
+            reply_markup=get_main_menu_markup(),
         )
+
+      @client.on_message(filters.command("scan") & filters.private)
+      async def scan_cmd(client, message):
+        if message.from_user.id != ADMIN_ID:
+          await message.reply("⛔ You are not authorized.")
+          return
+
+        status_msg = await message.reply("🔍 Scanning channel media using Telethon session... Please wait.")
+        try:
+          await sync_posts_from_channel()
+          await status_msg.edit_text("✅ Scan completed successfully! All channel media and stories have been synchronized with the website.")
+        except Exception as e:
+          await status_msg.edit_text(f"❌ Scan failed: {str(e)}")
+
+      @client.on_callback_query(filters.regex("^run_scan$"))
+      async def run_scan_callback(client, callback_query):
+        if callback_query.from_user.id != ADMIN_ID:
+          await callback_query.answer("Unauthorized!", show_alert=True)
+          return
+
+        await callback_query.message.edit_text("🔍 Scanning channel media and stories... Please wait.")
+        try:
+          await sync_posts_from_channel()
+          back_markup = InlineKeyboardMarkup([[
+              InlineKeyboardButton("« Back to Menu", callback_data="main_menu")
+          ]])
+          await callback_query.message.edit_text(
+              "✅ Scan & Synchronization completed successfully! All photos and videos from the channel are now live on your website.",
+              reply_markup=back_markup
+          )
+        except Exception as e:
+          back_markup = InlineKeyboardMarkup([[
+              InlineKeyboardButton("« Back to Menu", callback_data="main_menu")
+          ]])
+          await callback_query.message.edit_text(f"❌ Scan failed: {str(e)}", reply_markup=back_markup)
+        await callback_query.answer()
+
+      @client.on_callback_query(filters.regex("^main_menu$"))
+      async def main_menu_callback(client, callback_query):
+        if callback_query.from_user.id != ADMIN_ID:
+          await callback_query.answer("Unauthorized!", show_alert=True)
+          return
+
+        pending_uploads.pop(ADMIN_ID, None)
+
+        await callback_query.message.edit_text(
+            "👋 Welcome Admin!\n\nChoose an option below to upload channel"
+            " media, add a new story, or scan channel media:",
+            reply_markup=get_main_menu_markup(),
+        )
+        await callback_query.answer()
 
       @client.on_callback_query(filters.regex("^start_upload$"))
       async def start_upload_callback(client, callback_query):
@@ -1700,10 +1667,15 @@ async def start_pyrogram_monitor():
             "published": False,
         }
 
+        back_markup = InlineKeyboardMarkup([[
+            InlineKeyboardButton("« Back", callback_data="main_menu")
+        ]])
+
         await callback_query.message.edit_text(
             "📥 Please send your photo(s), video(s), or document(s) now.\n\nYou"
             " can send single files sequentially or an album at once. Once"
-            " finished, click 'Confirm & Upload'."
+            " finished, click 'Confirm & Upload' in your incoming queue.",
+            reply_markup=back_markup,
         )
         await callback_query.answer()
 
@@ -1720,10 +1692,15 @@ async def start_pyrogram_monitor():
             "published": False,
         }
 
+        back_markup = InlineKeyboardMarkup([[
+            InlineKeyboardButton("« Back", callback_data="main_menu")
+        ]])
+
         await callback_query.message.edit_text(
             "📸 **Add Story Mode**\n\nPlease send the photo(s) or video(s) you"
             " want to add to the website's Story Line.\nOnce finished, click"
-            " 'Confirm & Upload'."
+            " 'Confirm & Upload'.",
+            reply_markup=back_markup,
         )
         await callback_query.answer()
 
@@ -1752,11 +1729,14 @@ async def start_pyrogram_monitor():
             " click confirm below."
         )
 
-        keyboard = InlineKeyboardMarkup([[
-            InlineKeyboardButton(
-                "✅ Confirm & Upload", callback_data="confirm_upload"
-            )
-        ]])
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    "✅ Confirm & Upload", callback_data="confirm_upload"
+                )
+            ],
+            [InlineKeyboardButton("« Back", callback_data="main_menu")],
+        ])
 
         await message.reply(text, reply_markup=keyboard)
 
@@ -1782,8 +1762,15 @@ async def start_pyrogram_monitor():
           state["published"] = True
           pending_uploads[ADMIN_ID] = state
 
+        back_markup = InlineKeyboardMarkup([[
+            InlineKeyboardButton(
+                "🏠 Back to Menu", callback_data="main_menu"
+            )
+        ]])
+
         await callback_query.message.edit_text(
-            "⏳ Uploading to backup channel... Please wait."
+            "⏳ Uploading to backup channel... Please wait.",
+            reply_markup=back_markup,
         )
 
         try:
@@ -1864,7 +1851,8 @@ async def start_pyrogram_monitor():
             await callback_query.message.edit_text(
                 f"🎉 Successfully added {len(sent_msgs)} story(s) to Backup"
                 f" Channel ({STORY_BACKUP_CHANNEL_ID}) and live on Website"
-                " Dashboard!"
+                " Dashboard!",
+                reply_markup=back_markup,
             )
 
           else:
@@ -1951,13 +1939,16 @@ async def start_pyrogram_monitor():
             await callback_query.message.edit_text(
                 f"🎉 Successfully published {len(media_list)} file(s) to the"
                 " Telegram channel and synced with the website!\n(Media also"
-                " cached locally via Telethon)"
+                " cached locally via Telethon)",
+                reply_markup=back_markup,
             )
         except Exception as e:
           with upload_lock:
             if ADMIN_ID in pending_uploads:
               pending_uploads[ADMIN_ID]["published"] = False
-          await callback_query.message.edit_text(f"❌ Upload failed: {str(e)}")
+          await callback_query.message.edit_text(
+              f"❌ Upload failed: {str(e)}", reply_markup=back_markup
+          )
 
         await callback_query.answer()
 
@@ -1966,11 +1957,6 @@ async def start_pyrogram_monitor():
   except Exception:
     print("Pyrogram startup error:", traceback.format_exc())
     return False
-
-
-# ============================================================
-# Background Services Startup (Non-Blocking for Render)
-# ============================================================
 
 
 def _init_background_services_worker():
