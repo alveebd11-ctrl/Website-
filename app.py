@@ -16,6 +16,13 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional, Tuple
 
+# Python 3.12+ Event Loop Fix (Fixes "There is no current event loop in thread 'MainThread'")
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    _main_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(_main_loop)
+
 import requests
 from flask import Flask, request, jsonify, send_file, abort, session, redirect, url_for, render_template_string, Response
 from flask_cors import CORS
@@ -396,13 +403,10 @@ def download_telegram_file(file_id):
 
 
 # ============================================================
-# Telethon Media Cache Helper (NEW)
+# Telethon Media Cache Helper
 # ============================================================
 
 async def cache_channel_media_telethon(message_id: int) -> bool:
-    """Download media from channel using Telethon and save to CACHE_DIR.
-    Supports files far larger than 20 MB (up to ~2GB / 4GB).
-    """
     global telethon_reader_client, telethon_channel_entity
 
     if not telethon_reader_client or not telethon_channel_entity:
@@ -419,7 +423,6 @@ async def cache_channel_media_telethon(message_id: int) -> bool:
 
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-        # Clean any previous partial files for this message_id
         for old in CACHE_DIR.glob(f"{message_id}*"):
             try:
                 old.unlink(missing_ok=True)
@@ -430,44 +433,33 @@ async def cache_channel_media_telethon(message_id: int) -> bool:
         downloaded_path = await telethon_reader_client.download_media(msg, file=str(target))
 
         if downloaded_path:
-            print(f"[Cache] Successfully cached message {message_id} → {downloaded_path}")
+            print(f"[Cache] Successfully cached message {message_id} -> {downloaded_path}")
             return True
 
-        print(f"[Cache] download_media returned None for {message_id}")
         return False
 
     except Exception as e:
         print(f"[Cache] Telethon error for message {message_id}: {e}")
-        traceback.print_exc()
         return False
 
 
 def find_cached_media(message_id: int) -> Optional[Path]:
-    """Find the cached file for a given message_id (handles any extension)."""
     if not CACHE_DIR.exists():
         return None
     matches = list(CACHE_DIR.glob(f"{message_id}*"))
-    # Prefer the largest file if multiple (rare)
     if not matches:
         return None
     return max(matches, key=lambda p: p.stat().st_size if p.is_file() else 0)
 
 
 # ============================================================
-# Channel History Auto-Recovery (NEW)
+# Channel History Auto-Recovery
 # ============================================================
-# সার্ভার রিস্টার্ট বা কোড আপডেটের ফলে chat_messages.db এবং telethon_cache
-# ফোল্ডার মুছে গেলেও, এই ফাংশনগুলো সার্ভার চালু হওয়ার সময় টেলিগ্রাম
-# স্টোরেজ চ্যানেলের সম্পূর্ণ হিস্ট্রি আবার পড়ে channel_posts টেবিল এবং
-# মিডিয়া ক্যাশ পুনরায় তৈরি করে দেয়। ছবি/ভিডিও কখনো "উধাও" হবে না।
 
 async def sync_posts_from_channel():
-    """টেলিগ্রাম স্টোরেজ চ্যানেলের সব পোস্ট আবার স্ক্যান করে channel_posts
-    টেবিলে যা নেই তা যোগ করে দেয়, এবং ক্যাশে নেই এমন মিডিয়ার তালিকা তৈরি করে।"""
     global telethon_reader_client, telethon_channel_entity
 
     if not telethon_reader_client or not telethon_channel_entity:
-        print("[Sync] Telethon reader not ready; skipping channel sync.")
         return
 
     try:
@@ -506,7 +498,6 @@ async def sync_posts_from_channel():
                 elif doc_mime.startswith("image/"):
                     media_type = "photo"
                 else:
-                    # অন্য ধরনের ডকুমেন্ট (যেমন pdf) হলে এড়িয়ে যান
                     continue
                 mime_type = doc_mime or "application/octet-stream"
             else:
@@ -535,11 +526,8 @@ async def sync_posts_from_channel():
 
         if synced_count:
             print(f"[Sync] Restored {synced_count} post(s) from Telegram channel history.")
-        else:
-            print("[Sync] channel_posts table already up to date.")
 
         if to_cache:
-            print(f"[Sync] {len(to_cache)} media file(s) need re-caching; starting background download...")
             asyncio.create_task(recache_missing_media(to_cache))
 
     except Exception:
@@ -547,15 +535,12 @@ async def sync_posts_from_channel():
 
 
 async def recache_missing_media(message_ids):
-    """ক্যাশে নেই এমন মিডিয়া ব্যাকগ্রাউন্ডে ধীরে ধীরে আবার ডাউনলোড করে,
-    যাতে টেলিগ্রাম রেট-লিমিটে না পড়তে হয়।"""
     for mid in message_ids:
         try:
             await cache_channel_media_telethon(mid)
         except Exception as e:
             print(f"[Sync] Failed to re-cache message {mid}: {e}")
         await asyncio.sleep(0.5)
-    print(f"[Sync] Background re-caching finished for {len(message_ids)} item(s).")
 
 
 # ============================================================
@@ -738,7 +723,6 @@ async def start_telethon_reader():
     global telethon_reader_client, telethon_channel_entity
 
     if not TELETHON_SESSION_STRING:
-        print("TELETHON_SESSION_STRING is missing.")
         return False
 
     max_retries = 5
@@ -747,7 +731,6 @@ async def start_telethon_reader():
         try:
             await client.connect()
             if not await client.is_user_authorized():
-                print(f"Telethon attempt {attempt}: Session is not authorized.")
                 await client.disconnect()
                 await asyncio.sleep(3)
                 continue
@@ -766,7 +749,6 @@ async def start_telethon_reader():
                         continue
 
             if channel_entity is None:
-                print(f"Telethon attempt {attempt}: Storage channel not found.")
                 await client.disconnect()
                 await asyncio.sleep(3)
                 continue
@@ -777,7 +759,6 @@ async def start_telethon_reader():
             return True
 
         except Exception as e:
-            print(f"Telethon connection attempt {attempt} failed: {e}")
             if client.is_connected():
                 try:
                     await client.disconnect()
@@ -785,12 +766,11 @@ async def start_telethon_reader():
                     pass
             await asyncio.sleep(5)
 
-    print("All Telethon reader connection attempts failed.")
     return False
 
 
 # ============================================================
-# API: GET TELEGRAM CHANNEL POSTS FROM SQLITE (Fixed Sequencing)
+# API: GET TELEGRAM CHANNEL POSTS FROM SQLITE
 # ============================================================
 
 @app.route("/api/channel/posts", methods=["GET"])
@@ -798,7 +778,6 @@ async def start_telethon_reader():
 def get_channel_posts_api():
     try:
         with db_connect() as conn:
-            # সঠিক সিরিয়াল মেইনটেইন করার জন্য ASC (পুরোনো থেকে নতুন) অথবা DESC সাজিয়ে পাঠানো
             rows = conn.execute(
                 "SELECT * FROM channel_posts ORDER BY message_id ASC LIMIT 100"
             ).fetchall()
@@ -841,7 +820,7 @@ def get_channel_posts_api():
 
 
 # ============================================================
-# API: STREAM TELEGRAM MEDIA VIA CACHE / BOT API (UPDATED)
+# API: STREAM TELEGRAM MEDIA VIA CACHE / BOT API
 # ============================================================
 
 @app.route("/api/channel/media/<int:message_id>", methods=["GET"])
@@ -862,36 +841,22 @@ def get_channel_media(message_id):
         else:
             default_mime = "image/jpeg"
 
-        # ---------- 1. Prefer local Telethon cache ----------
         cached_path = find_cached_media(message_id)
         if cached_path and cached_path.is_file():
             mime_type = mimetypes.guess_type(str(cached_path))[0] or default_mime
-            return send_file(
-                cached_path,
-                mimetype=mime_type,
-                conditional=True,
-                as_attachment=False
-            )
+            return send_file(cached_path, mimetype=mime_type, conditional=True, as_attachment=False)
 
-        # ---------- 1b. Cache missing: try Telethon download on-demand ----------
         try:
             cached_ok = run_async(cache_channel_media_telethon(message_id), timeout=120)
-        except Exception as e:
+        except Exception:
             cached_ok = False
-            print(f"[Media] On-demand Telethon cache failed for {message_id}: {e}")
 
         if cached_ok:
             cached_path = find_cached_media(message_id)
             if cached_path and cached_path.is_file():
                 mime_type = mimetypes.guess_type(str(cached_path))[0] or default_mime
-                return send_file(
-                    cached_path,
-                    mimetype=mime_type,
-                    conditional=True,
-                    as_attachment=False
-                )
+                return send_file(cached_path, mimetype=mime_type, conditional=True, as_attachment=False)
 
-        # ---------- 2. Fallback: Bot API download + cache it ----------
         file_id = row["telegram_file_id"]
         if not file_id:
             return jsonify({"ok": False, "error": "Media not found."}), 404
@@ -900,17 +865,14 @@ def get_channel_media(message_id):
         if content is None:
             return jsonify({"ok": False, "error": "Telegram media download failed."}), 404
 
-        # Save to cache for next time (even if it came from Bot API)
         try:
             CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            # Try to keep a sensible extension
             ext = Path(telegram_path or "").suffix or (".mp4" if media_type in ("video", "animation") else ".jpg")
             cache_file = CACHE_DIR / f"{message_id}{ext}"
             with open(cache_file, "wb") as f:
                 f.write(content)
-            print(f"[Cache] Saved Bot-API fallback for {message_id} → {cache_file}")
-        except Exception as e:
-            print(f"[Cache] Failed to write fallback cache: {e}")
+        except Exception:
+            pass
 
         mime_type = mimetypes.guess_type(telegram_path or "")[0] or default_mime
         file_size = len(content)
@@ -1054,7 +1016,6 @@ def chat_messages_api():
             messages = [row_to_message(row) for row in reversed(rows)]
             return jsonify({"ok": True, "messages": messages})
         except Exception:
-            print("Chat history error:", traceback.format_exc())
             return jsonify({"ok": False, "error": "Unable to load chat history."}), 500
 
     text = (request.form.get("text") or "").strip()
@@ -1115,7 +1076,6 @@ def chat_messages_api():
         try:
             uploaded_file.save(media_path)
         except Exception:
-            print("Media save error:", traceback.format_exc())
             return jsonify({"ok": False, "error": "Unable to save uploaded media."}), 500
 
     try:
@@ -1172,7 +1132,6 @@ def chat_messages_api():
     except TelegramAPIError as exc:
         if media_path and media_path.exists():
             media_path.unlink(missing_ok=True)
-        print("Telegram chat backup failed:", exc)
         return jsonify({"ok": False, "error": "Telegram storage failed. Please try again."}), 502
 
     except sqlite3.IntegrityError:
@@ -1188,11 +1147,9 @@ def chat_messages_api():
                 "telegram_saved": bool(row["telegram_saved"]),
                 "duplicate": True,
             })
-        print("Chat database integrity error:", traceback.format_exc())
         return jsonify({"ok": False, "error": "Unable to save chat message."}), 500
 
     except Exception:
-        print("Chat send error:", traceback.format_exc())
         return jsonify({"ok": False, "error": "Unexpected server error while saving the message."}), 500
 
 
@@ -1321,11 +1278,9 @@ async def start_pyrogram_monitor():
     global pyrogram_client
 
     if Client is None or filters is None:
-        print("Pyrogram is not installed; background bot uploader is disabled.")
         return False
 
     if not BOT_TOKEN or not API_ID or not API_HASH:
-        print("API_ID/API_HASH/BOT_TOKEN missing; Pyrogram bot uploader is disabled.")
         return False
 
     try:
@@ -1479,10 +1434,8 @@ async def start_pyrogram_monitor():
                             )
                         conn.commit()
 
-                    # ---------- NEW: Cache every uploaded media via Telethon ----------
                     for s_msg in sent_msgs:
                         try:
-                            # Large timeout for big files
                             run_async(cache_channel_media_telethon(s_msg.id), timeout=600)
                         except Exception as cache_err:
                             print(f"[Cache] Failed to cache message {s_msg.id}: {cache_err}")
@@ -1508,12 +1461,10 @@ async def start_pyrogram_monitor():
 
 
 # ============================================================
-# Background Services Startup (Non-Blocking for Render Port Scan)
+# Background Services Startup (Non-Blocking for Render)
 # ============================================================
 
 def _init_background_services_worker():
-    """ব্যাকগ্রাউন্ড থ্রেডে টেলিথন ও পাইরোগ্রাম চালু করে, যাতে ফ্লাস্ক সার্ভারের পোর্ট
-    ওপেন হতে এক সেকেন্ডও দেরি না হয় এবং Render-এ Port Scan Timeout না আসে।"""
     if TELETHON_SESSION_STRING and API_ID and API_HASH:
         if not telethon_thread.is_alive():
             telethon_thread.start()
@@ -1524,13 +1475,11 @@ def _init_background_services_worker():
                 reader_ok = False
                 print("Could not start Telethon reader:", traceback.format_exc())
 
-            # ---------- সার্ভার চালু হলে টেলিগ্রাম চ্যানেলের পুরো হিস্ট্রি
-            # ব্যাকগ্রাউন্ডে স্ক্যান করে channel_posts টেবিল ও মিডিয়া ক্যাশ পুনরুদ্ধার করা ----------
             if reader_ok:
                 try:
                     asyncio.run_coroutine_threadsafe(sync_posts_from_channel(), telethon_loop)
                 except Exception:
-                    print("Channel history sync schedule failed:", traceback.format_exc())
+                    pass
 
     if Client and BOT_TOKEN and API_ID and API_HASH:
         if not pyrogram_thread.is_alive():
@@ -1549,7 +1498,6 @@ def start_background_services():
             return
         _services_started = True
 
-    # আলাদা ডায়মন থ্রেডে সার্ভিসগুলো স্টার্ট করা হচ্ছে যেন ওয়েব সার্ভার সাথে সাথে চালু হয়
     startup_thread = threading.Thread(
         target=_init_background_services_worker,
         name="background-services-initializer",
