@@ -241,18 +241,25 @@
         return item;
     }
 
+    /* ---------- মিডিয়ার আসল প্রস্থ ও উচ্চতা (Dynamic Aspect Ratio) ----------
+       ক্রম: (১) সার্ভারের পোস্ট ডেটা → (২) থাম্বনেইল লোড হলে তার সাইজ →
+       (৩) ভিডিও/ছবির আসল সাইজ (loadedmetadata / load)।
+       প্রতিবার কার্ডে --ar-w ও --ar-h বসে; style.css এই দুই ভ্যালু দিয়ে
+       কার্ড ও ফ্রেমের উচ্চতা/প্রস্থ ঠিক করে, তাই লোডিং ও লোড-পরবর্তী সাইজ একই থাকে। */
     function getPostDimensions(post) {
         const width = Number(post.width || post.video_width || post.photo_width || post.media_width || 0);
         const height = Number(post.height || post.video_height || post.photo_height || post.media_height || 0);
         return width > 0 && height > 0 ? { width, height } : null;
     }
 
-    function applyNativeAspectRatio(frame, media, width, height) {
+    function applyNativeAspectRatio(card, frame, width, height, isReal) {
         const w = Number(width); const h = Number(height);
         if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return;
-        const ratio = `${w} / ${h}`;
-        frame.style.aspectRatio = ratio;
-        media.style.aspectRatio = ratio;
+        /* থাম্বনেইল থেকে পাওয়া আনুমানিক সাইজ দিয়ে আসল সাইজ বদলানো যাবে না */
+        if (!isReal && frame.dataset.ocAr) return;
+        if (isReal) frame.dataset.ocAr = '1';
+        card.style.setProperty('--ar-w', String(w));
+        card.style.setProperty('--ar-h', String(h));
     }
 
     /* ---------- ১) লোডিং: থাম্বনেইল (ব্লার + ঢেউ খাওয়া) + সাগরের ঢেউ ----------
@@ -291,12 +298,14 @@
         });
     }
 
-    /* থাম্বনেইল লোড হলে তবেই দেখানো হয়; না এলে কয়েকবার আবার চেষ্টা */
-    function loadThumb(frame, thumbBg, url) {
+    /* থাম্বনেইল লোড হলে তবেই দেখানো হয়; না এলে কয়েকবার আবার চেষ্টা।
+       onSize: থাম্বনেইলের সাইজ জানালে কার্ড শুরু থেকেই সঠিক রেশিওতে বসে যায় */
+    function loadThumb(frame, thumbBg, url, onSize) {
         var tries = 0;
         (function attempt() {
             var im = new Image();
             im.onload = function () {
+                if (onSize && im.naturalWidth > 0 && im.naturalHeight > 0) onSize(im.naturalWidth, im.naturalHeight);
                 thumbBg.style.backgroundImage = 'url("' + im.src + '")';
                 thumbBg.classList.add('is-ready');
                 frame.classList.add('has-thumb');
@@ -514,6 +523,9 @@
         const knownDimensions = getPostDimensions(post);
         const thumbURL = getThumbURL(post);
 
+        /* সার্ভার থেকে সাইজ জানা থাকলে কার্ড তৈরির মুহূর্তেই বসে যায় */
+        if (knownDimensions) applyNativeAspectRatio(card, mediaFrame, knownDimensions.width, knownDimensions.height, true);
+
         /* ব্লার থাম্বনেইল স্তর (লোডিং চলাকালীন দেখা যায়) */
         if (thumbURL) {
             const thumbBg = document.createElement('div');
@@ -522,7 +534,8 @@
             blurWave.className = 'alv-blur-wave';
             mediaFrame.appendChild(thumbBg);
             mediaFrame.appendChild(blurWave);
-            loadThumb(mediaFrame, thumbBg, thumbURL);
+            /* সাইজ জানা না থাকলে থাম্বনেইলের আসল সাইজ থেকে রেশিও নেওয়া */
+            loadThumb(mediaFrame, thumbBg, thumbURL, (w, h) => applyNativeAspectRatio(card, mediaFrame, w, h, false));
         }
 
         if (item.mediaType === 'video') {
@@ -531,15 +544,13 @@
             /* কাছাকাছি এলে (বা ফোনে ট্যাপ করলে) লোড হয় — একসাথে সব ভিডিও লোড হয় না */
             video.preload = HAS_IO ? 'none' : 'metadata';
             if (thumbURL) video.poster = thumbURL;
-            if (knownDimensions) applyNativeAspectRatio(mediaFrame, video, knownDimensions.width, knownDimensions.height);
-            video.addEventListener('loadedmetadata', () => applyNativeAspectRatio(mediaFrame, video, video.videoWidth, video.videoHeight), { once: true });
+            video.addEventListener('loadedmetadata', () => applyNativeAspectRatio(card, mediaFrame, video.videoWidth, video.videoHeight, true), { once: true });
             video.src = item.mediaURL;
             mediaFrame.appendChild(video);
         } else {
             const image = document.createElement('img');
             image.loading = 'lazy'; image.draggable = false;
-            if (knownDimensions) applyNativeAspectRatio(mediaFrame, image, knownDimensions.width, knownDimensions.height);
-            image.addEventListener('load', () => applyNativeAspectRatio(mediaFrame, image, image.naturalWidth, image.naturalHeight), { once: true });
+            image.addEventListener('load', () => applyNativeAspectRatio(card, mediaFrame, image.naturalWidth, image.naturalHeight, true), { once: true });
             image.src = item.mediaURL;
             mediaFrame.appendChild(image);
         }
