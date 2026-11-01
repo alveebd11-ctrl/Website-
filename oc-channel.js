@@ -8,6 +8,7 @@
         channelId: 'ocChannelWindow',
         apiURL: '/api/channel/posts',
         mediaURLPrefix: '/api/channel/media/',
+        thumbURLPrefix: '/api/channel/thumb/',
         statsURL: '/api/channel/stats',
         refreshInterval: 30000,
         statsPollInterval: 60000,
@@ -33,6 +34,11 @@
     const byId = id => document.getElementById(id);
     const getChannel = () => byId(CONFIG.channelId);
     const getContainer = () => byId(CONFIG.containerId);
+    /* আসল স্ক্রল হয় .oc-channel-body এ */
+    const getScroller = () => {
+        const ch = getChannel();
+        return (ch && ch.querySelector('.oc-channel-body')) || getContainer();
+    };
 
     /* ---------- Client ID & Storage ---------- */
     function safeStorageGet(key) {
@@ -168,6 +174,14 @@
         return CONFIG.mediaURLPrefix + encodeURIComponent(String(postId));
     }
 
+    function getThumbURL(post) {
+        const direct = post.thumbnail_url || post.thumbnail;
+        if (direct) return direct;
+        const postId = post.message_id ?? post.id;
+        if (postId === undefined || postId === null || postId === '') return null;
+        return CONFIG.thumbURLPrefix + encodeURIComponent(String(postId));
+    }
+
     function getMediaType(post) {
         const type = String(post.media_type || '').toLowerCase();
         const mime = String(post.mime_type || post.mime || '').toLowerCase();
@@ -241,9 +255,10 @@
         media.style.aspectRatio = ratio;
     }
 
-    /* ---------- ১) লোডিং: সাগরের ঢেউ + প্রথম ফ্রেম (থাম্বনেইল) ----------
-       মিডিয়া লোড হওয়ার সময় ফ্রেমে .is-loading থাকে (CSS-এ ঢেউ অ্যানিমেশন)।
-       ভিডিওর প্রথম ফ্রেম এলেই ঢেউ সরে গিয়ে থাম্বনেইল দেখা যায়। */
+    /* ---------- ১) লোডিং: থাম্বনেইল (ব্লার + ঢেউ খাওয়া) + সাগরের ঢেউ ----------
+       মিডিয়া লোড হওয়ার সময় ফ্রেমে .is-loading থাকে। থাম্বনেইল থাকলে সেটা ব্লার হয়ে
+       একটু একটু ঢেউ খায় এবং তার উপরে পানির ঢেউ চলে। আসল ভিডিও/ছবি তৈরি হলেই
+       ব্লার ধীরে ধীরে মিলিয়ে যায়। */
     const frameObserver = HAS_IO ? new IntersectionObserver(entries => {
         entries.forEach(en => {
             if (!en.isIntersecting) return;
@@ -251,7 +266,7 @@
             const v = en.target.querySelector('video');
             if (v) activateVideo(v);
         });
-    }, { rootMargin: '400px 0px' }) : null;
+    }, { rootMargin: '900px 0px' }) : null;
 
     function activateVideo(video) {
         try {
@@ -273,6 +288,9 @@
             done = true;
             frame.classList.remove('is-loading');
             frame.classList.add('is-loaded');
+            /* ব্লার থাম্বনেইল ধীরে মিলিয়ে গিয়ে সরে যাবে */
+            var thumb = frame.querySelector('.alv-thumb-bg');
+            if (thumb) window.setTimeout(function () { if (thumb.parentNode) thumb.parentNode.removeChild(thumb); }, 600);
         }
         frame._ocFinish = finish;
 
@@ -297,13 +315,8 @@
             if (!media.poster && media.paused && !media.currentTime) {
                 try { media.currentTime = 0.1; } catch (e) { }
             }
-            window.setTimeout(finish, 1500);   /* কিছু ফোনে ফ্রেম ইভেন্ট আসে না — তখনও ভিডিও দেখাবে */
+            window.setTimeout(finish, 600);   /* কিছু ফোনে ফ্রেম ইভেন্ট আসে না — তখনও ভিডিও দেখাবে */
         });
-        if (media.poster) {
-            var im = new Image();
-            im.onload = finish;
-            im.src = media.poster;
-        }
         if (frameObserver) frameObserver.observe(frame); else activateVideo(media);
     }
 
@@ -464,13 +477,23 @@
         const mediaFrame = document.createElement('div');
         mediaFrame.className = 'alv-media-frame';
         const knownDimensions = getPostDimensions(post);
+        const thumbURL = getThumbURL(post);
+
+        /* ব্লার থাম্বনেইল স্তর (লোডিং চলাকালীন দেখা যায়) */
+        if (thumbURL) {
+            const thumbBg = document.createElement('div');
+            thumbBg.className = 'alv-thumb-bg';
+            thumbBg.style.backgroundImage = 'url("' + thumbURL + '")';
+            mediaFrame.classList.add('has-thumb');
+            mediaFrame.appendChild(thumbBg);
+        }
 
         if (item.mediaType === 'video') {
             const video = document.createElement('video');
             video.controls = true; video.playsInline = true;
             /* কাছাকাছি এলে (বা ফোনে ট্যাপ করলে) লোড হয় — একসাথে সব ভিডিও লোড হয় না */
             video.preload = HAS_IO ? 'none' : 'metadata';
-            if (post.thumbnail_url || post.thumbnail) video.poster = post.thumbnail_url || post.thumbnail;
+            if (thumbURL) video.poster = thumbURL;
             if (knownDimensions) applyNativeAspectRatio(mediaFrame, video, knownDimensions.width, knownDimensions.height);
             video.addEventListener('loadedmetadata', () => applyNativeAspectRatio(mediaFrame, video, video.videoWidth, video.videoHeight), { once: true });
             video.src = item.mediaURL;
@@ -579,8 +602,9 @@
 
     function prependBatch(items) {
         const container = getContainer();
-        const oldHeight = container.scrollHeight;
-        const oldScrollTop = container.scrollTop;
+        const scroller = getScroller();
+        const oldHeight = scroller.scrollHeight;
+        const oldScrollTop = scroller.scrollTop;
         const fragment = document.createDocumentFragment();
         items.forEach(item => {
             const card = createMediaCard(item);
@@ -589,7 +613,8 @@
         });
         const firstPost = container.querySelector('.alv-post');
         container.insertBefore(fragment, firstPost || ensureSentinel());
-        if (oldScrollTop > 0) container.scrollTop = oldScrollTop + (container.scrollHeight - oldHeight);
+        /* নিচে স্ক্রল করা থাকলে নতুন কার্ড এলে পেজ যেন লাফিয়ে না যায় */
+        if (oldScrollTop > 0) scroller.scrollTop = oldScrollTop + (scroller.scrollHeight - oldHeight);
     }
 
     function renderNextBatch() {
@@ -662,7 +687,7 @@
         statsTimer = window.setInterval(() => { if (!document.hidden) refreshAllStats(); }, CONFIG.statsPollInterval);
 
         if (HAS_IO) {
-            const obs = new IntersectionObserver(e => { if (e[0].isIntersecting) renderNextBatch(); }, { root: getChannel(), rootMargin: CONFIG.observerRootMargin });
+            const obs = new IntersectionObserver(e => { if (e[0].isIntersecting) renderNextBatch(); }, { root: getScroller(), rootMargin: CONFIG.observerRootMargin });
             obs.observe(ensureSentinel());
         }
 
