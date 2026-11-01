@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0a1128">
 <title>User Dashboard - OC Collection Universe</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
 
 <style>
 * {
@@ -54,27 +54,29 @@ body {
     padding: 0 15px 40px; position: relative; z-index: 2;
 }
 
-/* ===== GLASS HEADER ===== */
+/* GLASS HEADER (header + stories, both stay fixed on scroll) */
 .glass-header {
     position: sticky;
     top: 0;
     z-index: 50;
     width: calc(100% + 30px);
     margin: 0 -15px 16px;
-    padding: calc(env(safe-area-inset-top, 0px) + 8px) 15px 8px;
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) 15px 0;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
     backdrop-filter: blur(3px) saturate(160%);
     -webkit-backdrop-filter: blur(3px) saturate(160%);
     border-bottom: 1px solid rgba(255,255,255,.22);
     box-shadow: 0 6px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.25);
 }
+.glass-header:has(.stories-row:empty) { padding-bottom: 8px; }
 .header-nav {
     width: 100%;
     max-width: 440px;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     gap: 8px;
     min-height: 40px;
@@ -103,10 +105,10 @@ body {
 }
 @keyframes spinLoader { to { transform: rotate(360deg); } }
 
-/* profile chip (right side of header) */
+/* profile chip (left side of header) */
 .header-profile {
     display: flex; align-items: center; gap: 8px;
-    min-width: 0; max-width: 62%;
+    min-width: 0; max-width: 68%;
     padding: 3px 12px 3px 3px;
     background: rgba(255,255,255,.1);
     border: 1px solid rgba(255,255,255,.2);
@@ -144,15 +146,16 @@ body {
 }
 .view-section.active-view { display: flex; }
 
-/* ===== STORIES ===== */
+/* STORIES (inside sticky header, still swipes left/right) */
 .stories-row {
     width: 100%; max-width: 440px;
-    margin-bottom: 14px;
     display: flex; gap: 12px;
     overflow-x: auto; overflow-y: hidden;
-    padding: 4px 4px 8px;
+    padding: 8px 4px 10px;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
     scrollbar-width: none;
 }
 .stories-row::-webkit-scrollbar { display: none; }
@@ -251,7 +254,6 @@ body {
 }
 .oc-collection-card:active, .profile-card.blink-glow:active { transform: scale(.94); }
 
-/* attention animation for OC card: bounce + shine sweep + ripple + tap hint */
 .oc-collection-card.attention {
     position: relative; overflow: visible;
     animation: cardBlink 2s infinite ease-in-out, ocBounce 2.8s infinite ease-in-out;
@@ -307,43 +309,7 @@ body {
 @keyframes livePulse { 0%, 100% { transform: scale(1); } 70% { transform: scale(1.18); } }
 .live-text { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; }
 
-/* PROFILE VIEW */
-.profile-card-modern {
-    width: 100%; background: #1a1f2eed;
-    backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-    border: 1px solid #ffffff1f; border-radius: 28px;
-    padding: 16px 16px 24px; color: #fff;
-}
-.card-image-wrapper {
-    width: 100%; height: 280px; border-radius: 20px;
-    overflow: hidden; position: relative; background: #ffffff0d;
-}
-.card-image-wrapper img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .3s ease; }
-.card-user-info { padding: 16px 6px 4px; }
-.name-row h2 { font-size: 18px; font-weight: 700; color: #fff; }
-.username-text { font-size: 13px; color: #00bfff; margin-bottom: 12px; }
-.card-bio {
-    font-size: 13px; color: #cbd5e1; padding: 10px 12px; background: #ffffff0a;
-    border-radius: 12px; margin-bottom: 15px; overflow-wrap: anywhere;
-}
-.telegram-meta-details {
-    display: flex; flex-direction: column; gap: 10px;
-    border-top: 1px solid #ffffff14; padding-top: 12px;
-}
-.meta-row { display: flex; flex-direction: column; gap: 3px; }
-.meta-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
-.meta-value { font-size: 13px; color: #fff; font-weight: 600; word-break: break-all; }
-.logout-action-btn {
-    width: 100%; background: #ff4d4d26; color: #ff4d4d; border: 1px solid #ff4d4d4d;
-    padding: 12px; border-radius: 16px; font-weight: 700; cursor: pointer; margin-top: 15px;
-}
-.back-home-btn {
-    align-self: flex-start; background: rgba(255,255,255,.1); color: #fff;
-    border: 1px solid rgba(255,255,255,.2); padding: 8px 16px; border-radius: 50px;
-    font-size: 12px; font-weight: 600; cursor: pointer;
-}
-
-/* PROFILE MODAL */
+/* small info popup for channel cards */
 .modal-overlay {
     position: fixed; inset: 0; background: #000d;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -369,6 +335,183 @@ body {
 .naughty-window iframe {
     display: block; width: 100%; height: 100%; min-height: 0; flex: 1; border: 0; background: #080d20;
 }
+
+/* ================= ALVEE POPUP PROFILE CARD ================= */
+.pc-overlay {
+    position: fixed; inset: 0; z-index: 3500;
+    display: none; align-items: center; justify-content: center;
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    background: rgba(30,6,36,.62);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.pc-overlay.open { display: flex; animation: pcFade .25s ease; }
+@keyframes pcFade { from { opacity: 0; } }
+@keyframes pcPop { from { opacity: 0; transform: translateY(18px) scale(.94); } }
+
+.pc-card {
+    --plum: #3b0a45; --pink: #ff4d8d; --magenta: #e5127d;
+    position: relative; width: 100%; max-width: 400px; max-height: 100%;
+    overflow-y: auto; overflow-x: hidden; scrollbar-width: none;
+    border-radius: 32px; color: var(--plum);
+    background: linear-gradient(180deg, #fff 0%, #fff0f6 55%, #fde4f0 100%);
+    border: 1px solid rgba(255,255,255,.8);
+    box-shadow: 0 24px 60px rgba(90,0,60,.45), 0 0 0 1px rgba(255,120,170,.25);
+}
+.pc-card::-webkit-scrollbar { display: none; }
+.pc-overlay.open .pc-card { animation: pcPop .35s cubic-bezier(.2,.9,.3,1.1); }
+
+.pc-cover { position: relative; height: 230px; overflow: hidden; background: #f7c6da; }
+.pc-cover img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; pointer-events: none; }
+.pc-cover::after {
+    content: ""; position: absolute; inset: auto 0 0 0; height: 70%;
+    background: linear-gradient(180deg, rgba(255,240,246,0), rgba(255,240,246,.75) 60%, #fff0f6);
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 70%);
+    mask-image: linear-gradient(180deg, transparent, #000 70%);
+}
+
+.pc-close {
+    position: absolute; top: 14px; right: 14px; z-index: 5;
+    width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.4);
+    background: rgba(40,10,50,.4); color: #fff; cursor: pointer;
+    display: grid; place-items: center;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: transform .25s ease, background .2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.pc-close:hover { background: rgba(229,18,125,.75); transform: rotate(90deg); }
+.pc-close:active { transform: rotate(90deg) scale(.88); }
+.pc-close svg { width: 18px; height: 18px; }
+
+.pc-head { position: relative; z-index: 2; margin-top: -78px; text-align: center; padding: 0 18px; }
+.pc-avatar {
+    width: 128px; height: 128px; margin: 0 auto; border-radius: 50%;
+    border: 4px solid #fff; background: #fff;
+    box-shadow: 0 8px 24px rgba(229,18,125,.35), 0 0 0 3px rgba(255,150,190,.55);
+    overflow: hidden;
+}
+.pc-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; image-rendering: auto; pointer-events: none; }
+.pc-wordmark { display: block; width: 210px; max-width: 70%; height: auto; margin: 6px auto 0; overflow: visible; }
+
+.pc-actions { display: flex; gap: 10px; padding: 14px 16px 0; align-items: center; }
+.pc-sub {
+    flex: 1; min-width: 0; height: 54px; border: 0; border-radius: 999px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 17px; font-weight: 700; color: #fff;
+    background: linear-gradient(90deg, #ff4d8d, #e5127d 60%, #c40a8f);
+    box-shadow: 0 10px 22px rgba(229,18,125,.4), 0 0 18px rgba(255,77,141,.35);
+    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.pc-sub:hover { filter: brightness(1.06); box-shadow: 0 12px 28px rgba(229,18,125,.55), 0 0 26px rgba(255,77,141,.5); }
+.pc-sub:active { transform: scale(.95); }
+.pc-sub svg { width: 22px; height: 22px; flex: 0 0 auto; }
+.pc-sub.subscribed { background: linear-gradient(90deg, #6d2a78, #3b0a45); box-shadow: 0 8px 18px rgba(59,10,69,.4); }
+
+.pc-icon-btn {
+    position: relative; flex: 0 0 54px; width: 54px; height: 54px; border-radius: 50%;
+    border: 1px solid rgba(255,120,170,.35); background: #fff; color: var(--pink);
+    cursor: pointer; display: grid; place-items: center;
+    box-shadow: 0 6px 16px rgba(229,18,125,.16);
+    transition: transform .2s ease, box-shadow .25s ease, background .25s ease, color .25s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.pc-icon-btn:hover { box-shadow: 0 0 0 4px rgba(255,77,141,.15), 0 8px 20px rgba(229,18,125,.3); }
+.pc-icon-btn:active { transform: scale(.9); }
+.pc-icon-btn svg { width: 24px; height: 24px; transform-origin: 50% 12%; overflow: visible; }
+.pc-bell.on { background: linear-gradient(145deg,#ff6aa2,#e5127d); color: #fff; border-color: transparent; }
+.pc-bell.ring-anim svg { animation: bellRing .7s ease-in-out 3; }
+.pc-bell.glow { animation: bellGlow 1.6s ease-in-out 1; }
+@keyframes bellRing {
+    0%,100% { transform: rotate(0); } 15% { transform: rotate(22deg); } 35% { transform: rotate(-20deg); }
+    55% { transform: rotate(14deg); } 75% { transform: rotate(-10deg); }
+}
+@keyframes bellGlow {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,77,141,0); }
+    30%,70% { box-shadow: 0 0 0 7px rgba(255,77,141,.28), 0 0 26px rgba(255,77,141,.8); }
+}
+.pc-heart:active svg { transform: scale(.8); }
+.pc-heart svg { transition: transform .15s ease; }
+
+.pc-cats { display: flex; gap: 8px; padding: 14px 16px 0; }
+.pc-cat {
+    flex: 1 1 0; min-width: 0; height: 42px; padding: 0 6px; border-radius: 999px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    font-size: 11.5px; font-weight: 600; white-space: nowrap; text-decoration: none;
+    transition: transform .2s ease, box-shadow .25s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+.pc-cat span { overflow: hidden; text-overflow: ellipsis; }
+.pc-cat svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.pc-cat:hover { transform: translateY(-2px); }
+.pc-cat:active { transform: scale(.94); }
+.pc-cat.excl { background: #1d1424; color: #fff; border: 0; box-shadow: 0 6px 14px rgba(20,10,30,.35); }
+.pc-cat.excl svg { color: #ffc400; }
+.pc-cat.excl:hover { box-shadow: 0 8px 18px rgba(255,196,0,.35); }
+.pc-cat.priv { background: #ffeaf3; color: var(--plum); border: 1.5px solid rgba(255,77,141,.45); }
+.pc-cat.priv svg { color: var(--pink); }
+.pc-cat.priv:hover { box-shadow: 0 6px 16px rgba(255,77,141,.35); }
+.pc-cat.shift {
+    background: linear-gradient(145deg, #2a2133, #14101a); color: #f4e6b8;
+    border: 1px solid rgba(226,196,120,.7);
+}
+.pc-cat.shift svg { color: #e6c675; }
+.pc-cat.shift:hover { box-shadow: 0 0 18px rgba(226,196,120,.55); }
+
+.pc-eyes {
+    position: relative; margin: 16px 16px 0; height: 168px; border-radius: 22px; overflow: hidden;
+    border: 1.5px solid rgba(255,120,170,.55);
+    box-shadow: 0 10px 26px rgba(229,18,125,.28);
+    display: grid; place-items: center; text-align: center; color: #fff;
+}
+.pc-eyes .bgb {
+    position: absolute; inset: -24px; background-size: cover; background-position: center;
+    filter: blur(18px) saturate(1.1); transform: scale(1.1);
+}
+.pc-eyes::before { content: ""; position: absolute; inset: 0; z-index: 1; background: rgba(48,14,56,.5); }
+.pc-eyes .inner { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.pc-eyes .eye {
+    width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.4);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.pc-eyes .eye svg { width: 28px; height: 28px; }
+.pc-eyes .txt { font-size: 17px; font-weight: 600; text-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.pc-eyes .lock {
+    position: absolute; top: 12px; right: 12px; z-index: 2; width: 34px; height: 34px; border-radius: 10px;
+    display: grid; place-items: center; background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.4);
+}
+.pc-eyes .lock svg { width: 17px; height: 17px; }
+
+.pc-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    margin: 16px 16px 18px; padding: 12px 4px; border-radius: 20px;
+    background: rgba(255,255,255,.8); border: 1px solid rgba(255,150,190,.3);
+    box-shadow: 0 6px 16px rgba(229,18,125,.1);
+}
+.pc-stat { display: flex; align-items: center; justify-content: center; gap: 7px; padding: 0 4px; min-width: 0; }
+.pc-stat + .pc-stat { border-left: 1px solid rgba(59,10,69,.14); }
+.pc-stat svg { width: 22px; height: 22px; color: #6d4a78; flex: 0 0 auto; }
+.pc-stat b { display: block; font-size: 16px; line-height: 1.15; font-weight: 700; }
+.pc-stat small { display: block; font-size: 10.5px; color: #8b6a95; font-weight: 500; }
+
+/* love particles layer */
+.love-layer { position: fixed; inset: 0; z-index: 3600; pointer-events: none; overflow: hidden; }
+.love-p { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.love-p svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+.pc-card button:focus-visible, .pc-card a:focus-visible { outline: 3px solid #00bfff; outline-offset: 2px; }
+
+@media (max-width: 360px) {
+    .pc-cat { font-size: 10px; gap: 3px; }
+    .pc-cat svg { width: 13px; height: 13px; }
+    .pc-stat svg { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pc-overlay.open, .pc-overlay.open .pc-card { animation: none; }
+    .pc-bell.ring-anim svg, .pc-bell.glow { animation: none; }
+    .pc-close:hover { transform: none; }
+}
 </style>
 
 </head>
@@ -381,26 +524,35 @@ body {
     <div class="bg-shade"></div>
 </div>
 
+<!-- shared SVG defs for the custom love stickers (no emoji fonts) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+        <radialGradient id="gRed" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#ff7a8a"/><stop offset=".45" stop-color="#e3172f"/><stop offset="1" stop-color="#8e0618"/></radialGradient>
+        <linearGradient id="gPink" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb3cf"/><stop offset="1" stop-color="#ff5f9e"/></linearGradient>
+        <linearGradient id="gLip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5a86"/><stop offset="1" stop-color="#c8104f"/></linearGradient>
+        <symbol id="hp" viewBox="0 0 32 32"><path d="M16 28.5C6 20.5 2 14.5 2 9.6 2 5.6 5 3 8.6 3c3 0 5.4 1.7 7.4 4.5C18 4.7 20.4 3 23.4 3 27 3 30 5.6 30 9.6c0 4.9-4 10.9-14 18.9z"/></symbol>
+        <symbol id="st" viewBox="0 0 10 10"><path d="M5 0c.5 3 2 4.5 5 5-3 .5-4.5 2-5 5-.5-3-2-4.5-5-5 3-.5 4.5-2 5-5z"/></symbol>
+    </defs>
+</svg>
+
 <div id="dashboardWrapper">
 
-    <!-- GLASS HEADER -->
+    <!-- GLASS HEADER: profile (left) + refresh (right), stories stay fixed below -->
     <header class="glass-header">
         <div class="header-nav">
-            <button id="refreshBtn" type="button" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
-            <div class="header-profile" onclick="switchView('profile')" role="button" aria-label="Profile">
+            <div class="header-profile" onclick="openProfileCard()" role="button" tabindex="0" aria-label="Open profile" aria-haspopup="dialog">
                 <div class="ring sm"><img src="https://carder.top/imagens/1793417411592-885991335.jpg" alt=""></div>
                 <span class="pname" id="headerName"></span>
             </div>
+            <button id="refreshBtn" type="button" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
         </div>
+        <!-- STORIES -->
+        <div class="stories-row" id="storiesRow"></div>
     </header>
-
-    <!-- STORIES -->
-    <div class="stories-row" id="storiesRow"></div>
 
     <!-- HOME VIEW -->
     <div id="homeView" class="view-section active-view">
 
-        <!-- OC COLLECTION UNIVERSE (top, with attention animation) -->
         <div class="profile-card blink-glow oc-collection-card attention" onclick="window.location.href='/oc-collection.html'">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
@@ -419,7 +571,6 @@ body {
             <span class="tap-hint">👆 TAP HERE</span>
         </div>
 
-        <!-- NAUGHTY NONSTOP (moved below) -->
         <div class="profile-card blink-glow" onclick="openNaughtyWithLandAnimation()">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
@@ -480,29 +631,6 @@ body {
         </div>
     </div>
 
-    <!-- PROFILE VIEW -->
-    <div id="profileView" class="view-section">
-        <button type="button" class="back-home-btn" onclick="switchView('home')">← Back</button>
-        <div class="profile-card-modern">
-            <div class="card-image-wrapper">
-                <img id="profileImage" src="" alt="Profile Picture">
-                <div class="image-shield"></div>
-            </div>
-            <div class="card-user-info">
-                <div class="name-row"><h2 id="profileName">Loading...</h2></div>
-                <div id="profileUsername" class="username-text">@username</div>
-                <div id="profileBio" class="card-bio">Loading bio...</div>
-                <div class="telegram-meta-details">
-                    <div class="meta-row"><span class="meta-label">Phone Number</span><span id="profilePhone" class="meta-value">+880 XXXXXXXXXX</span></div>
-                    <div class="meta-row"><span class="meta-label">Telegram ID</span><span id="profileId" class="meta-value">000000000</span></div>
-                </div>
-            </div>
-        </div>
-        <div class="logout-box">
-            <button type="button" onclick="logoutUser()" class="logout-action-btn">Log Out Account 🚪</button>
-        </div>
-    </div>
-
     <!-- STORY VIEWER -->
     <div class="story-viewer" id="storyViewer">
         <div class="story-stage" id="storyStage">
@@ -519,7 +647,7 @@ body {
         <iframe src="naughty.html" title="Naughty NonStop" loading="eager"></iframe>
     </div>
 
-    <!-- PROFILE MODAL -->
+    <!-- PROFILE MODAL (channel info) -->
     <div class="modal-overlay" id="profileModal">
         <div class="modal-box">
             <h3 id="modalName">User Profile</h3>
@@ -530,25 +658,81 @@ body {
 
 </div>
 
+<!-- ================= ALVEE POPUP PROFILE CARD ================= -->
+<div class="pc-overlay" id="pcOverlay" aria-hidden="true">
+    <section class="pc-card" id="pcCard" role="dialog" aria-modal="true" aria-label="ALVEE profile" tabindex="-1">
+
+        <div class="pc-cover">
+            <img src="https://carder.top/imagens/1793546742526-646878459.jpg" alt="" draggable="false">
+        </div>
+
+        <button type="button" class="pc-close" id="pcClose" aria-label="Close profile">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
+
+        <div class="pc-head">
+            <div class="pc-avatar"><img src="https://carder.top/imagens/1793417411592-885991335.jpg" alt="ALVEE profile picture" draggable="false"></div>
+            <svg class="pc-wordmark" viewBox="0 0 220 64" role="img" aria-label="ALVEE">
+                <g transform="translate(110 49) skewX(-14)">
+                    <text x="0" y="0" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="800" font-style="italic" font-size="52" letter-spacing="1"
+                          stroke="#3b0a45" stroke-width="7" stroke-linejoin="round" paint-order="stroke fill"><tspan fill="#22d3ee">A</tspan><tspan fill="#ffffff">LVEE</tspan></text>
+                </g>
+            </svg>
+        </div>
+
+        <div class="pc-actions">
+            <button type="button" class="pc-sub" id="pcSub" aria-pressed="false">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>
+                <span id="pcSubText">Subscribe</span>
+            </button>
+            <button type="button" class="pc-icon-btn pc-bell" id="pcBell" aria-pressed="false" aria-label="Notifications off">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15L6 16z"/><path d="M10 21a2 2 0 004 0"/></svg>
+            </button>
+            <button type="button" class="pc-icon-btn pc-heart" id="pcHeart" aria-label="Send love">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20.5C5 15 3 11.5 3 8.7 3 6.2 4.9 4.5 7.1 4.5c2 0 3.7 1.1 4.9 3 1.2-1.9 2.9-3 4.9-3C19.1 4.5 21 6.2 21 8.7c0 2.8-2 6.3-9 11.8z"/></svg>
+            </button>
+        </div>
+
+        <div class="pc-cats">
+            <a class="pc-cat excl" href="https://www.alveecommunity.com/oc-collection.html">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l9-12h-6.5L13 2z"/></svg><span>Exclusive Content</span>
+            </a>
+            <button type="button" class="pc-cat priv" id="pcPrivate">
+                <svg viewBox="0 0 24 24" fill="currentColor"><use href="#hp"/></svg><span>Private Media</span>
+            </button>
+            <a class="pc-cat shift" href="https://t.me/ALVEE_BD" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg><span>Member Shift</span>
+            </a>
+        </div>
+
+        <div class="pc-eyes" role="img" aria-label="Your eyes only. Private media preview.">
+            <div class="bgb" style="background-image:url('https://carder.top/imagens/1793546742526-646878459.jpg')"></div>
+            <div class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="#fff"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div>
+            <div class="inner">
+                <div class="eye"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7c2 0 3.7.6 5.1 1.5M22 12s-3.6 7-10 7c-2 0-3.7-.6-5.1-1.5"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg></div>
+                <div class="txt">Your eyes only</div>
+            </div>
+        </div>
+
+        <div class="pc-stats" id="pcStats"></div>
+    </section>
+</div>
+<div class="love-layer" id="loveLayer" aria-hidden="true"></div>
+
 <script>
-/* ========================================
-   HEADER NAME (unicode escapes => never breaks when copied)
-   𝆺𝅥⃝🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀𝆺𝅥♥️⟵꯭
-   ======================================== */
+/* HEADER NAME */
 const HEADER_NAME =
-    "\u{1D1BA}\u{1D165}\u20DD" +      // 𝆺𝅥⃝
-    "\u{1F5A4}" +                      // 🖤
-    "\u0F0F\u0640\uABED\u0640\uABED" + // ༏ـ꯭ـ꯭
-    "\u{1F1E6}" +                      // 🇦
-    "\u{1D647}\u{1D651}\u{1D640}\u{1D640}" + // 𝙇𝙑𝙀𝙀
-    "\u{1D1BA}\u{1D165}" +            // 𝆺𝅥
-    "\u2665\uFE0F" +                   // ♥️
-    "\u27F5\uABED";                    // ⟵꯭
+    "\u{1D1BA}\u{1D165}\u20DD" +
+    "\u{1F5A4}" +
+    "\u0F0F\u0640\uABED\u0640\uABED" +
+    "\u{1F1E6}" +
+    "\u{1D647}\u{1D651}\u{1D640}\u{1D640}" +
+    "\u{1D1BA}\u{1D165}" +
+    "\u2665\uFE0F" +
+    "\u27F5\uABED";
 document.getElementById('headerName').textContent = HEADER_NAME;
 
-/* ========================================
-   BACKGROUND IMAGE & EXISTING DASHBOARD JS
-   ======================================== */
+/* BACKGROUND IMAGE & DASHBOARD JS */
 const backgroundImages = [
     "https://carder.top/imagens/1792211356900-71480222.jpg",
     "https://carder.top/imagens/1792211360124-891549584.jpg",
@@ -606,20 +790,13 @@ function initializeDashboard() {
     if (!loggedIn) { window.location.replace('verify.html'); return; }
     initRandomBackground();
     loadStories();
+    initProfileCard();
+    if (location.hash === '#profile') openProfileCard();
 }
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeDashboard);
 } else { initializeDashboard(); }
-
-function switchView(viewName) {
-    document.querySelectorAll('.view-section').forEach(section => section.classList.remove('active-view'));
-    const target = document.getElementById(viewName === 'home' ? 'homeView' : 'profileView');
-    if (target) target.classList.add('active-view');
-    const row = document.getElementById('storiesRow');
-    if (row) row.style.display = viewName === 'home' ? '' : 'none';
-    window.scrollTo(0, 0);
-}
 
 function triggerRefresh(button) {
     if (button) { button.classList.add('loading'); button.disabled = true; }
@@ -652,11 +829,7 @@ function logoutUser() {
     window.location.href = 'verify.html';
 }
 
-/* ========================================
-   STORIES
-   Expected API: GET /api/stories  ->
-   [{ "id": "123", "type": "photo"|"video", "thumb": "url", "src": "url", "ts": 1730000000 }]
-   ======================================== */
+/* STORIES  (API: GET /api/stories) */
 const STORY_API = '/api/stories';
 const STORY_CACHE_KEY = 'storiesCacheV1';
 const STORY_SEEN_KEY = 'storiesSeenV1';
@@ -698,7 +871,7 @@ function renderStories() {
 function normalize(list) {
     return (Array.isArray(list) ? list : [])
         .filter(s => s && s.src)
-        .sort((a, b) => (b.ts || 0) - (a.ts || 0)); // newest first => leftmost
+        .sort((a, b) => (b.ts || 0) - (a.ts || 0));
 }
 
 async function loadStories() {
@@ -775,9 +948,130 @@ function closeStory() {
     renderStories();
 }
 
+/* ALVEE POPUP PROFILE CARD */
+/* Update these numbers whenever you want */
+const PROFILE_STATS = [
+    { value: '328K', label: 'Subscribers', icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M17 14.2c2.5.2 4.5 2 4.5 4.8"/>' },
+    { value: '1.4K',  label: 'Posts',       icon: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 9l5 3-5 3V9z"/>' },
+    { value: '320',   label: 'Media',       icon: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/>' }
+];
+
+/* six custom vector stickers (no emoji fonts) */
+const LOVE_STICKERS = [
+    '<svg viewBox="0 0 32 32"><use href="#hp" fill="url(#gRed)"/><ellipse cx="10" cy="9" rx="4" ry="2.3" fill="#fff" opacity=".55" transform="rotate(-35 10 9)"/></svg>',
+    '<svg viewBox="0 0 32 32"><use href="#hp" fill="url(#gPink)" stroke="#fff" stroke-width="1.2"/></svg>',
+    '<svg viewBox="0 0 32 32"><path d="M2.5 16c4-5 8-7.5 13.5-4.2C21.5 8.5 25.5 11 29.5 16c-4 8-9.5 10-13.5 10S6.5 24 2.5 16z" fill="url(#gLip)"/><path d="M3 16.2c8 3 18 3 26 0" fill="none" stroke="#7a0a30" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="11" cy="14.2" rx="3.2" ry="1.2" fill="#fff" opacity=".5"/></svg>',
+    '<svg viewBox="0 0 40 36"><use href="#hp" x="0" y="5" width="22" height="22" fill="#ff3d78"/><use href="#hp" x="14" y="9" width="24" height="24" fill="url(#gPink)" stroke="#fff" stroke-width="1"/></svg>',
+    '<svg viewBox="0 0 40 36"><use href="#hp" x="4" y="4" width="30" height="30" fill="url(#gRed)"/><use href="#st" x="26" y="0" width="10" height="10" fill="#ffe27a"/><use href="#st" x="0" y="2" width="7" height="7" fill="#fff"/><use href="#st" x="31" y="16" width="6" height="6" fill="#fff"/></svg>',
+    '<svg viewBox="0 0 32 32"><g transform="rotate(-18 16 16)"><path d="M3 16c3.5-4.5 7-6.5 13-3.8 6-2.7 9.5-.7 13 3.8-3.5 7-8 9-13 9S6.5 23 3 16z" fill="#ff9ec4" stroke="#ff4d8d" stroke-width="1.4"/><path d="M4 16c7 2.6 17 2.6 24 0" fill="none" stroke="#ff4d8d" stroke-width="1.2" stroke-linecap="round"/></g><use href="#st" x="22" y="2" width="7" height="7" fill="#ff7fb0"/></svg>'
+];
+
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
+let pcLastFocus = null;
+
+function initProfileCard() {
+    const overlay = document.getElementById('pcOverlay');
+    const sub = document.getElementById('pcSub');
+    const bell = document.getElementById('pcBell');
+    const heart = document.getElementById('pcHeart');
+
+    document.getElementById('pcStats').innerHTML = PROFILE_STATS.map(s =>
+        `<div class="pc-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg><div><b>${s.value}</b><small>${s.label}</small></div></div>`
+    ).join('');
+
+    document.getElementById('pcClose').addEventListener('click', closeProfileCard);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeProfileCard(); });
+
+    const chip = document.querySelector('.header-profile');
+    chip.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProfileCard(); } });
+
+    sub.addEventListener('click', () => {
+        const on = sub.classList.toggle('subscribed');
+        sub.setAttribute('aria-pressed', on);
+        document.getElementById('pcSubText').textContent = on ? 'Subscribed' : 'Subscribe';
+        if (on) { setBell(true); ringBell(); }
+    });
+
+    bell.addEventListener('click', () => {
+        const on = !bell.classList.contains('on');
+        setBell(on);
+        if (on) ringBell();
+    });
+
+    heart.addEventListener('click', () => loveBurst(heart));
+
+    document.getElementById('pcPrivate').addEventListener('click', () => {
+        closeProfileCard();
+        openNaughtyWithLandAnimation();
+    });
+}
+
+function setBell(on) {
+    const bell = document.getElementById('pcBell');
+    bell.classList.toggle('on', on);
+    bell.setAttribute('aria-pressed', on);
+    bell.setAttribute('aria-label', on ? 'Notifications on' : 'Notifications off');
+}
+function ringBell() {
+    const bell = document.getElementById('pcBell');
+    bell.classList.remove('ring-anim', 'glow');
+    void bell.offsetWidth;
+    bell.classList.add('ring-anim', 'glow');
+    setTimeout(() => bell.classList.remove('ring-anim', 'glow'), 2200);
+}
+
+function openProfileCard() {
+    const overlay = document.getElementById('pcOverlay');
+    pcLastFocus = document.activeElement;
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('pcCard').focus({ preventScroll: true });
+}
+function closeProfileCard() {
+    const overlay = document.getElementById('pcOverlay');
+    if (!overlay.classList.contains('open')) return;
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+    if (location.hash === '#profile') history.replaceState(null, '', location.pathname + location.search);
+    if (!document.getElementById('storyViewer').classList.contains('open') &&
+        !document.getElementById('naughtyWindow').classList.contains('open')) document.body.style.overflow = '';
+    if (pcLastFocus && pcLastFocus.focus) pcLastFocus.focus({ preventScroll: true });
+}
+
+function loveBurst(btn) {
+    if (REDUCED_MOTION.matches) return;
+    const layer = document.getElementById('loveLayer');
+    const r = btn.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const order = shuffled(LOVE_STICKERS);
+    const count = 5 + Math.round(Math.random());
+    for (let i = 0; i < count; i++) {
+        const size = 26 + Math.random() * 18;
+        const p = document.createElement('div');
+        p.className = 'love-p';
+        p.style.width = p.style.height = size + 'px';
+        p.innerHTML = order[i % order.length];
+        layer.appendChild(p);
+        const base = -Math.PI / 2;
+        const ang = base + (Math.random() - .5) * Math.PI * 1.25;
+        const dist = 70 + Math.random() * 90;
+        const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist - 30 - Math.random() * 40;
+        const rot = (Math.random() - .5) * 120, s0 = .3, s1 = .9 + Math.random() * .5;
+        const x0 = cx - size / 2, y0 = cy - size / 2;
+        const anim = p.animate([
+            { transform: `translate(${x0}px,${y0}px) scale(${s0}) rotate(0deg)`, opacity: 0 },
+            { transform: `translate(${x0 + dx * .45}px,${y0 + dy * .45}px) scale(${s1}) rotate(${rot * .5}deg)`, opacity: 1, offset: .3 },
+            { transform: `translate(${x0 + dx}px,${y0 + dy - 40}px) scale(${s1 * .85}) rotate(${rot}deg)`, opacity: 0 }
+        ], { duration: 1100 + Math.random() * 600, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+        anim.onfinish = anim.oncancel = () => p.remove();
+    }
+}
+
 /* ESC key closes open modals */
 document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
+        if (document.getElementById('pcOverlay').classList.contains('open')) { closeProfileCard(); return; }
         closeStory();
         closeNaughtyWindow();
         closeModal();
