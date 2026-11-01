@@ -151,7 +151,8 @@
 
         const brand = document.createElement('div');
         brand.className = 'alv-brand';
-        brand.textContent = CONFIG.brandText;
+        brand.setAttribute('role', 'img');
+        brand.setAttribute('aria-label', 'ALVEE');   /* ছবি style.css এর --alv-brand-img থেকে আসে */
 
         const subscribe = document.createElement('button');
         subscribe.type = 'button';
