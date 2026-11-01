@@ -2189,6 +2189,14 @@ def oc_channel_script():
   return "oc-channel.js not found", 404
 
 
+@app.route("/style.css", methods=["GET"])
+def style_css_file():
+  page_path = BASE_DIR / "style.css"
+  if page_path.is_file():
+    return send_file(page_path, mimetype="text/css")
+  return "style.css not found", 404
+
+
 @app.route("/health", methods=["GET"])
 def health_check():
   return "ok", 200
