@@ -640,6 +640,27 @@ async def get_telethon_thumb_bytes(message_id, kind="story"):
     return None
 
 
+async def get_post_thumb_bytes(message_id, kind="post"):
+  try:
+    msg = await get_cached_message(message_id, kind)
+    if not msg or not getattr(msg, "media", None):
+      return None
+    is_photo = bool(getattr(msg, "photo", None))
+    for t in ((1, 0, -1) if is_photo else (-1,)):
+      try:
+        data = await telethon_reader_client.download_media(
+            msg, file=bytes, thumb=t
+        )
+      except Exception:
+        data = None
+      if data:
+        return data
+    return None
+  except Exception as exc:
+    print(f"[Thumb] post thumb failed for {message_id}: {exc}")
+    return None
+
+
 async def telegram_stream_producer(
     q, stop, message_id, kind, aligned_offset, n_chunks, file_size
 ):
@@ -1492,6 +1513,7 @@ def get_channel_posts_api():
           "media_url": f"/api/channel/media/{row['message_id']}",
           "date": row["created_at"] or "",
           "has_media": True,
+          "thumbnail_url": f"/api/channel/thumb/{row['message_id']}",
       })
 
     videos = [
@@ -1649,6 +1671,46 @@ def stream_telegram_media(message_id, kind, size, mime):
       headers=headers,
       direct_passthrough=True,
   )
+
+
+@app.route("/api/channel/thumb/<int:message_id>", methods=["GET"])
+def get_channel_thumb(message_id):
+  try:
+    thumb_cache = CACHE_DIR / f"pthumb_{message_id}.jpg"
+    if thumb_cache.is_file():
+      return send_file(thumb_cache, mimetype="image/jpeg", conditional=True)
+
+    row, row_kind = find_media_row(
+        message_id, (request.args.get("kind") or "").strip().lower()
+    )
+    if not row:
+      return "", 404
+
+    content = None
+    if telethon_reader_client is not None:
+      try:
+        content = run_async(
+            get_post_thumb_bytes(message_id, row_kind), timeout=60
+        )
+      except Exception:
+        content = None
+    if not content:
+      return "", 404
+
+    try:
+      with open(thumb_cache, "wb") as f:
+        f.write(content)
+    except Exception:
+      pass
+
+    return Response(
+        content,
+        status=200,
+        mimetype="image/jpeg",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+  except Exception:
+    return "", 404
 
 
 @app.route("/api/channel/media/<int:message_id>", methods=["GET", "HEAD"])
