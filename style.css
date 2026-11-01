@@ -120,11 +120,11 @@ body {
     max-width: 100%; max-height: 65vh; min-width: 240px;
 }
 
-/* ===== লোডিং: থাম্বনেইল (ব্লার + ঢেউ খাওয়া) + সাগরের ঢেউ অ্যানিমেশন =====
+/* ===== লোডিং: থাম্বনেইল + হালকা ব্লার (৩px), আর পুরো ফ্রেম জুড়ে ব্লারের ঢেউ =====
    .is-loading ক্লাস oc-channel.js যোগ করে, মিডিয়া তৈরি হলেই সরিয়ে দেয় */
 .alv-media-frame.is-loading {
     width: 100%; min-width: 280px; min-height: 360px;
-    background: linear-gradient(180deg, #06142e 0%, #0b2f5b 52%, #0e5a8a 100%);
+    background: linear-gradient(180deg, #14161c 0%, #0d0f14 100%);
 }
 .alv-media-frame.is-loading > img,
 .alv-media-frame.is-loading > video {
@@ -132,42 +132,42 @@ body {
     min-width: 0; max-height: none; opacity: 0; pointer-events: none;
 }
 
-/* থাম্বনেইলের ব্লার স্তর — ব্লারের পরিমাণ ও আকার ধীরে ধীরে ওঠানামা করে (ঢেউ খাওয়ার মতো) */
+/* থাম্বনেইল স্তর: হালকা ব্লার */
 .alv-thumb-bg {
     position: absolute; inset: 0; z-index: 0; pointer-events: none;
     background-size: cover; background-position: center; background-repeat: no-repeat;
-    filter: blur(14px); transform: scale(1.15);
-    animation: alv-blur-wave 3.2s ease-in-out infinite;
-    transition: opacity 0.5s ease;
+    filter: blur(3px); transform: scale(1.05);
+    opacity: 0; transition: opacity 0.5s ease;
 }
-@keyframes alv-blur-wave {
-    0%, 100% { filter: blur(10px); transform: scale(1.12) translateY(0); }
-    50%      { filter: blur(18px); transform: scale(1.2) translateY(-8px); }
-}
+.alv-thumb-bg.is-ready { opacity: 1; }
 .alv-media-frame.is-loaded .alv-thumb-bg { opacity: 0; }
 
-.alv-media-frame.is-loading::before,
-.alv-media-frame.is-loading::after {
-    content: ""; position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none;
-    background-repeat: repeat-x; background-size: 600px 100%; background-position: 0 100%;
+/* ব্লারের ঢেউ: আরও ঘন ব্লারের ফিতা পুরো ফ্রেমের উপর দিয়ে ঢেউয়ের মতো বয়ে যায় */
+.alv-blur-wave {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 25%, transparent 50%, #000 75%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0%, #000 25%, transparent 50%, #000 75%, transparent 100%);
+    -webkit-mask-size: 100% 240px; mask-size: 100% 240px;
+    -webkit-mask-repeat: repeat-y; mask-repeat: repeat-y;
+    animation: alv-blur-sweep 2.8s linear infinite;
 }
-.alv-media-frame.is-loading::before {
-    z-index: 1; height: 62%; background-image: var(--alv-wave-a);
-    animation: alv-wave-x 6s linear infinite, alv-wave-bob 3.4s ease-in-out infinite;
+@keyframes alv-blur-sweep {
+    from { -webkit-mask-position: 0 0;     mask-position: 0 0; }
+    to   { -webkit-mask-position: 0 240px; mask-position: 0 240px; }
 }
-.alv-media-frame.is-loading::after {
-    z-index: 2; height: 48%; background-image: var(--alv-wave-b);
-    animation: alv-wave-x-rev 4s linear infinite, alv-wave-bob 2.7s ease-in-out infinite reverse;
-}
-/* থাম্বনেইল থাকলে ঢেউ একটু হালকা, যাতে নিচের ছবি বোঝা যায় */
-.alv-media-frame.has-thumb.is-loading::before,
-.alv-media-frame.has-thumb.is-loading::after { opacity: 0.7; }
+.alv-media-frame.is-loaded .alv-blur-wave { opacity: 0; transition: opacity 0.4s ease; }
 
-@keyframes alv-wave-x     { from { background-position-x: 0; }     to { background-position-x: 600px; } }
-@keyframes alv-wave-x-rev { from { background-position-x: 600px; } to { background-position-x: 0; } }
-@keyframes alv-wave-bob   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(9px); } }
+/* থাম্বনেইল না থাকলে: শুধু হালকা আলোর ঝিলিক */
+.alv-media-frame.is-loading:not(.has-thumb)::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.06) 50%, transparent 70%);
+    background-size: 220% 100%;
+    animation: alv-shimmer 1.8s ease-in-out infinite;
+}
+@keyframes alv-shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
 @media (prefers-reduced-motion: reduce) {
-    .alv-media-frame.is-loading::before, .alv-media-frame.is-loading::after, .alv-thumb-bg { animation: none; }
+    .alv-blur-wave, .alv-media-frame.is-loading:not(.has-thumb)::after { animation: none; }
 }
 
 .alv-tribute-btn {
