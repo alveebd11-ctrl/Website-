@@ -8,7 +8,7 @@
     --oc-muted: #94a3b8;
     --oc-border: rgba(255, 255, 255, 0.12);
 
-    /* ১ নম্বর কোড থেকে যুক্ত করা: সাগরের ঢেউ (লোডিং অ্যানিমেশন) — SVG টাইল, ৬০০px চওড়া */
+    /* সাগরের ঢেউ (লোডিং অ্যানিমেশন) — SVG টাইল, ৬০০px চওড়া, দুই প্রান্ত মিলে যায় */
     --alv-wave-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'%3E%3Cpath d='M0 60 C150 0 150 120 300 60 S450 120 600 60 V120 H0 Z' fill='%2338bdf8' fill-opacity='.42'/%3E%3C/svg%3E");
     --alv-wave-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 120' preserveAspectRatio='none'%3E%3Cpath d='M0 60 C150 0 150 120 300 60 S450 120 600 60 V120 H0 Z' fill='%230ea5e9' fill-opacity='.55'/%3E%3C/svg%3E");
 }
@@ -72,10 +72,19 @@ body {
 .oc-search-panel input { width: 100%; background: transparent; border: none; outline: none; color: #fff; font-family: inherit; font-size: 14px; }
 .oc-menu-popover button { margin-top: 8px; padding: 10px; border: none; border-radius: 12px; background: rgba(138, 43, 226, 0.2); color: #e0b0ff; cursor: pointer; }
 
+/* ===== ALVEE / Subscribe / Trending: গ্লাস কার্ড (2% ব্লার) =====
+   oc-channel.js এটাকে স্ক্রল-এরিয়ার ভেতরে রাখে, তাই নিচে স্ক্রল করলে
+   কার্ডটি কনটেন্টের সাথে উপরে উঠে হেডারের নিচে হারিয়ে যায় (হেডার আগের মতোই থাকে) */
 .alv-topbar {
-    display: flex; align-items: center; gap: 6px; padding: 10px 15px; background: var(--oc-bg);
-    border-bottom: 1px solid var(--oc-border); z-index: 5;
+    display: flex; align-items: center; gap: 6px; padding: 10px 12px;
+    width: 100%; max-width: 420px; margin: 12px auto 4px; flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04));
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    z-index: 5;
 }
+.oc-channel-body > .alv-topbar { margin: 0 auto 18px; }
 .alv-brand {
     background: #ffffff; color: #000000; font-size: 11px; font-weight: 700;
     padding: 7px 10px; border-radius: 10px; white-space: nowrap;
@@ -111,6 +120,37 @@ body {
     max-width: 100%; max-height: 65vh; min-width: 240px;
 }
 
+/* ===== লোডিং: ভিডিও/ছবির জায়গায় সাগরের ঢেউ অ্যানিমেশন =====
+   .is-loading ক্লাস oc-channel.js যোগ করে, মিডিয়ার প্রথম ফ্রেম (থাম্বনেইল) এলেই সরিয়ে দেয় */
+.alv-media-frame.is-loading {
+    width: 100%; min-width: 280px; min-height: 360px;
+    background: linear-gradient(180deg, #06142e 0%, #0b2f5b 52%, #0e5a8a 100%);
+}
+.alv-media-frame.is-loading > img,
+.alv-media-frame.is-loading > video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    min-width: 0; max-height: none; opacity: 0; pointer-events: none;
+}
+.alv-media-frame.is-loading::before,
+.alv-media-frame.is-loading::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; pointer-events: none;
+    background-repeat: repeat-x; background-size: 600px 100%; background-position: 0 100%;
+}
+.alv-media-frame.is-loading::before {
+    height: 62%; background-image: var(--alv-wave-a);
+    animation: alv-wave-x 6s linear infinite, alv-wave-bob 3.4s ease-in-out infinite;
+}
+.alv-media-frame.is-loading::after {
+    height: 48%; background-image: var(--alv-wave-b);
+    animation: alv-wave-x-rev 4s linear infinite, alv-wave-bob 2.7s ease-in-out infinite reverse;
+}
+@keyframes alv-wave-x     { from { background-position-x: 0; }     to { background-position-x: 600px; } }
+@keyframes alv-wave-x-rev { from { background-position-x: 600px; } to { background-position-x: 0; } }
+@keyframes alv-wave-bob   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(9px); } }
+@media (prefers-reduced-motion: reduce) {
+    .alv-media-frame.is-loading::before, .alv-media-frame.is-loading::after { animation: none; }
+}
+
 .alv-tribute-btn {
     position: absolute; top: 10px; left: 10px; background: rgba(23, 23, 25, 0.9);
     border: 1px solid var(--oc-border); color: var(--oc-accent); font-size: 11px;
@@ -139,6 +179,7 @@ body {
 .alv-stat-like.is-active svg { stroke: #ef4444; fill: #ef4444; }
 .alv-stat-bookmark.is-active svg { stroke: var(--oc-accent); fill: var(--oc-accent); }
 .alv-stat-views { color: #38bdf8; cursor: default; }
+.alv-stat-like.is-active, .alv-stat-bookmark.is-active { color: #f8fafc; }
 
 .alv-telegram-btn {
     width: 100%; background: var(--oc-telegram); color: #ffffff; font-size: 14px;
