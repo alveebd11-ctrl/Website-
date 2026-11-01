@@ -266,15 +266,47 @@
             const v = en.target.querySelector('video');
             if (v) activateVideo(v);
         });
-    }, { rootMargin: '900px 0px' }) : null;
+    }, { root: getScroller(), rootMargin: '900px 0px' }) : null;
 
     function activateVideo(video) {
         try {
             if (video.getAttribute('preload') !== 'metadata') video.setAttribute('preload', 'metadata');
             if (video.readyState === 0 && video.networkState !== 2) video.load();
-            const frame = video.closest('.alv-media-frame');
-            if (frame && frame._ocFinish) window.setTimeout(frame._ocFinish, 30000);
         } catch (e) { }
+    }
+
+    /* সার্ভার ঘুম থেকে উঠছে বা নেটওয়ার্ক ধীর হলে ছবি/ভিডিও নিজে নিজে আবার চেষ্টা করবে */
+    function setupRetry(frame, media, finish) {
+        var tries = 0;
+        media.addEventListener('error', function () {
+            if (frame.classList.contains('is-loaded')) return;
+            if (tries >= 5) { finish(); return; }
+            tries++;
+            var base = media.dataset.ocSrc || media.getAttribute('src');
+            media.dataset.ocSrc = base;
+            window.setTimeout(function () {
+                media.src = base + (base.indexOf('?') > -1 ? '&' : '?') + 'r=' + Date.now();
+                if (media.tagName === 'VIDEO') { try { media.load(); } catch (e) { } }
+            }, 2500 * tries);
+        });
+    }
+
+    /* থাম্বনেইল লোড হলে তবেই দেখানো হয়; না এলে কয়েকবার আবার চেষ্টা */
+    function loadThumb(frame, thumbBg, url) {
+        var tries = 0;
+        (function attempt() {
+            var im = new Image();
+            im.onload = function () {
+                thumbBg.style.backgroundImage = 'url("' + im.src + '")';
+                thumbBg.classList.add('is-ready');
+                frame.classList.add('has-thumb');
+            };
+            im.onerror = function () {
+                tries++;
+                if (tries <= 5 && thumbBg.parentNode) window.setTimeout(attempt, 2500 * tries);
+            };
+            im.src = url + (tries ? (url.indexOf('?') > -1 ? '&' : '?') + 'r=' + Date.now() : '');
+        })();
     }
 
     function prepareFrame(frame) {
@@ -289,8 +321,12 @@
             frame.classList.remove('is-loading');
             frame.classList.add('is-loaded');
             /* ব্লার থাম্বনেইল ধীরে মিলিয়ে গিয়ে সরে যাবে */
-            var thumb = frame.querySelector('.alv-thumb-bg');
-            if (thumb) window.setTimeout(function () { if (thumb.parentNode) thumb.parentNode.removeChild(thumb); }, 600);
+            var layers = frame.querySelectorAll('.alv-thumb-bg, .alv-blur-wave');
+            window.setTimeout(function () {
+                for (var i = 0; i < layers.length; i++) {
+                    if (layers[i].parentNode) layers[i].parentNode.removeChild(layers[i]);
+                }
+            }, 600);
         }
         frame._ocFinish = finish;
 
@@ -298,8 +334,7 @@
             if (media.complete && media.naturalWidth > 0) { finish(); return; }
             frame.classList.add('is-loading');
             media.addEventListener('load', finish);
-            media.addEventListener('error', finish);
-            window.setTimeout(finish, 25000);
+            setupRetry(frame, media, finish);
             return;
         }
 
@@ -309,7 +344,7 @@
         ['loadeddata', 'seeked', 'canplay', 'playing'].forEach(function (ev) {
             media.addEventListener(ev, finish);
         });
-        media.addEventListener('error', finish);
+        setupRetry(frame, media, finish);
         media.addEventListener('loadedmetadata', function () {
             /* poster না থাকলে ০.১ সেকেন্ডের ফ্রেমকে থাম্বনেইল হিসেবে দেখানো */
             if (!media.poster && media.paused && !media.currentTime) {
@@ -483,9 +518,11 @@
         if (thumbURL) {
             const thumbBg = document.createElement('div');
             thumbBg.className = 'alv-thumb-bg';
-            thumbBg.style.backgroundImage = 'url("' + thumbURL + '")';
-            mediaFrame.classList.add('has-thumb');
+            const blurWave = document.createElement('div');
+            blurWave.className = 'alv-blur-wave';
             mediaFrame.appendChild(thumbBg);
+            mediaFrame.appendChild(blurWave);
+            loadThumb(mediaFrame, thumbBg, thumbURL);
         }
 
         if (item.mediaType === 'video') {
