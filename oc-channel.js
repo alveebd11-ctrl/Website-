@@ -10,12 +10,14 @@
         mediaURLPrefix: '/api/channel/media/',
         statsURL: '/api/channel/stats',
         refreshInterval: 30000,
+        statsPollInterval: 60000,
         batchSize: 10,
         observerRootMargin: '350px 0px',
         telegramURL: 'https://t.me/ALVEE_BD1',
         brandText: '🫂🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀🫂♥️⟵꯭'
     };
 
+    const HAS_IO = 'IntersectionObserver' in window;
     const mediaCards = new Map();
     const knownMediaIds = new Set();
 
@@ -23,6 +25,7 @@
     let isFetchingMedia = false;
     let isRenderingBatch = false;
     let pollingTimer = null;
+    let statsTimer = null;
     let currentSearchQuery = '';
     let trendingTimer = null;
     let toastTimer = null;
@@ -90,13 +93,52 @@
         }, 2200);
     }
 
-    /* ---------- ৩) টপবার কার্ড স্ক্রল-এরিয়ার ভেতরে নেওয়া ---------- */
+    /* ---------- ALVEE / Subscribe / Trending কার্ড ----------
+       কার্ডটি স্ক্রল-এরিয়ার (.oc-channel-body) ভেতরে থাকে, তাই নিচে স্ক্রল করলে
+       কনটেন্টের সাথে উপরে উঠে হেডারের নিচে হারিয়ে যায়। উপরের হেডার আগের মতোই থাকে। */
+    function bindTopbar(topbar) {
+        if (topbar.dataset.ocBound) return;
+        topbar.dataset.ocBound = '1';
+
+        const subscribe = topbar.querySelector('.alv-subscribe-btn');
+        const trending = topbar.querySelector('.alv-trending-btn');
+
+        if (subscribe) {
+            if (safeStorageGet('alvSubscribeActive') === 'true' || safeStorageGet('oc_subscribed') === '1') {
+                subscribe.classList.add('is-active');
+            }
+            /* ক্লিক করলে রং বদলায় (লাল ↔ সবুজ) এবং মনে রাখে */
+            subscribe.addEventListener('click', () => {
+                const isActive = subscribe.classList.toggle('is-active');
+                safeStorageSet('alvSubscribeActive', isActive ? 'true' : 'false');
+                safeStorageSet('oc_subscribed', isActive ? '1' : '0');
+            });
+        }
+
+        if (trending) {
+            if (safeStorageGet('alvTrendingActive') === 'true') trending.classList.add('is-active');
+            trending.addEventListener('click', () => {
+                trending.classList.add('is-active');
+                safeStorageSet('alvTrendingActive', 'true');
+                trending.textContent = 'Ok Done';
+                if (trendingTimer) window.clearTimeout(trendingTimer);
+                trendingTimer = window.setTimeout(() => { trending.textContent = 'Trending'; }, 1500);
+            });
+        }
+    }
+
     function moveTopbar() {
         const channel = getChannel();
         const body = channel ? channel.querySelector('.oc-channel-body') : null;
-        if (!body || body.querySelector('.alv-topbar')) return;
-        const existingHeader = channel.querySelector('.oc-channel-header');
-        if (!existingHeader) return;
+        if (!body) return;
+
+        /* HTML-এ আগে থেকে টপবার থাকলে সেটাকেই স্ক্রল-এরিয়ায় আনা (ডুপ্লিকেট হবে না) */
+        const existing = channel.querySelector('.alv-topbar');
+        if (existing) {
+            if (!body.contains(existing)) body.insertBefore(existing, body.firstChild);
+            bindTopbar(existing);
+            return;
+        }
 
         const topbar = document.createElement('div');
         topbar.className = 'alv-topbar';
@@ -115,31 +157,9 @@
         trending.className = 'alv-header-btn alv-trending-btn';
         trending.textContent = 'Trending';
 
-        if (safeStorageGet('alvSubscribeActive') === 'true' || safeStorageGet('oc_subscribed') === '1') {
-            subscribe.classList.add('is-active');
-        }
-        if (safeStorageGet('alvTrendingActive') === 'true') {
-            trending.classList.add('is-active');
-        }
-
-        subscribe.addEventListener('click', () => {
-            setTimeout(() => {
-                const isActive = subscribe.classList.contains('is-active');
-                safeStorageSet('alvSubscribeActive', isActive ? 'true' : 'false');
-                safeStorageSet('oc_subscribed', isActive ? '1' : '0');
-            }, 50);
-        });
-
-        trending.addEventListener('click', () => {
-            trending.classList.add('is-active');
-            safeStorageSet('alvTrendingActive', 'true');
-            trending.textContent = 'Ok Done';
-            if (trendingTimer) window.clearTimeout(trendingTimer);
-            trendingTimer = window.setTimeout(() => { trending.textContent = 'Trending'; }, 1500);
-        });
-
         topbar.append(brand, subscribe, trending);
         body.insertBefore(topbar, body.firstChild);
+        bindTopbar(topbar);
     }
 
     function getSafeMediaURL(post) {
@@ -221,7 +241,27 @@
         media.style.aspectRatio = ratio;
     }
 
-    /* ---------- ১) লোডিং ঢেউ + থাম্বনেইল হ্যান্ডলার ---------- */
+    /* ---------- ১) লোডিং: সাগরের ঢেউ + প্রথম ফ্রেম (থাম্বনেইল) ----------
+       মিডিয়া লোড হওয়ার সময় ফ্রেমে .is-loading থাকে (CSS-এ ঢেউ অ্যানিমেশন)।
+       ভিডিওর প্রথম ফ্রেম এলেই ঢেউ সরে গিয়ে থাম্বনেইল দেখা যায়। */
+    const frameObserver = HAS_IO ? new IntersectionObserver(entries => {
+        entries.forEach(en => {
+            if (!en.isIntersecting) return;
+            frameObserver.unobserve(en.target);
+            const v = en.target.querySelector('video');
+            if (v) activateVideo(v);
+        });
+    }, { rootMargin: '400px 0px' }) : null;
+
+    function activateVideo(video) {
+        try {
+            if (video.getAttribute('preload') !== 'metadata') video.setAttribute('preload', 'metadata');
+            if (video.readyState === 0 && video.networkState !== 2) video.load();
+            const frame = video.closest('.alv-media-frame');
+            if (frame && frame._ocFinish) window.setTimeout(frame._ocFinish, 30000);
+        } catch (e) { }
+    }
+
     function prepareFrame(frame) {
         var media = frame.querySelector('video, img');
         if (!media || frame.dataset.ocLoad) return;
@@ -234,17 +274,18 @@
             frame.classList.remove('is-loading');
             frame.classList.add('is-loaded');
         }
+        frame._ocFinish = finish;
 
         if (media.tagName === 'IMG') {
             if (media.complete && media.naturalWidth > 0) { finish(); return; }
             frame.classList.add('is-loading');
             media.addEventListener('load', finish);
             media.addEventListener('error', finish);
-            setTimeout(finish, 25000);
+            window.setTimeout(finish, 25000);
             return;
         }
 
-        /* ভিডিওর জন্য লোডিং স্টেট */
+        /* ভিডিও */
         if (media.readyState >= 2) { finish(); return; }
         frame.classList.add('is-loading');
         ['loadeddata', 'seeked', 'canplay', 'playing'].forEach(function (ev) {
@@ -252,17 +293,156 @@
         });
         media.addEventListener('error', finish);
         media.addEventListener('loadedmetadata', function () {
+            /* poster না থাকলে ০.১ সেকেন্ডের ফ্রেমকে থাম্বনেইল হিসেবে দেখানো */
             if (!media.poster && media.paused && !media.currentTime) {
                 try { media.currentTime = 0.1; } catch (e) { }
             }
+            window.setTimeout(finish, 1500);   /* কিছু ফোনে ফ্রেম ইভেন্ট আসে না — তখনও ভিডিও দেখাবে */
         });
         if (media.poster) {
             var im = new Image();
             im.onload = finish;
             im.src = media.poster;
         }
-        setTimeout(finish, 30000);
+        if (frameObserver) frameObserver.observe(frame); else activateVideo(media);
     }
+
+    /* ---------- ২) স্ক্রলে ভিডিও পজ + একটাই ভিডিও চলার নিয়ম ---------- */
+    document.addEventListener('play', function (e) {
+        var t = e.target;
+        if (!t || t.tagName !== 'VIDEO') return;
+        var all = document.querySelectorAll('video');
+        for (var i = 0; i < all.length; i++) {
+            if (all[i] !== t && !all[i].paused) { try { all[i].pause(); } catch (err) { } }
+        }
+    }, true);
+
+    const pauseObserver = HAS_IO ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+            var v = en.target;
+            if (en.intersectionRatio < 0.2 && !v.paused) {
+                try { v.pause(); } catch (e) { }
+            }
+        });
+    }, { threshold: [0, 0.2, 0.5] }) : null;
+
+    /* ---------- ৩) View / Like / Save — সব ইউজারের মোট সংখ্যা (সার্ভার থেকে) ---------- */
+    function jget(url) {
+        return fetch(url, { credentials: 'same-origin' }).then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        });
+    }
+
+    function jpost(url, body) {
+        return fetch(url, {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body || {})
+        }).then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        });
+    }
+
+    function applyStats(id, s) {
+        if (!s) return;
+        document.querySelectorAll('.alv-post[data-oc-id="' + id + '"]').forEach(post => {
+            const viewsEl = post.querySelector('.alv-stat-views .alv-stat-count');
+            const likeBtn = post.querySelector('.alv-stat-like');
+            const saveBtn = post.querySelector('.alv-stat-bookmark');
+
+            if (viewsEl && s.views !== undefined) viewsEl.textContent = formatCount(s.views);
+
+            if (likeBtn && s.likes !== undefined) {
+                const likeCount = likeBtn.querySelector('.alv-stat-count');
+                if (likeCount) {
+                    likeCount.dataset.n = String(s.likes);
+                    likeCount.textContent = formatCount(s.likes);
+                }
+                likeBtn.classList.toggle('is-active', !!s.liked);
+                safeStorageSet('alvLiked_' + id, String(!!s.liked));
+            }
+
+            if (saveBtn && s.saves !== undefined) {
+                const saveCount = saveBtn.querySelector('.alv-stat-count');
+                if (saveCount) {
+                    saveCount.dataset.n = String(s.saves);
+                    saveCount.textContent = s.saves > 0 ? formatCount(s.saves) : 'Save';
+                }
+                saveBtn.classList.toggle('is-active', !!s.saved);
+                safeStorageSet('alvBookmarked_' + id, String(!!s.saved));
+            }
+        });
+    }
+
+    let pendingStatIds = {};
+    let statsFetchTimer = null;
+
+    function queueStats(id) {
+        pendingStatIds[id] = 1;
+        if (!statsFetchTimer) statsFetchTimer = window.setTimeout(flushStats, 150);
+    }
+
+    function fetchStatsFor(ids) {
+        for (let i = 0; i < ids.length; i += 100) {
+            const chunk = ids.slice(i, i + 100);
+            jget(CONFIG.statsURL + '?client_id=' + encodeURIComponent(clientId) + '&ids=' + chunk.join(','))
+                .then(data => {
+                    const stats = (data && data.stats) || {};
+                    Object.keys(stats).forEach(id => applyStats(id, stats[id]));
+                })
+                .catch(() => { /* সার্ভার না পেলে আগের সংখ্যাই থাকবে */ });
+        }
+    }
+
+    function flushStats() {
+        statsFetchTimer = null;
+        const ids = Object.keys(pendingStatIds);
+        pendingStatIds = {};
+        if (ids.length) fetchStatsFor(ids);
+    }
+
+    function refreshAllStats() {
+        const ids = Array.from(mediaCards.keys()).slice(0, 150);
+        if (ids.length) fetchStatsFor(ids);
+    }
+
+    function sendAction(id, action) {
+        jpost(`${CONFIG.statsURL}/${id}/${action}`, { client_id: clientId })
+            .then(data => { if (data && data.stats) applyStats(id, data.stats); })
+            .catch(() => { });
+    }
+
+    /* ভিউ: কার্ড অন্তত ০.৮ সেকেন্ড স্ক্রিনে থাকলে প্রতি ডিভাইসে একবার গোনা হয় */
+    var viewed = {};
+    try { (JSON.parse(safeStorageGet('oc_viewed') || '[]') || []).forEach(i => { viewed[i] = 1; }); } catch (e) { }
+
+    function registerView(id) {
+        if (!id || viewed[id]) return;
+        viewed[id] = 1;
+        safeStorageSet('oc_viewed', JSON.stringify(Object.keys(viewed).slice(-500)));
+        jpost(`${CONFIG.statsURL}/${id}/view`, { client_id: clientId })
+            .then(data => { if (data && data.stats) applyStats(id, data.stats); })
+            .catch(() => { delete viewed[id]; });
+    }
+
+    const viewTimers = new Map();
+    const viewObserver = HAS_IO ? new IntersectionObserver(entries => {
+        entries.forEach(en => {
+            const card = en.target;
+            if (en.isIntersecting && en.intersectionRatio >= 0.35) {
+                if (viewTimers.has(card)) return;
+                viewTimers.set(card, window.setTimeout(() => {
+                    viewTimers.delete(card);
+                    registerView(card.dataset.ocId);
+                }, 800));
+            } else if (viewTimers.has(card)) {
+                window.clearTimeout(viewTimers.get(card));
+                viewTimers.delete(card);
+            }
+        });
+    }, { threshold: [0, 0.35, 0.6] }) : null;
 
     function createMediaCard(item) {
         const post = item.post || {};
@@ -287,7 +467,9 @@
 
         if (item.mediaType === 'video') {
             const video = document.createElement('video');
-            video.controls = true; video.playsInline = true; video.preload = 'metadata';
+            video.controls = true; video.playsInline = true;
+            /* কাছাকাছি এলে (বা ফোনে ট্যাপ করলে) লোড হয় — একসাথে সব ভিডিও লোড হয় না */
+            video.preload = HAS_IO ? 'none' : 'metadata';
             if (post.thumbnail_url || post.thumbnail) video.poster = post.thumbnail_url || post.thumbnail;
             if (knownDimensions) applyNativeAspectRatio(mediaFrame, video, knownDimensions.width, knownDimensions.height);
             video.addEventListener('loadedmetadata', () => applyNativeAspectRatio(mediaFrame, video, video.videoWidth, video.videoHeight), { once: true });
@@ -310,19 +492,23 @@
         const views = readCount(post, ['view_count', 'views_count', 'views']);
         const serverLikes = readCount(post, ['like_count', 'likes_count', 'likes']) || 0;
 
-        const viewsItem = createStatItem('alv-stat-item alv-stat-views', '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>', formatCount(views), 'Views');
+        const viewsItem = createStatItem('alv-stat-views', '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>', formatCount(views), 'Views');
         statsBar.appendChild(viewsItem);
 
+        /* Like — ক্লিকে সাথে সাথে বদলায়, তারপর সার্ভারের আসল সংখ্যা বসে */
         const likeKey = 'alvLiked_' + item.id;
-        let isLiked = safeStorageGet(likeKey) === 'true';
-        const likeControl = createStatButton('alv-stat-like', '<path d="M20.8 8.7c0 5.2-8.8 10.1-8.8 10.1S3.2 13.9 3.2 8.7A4.5 4.5 0 0 1 12 6.5a4.5 4.5 0 0 1 8.8 2.2Z"/>', formatCount(serverLikes + (isLiked ? 1 : 0)));
-        if (isLiked) likeControl.button.classList.add('is-active');
-        
+        const likeControl = createStatButton('alv-stat-like', '<path d="M20.8 8.7c0 5.2-8.8 10.1-8.8 10.1S3.2 13.9 3.2 8.7A4.5 4.5 0 0 1 12 6.5a4.5 4.5 0 0 1 8.8 2.2Z"/>', formatCount(serverLikes));
+        likeControl.count.dataset.n = String(serverLikes);
+        likeControl.button.title = 'Likes';
+        if (safeStorageGet(likeKey) === 'true') likeControl.button.classList.add('is-active');
+
         likeControl.button.addEventListener('click', () => {
-            isLiked = !isLiked;
-            safeStorageSet(likeKey, String(isLiked));
-            likeControl.button.classList.toggle('is-active', isLiked);
-            likeControl.count.textContent = formatCount(serverLikes + (isLiked ? 1 : 0));
+            const active = !likeControl.button.classList.contains('is-active');
+            likeControl.button.classList.toggle('is-active', active);
+            const n = Math.max(0, (Number(likeControl.count.dataset.n) || 0) + (active ? 1 : -1));
+            likeControl.count.dataset.n = String(n);
+            likeControl.count.textContent = formatCount(n);
+            safeStorageSet(likeKey, String(active));
             sendAction(item.id, 'like');
         });
         statsBar.appendChild(likeControl.button);
@@ -331,16 +517,21 @@
         commentControl.button.addEventListener('click', () => showToast('Comments are not connected yet.'));
         statsBar.appendChild(commentControl.button);
 
+        /* Save — কতজন সেভ করেছে তার সংখ্যা; ০ হলে "Save" লেখা */
         const bookmarkKey = 'alvBookmarked_' + item.id;
-        let isBookmarked = safeStorageGet(bookmarkKey) === 'true';
-        const bookmarkControl = createStatButton('alv-stat-bookmark', '<path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-4-6 4V4.5Z"/>', isBookmarked ? 'Saved' : 'Save');
-        if (isBookmarked) bookmarkControl.button.classList.add('is-active');
-        
+        const wasSaved = safeStorageGet(bookmarkKey) === 'true';
+        const bookmarkControl = createStatButton('alv-stat-bookmark', '<path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-4-6 4V4.5Z"/>', wasSaved ? 'Saved' : 'Save');
+        bookmarkControl.count.dataset.n = '0';
+        bookmarkControl.button.title = 'Saves';
+        if (wasSaved) bookmarkControl.button.classList.add('is-active');
+
         bookmarkControl.button.addEventListener('click', () => {
-            isBookmarked = !isBookmarked;
-            safeStorageSet(bookmarkKey, String(isBookmarked));
-            bookmarkControl.button.classList.toggle('is-active', isBookmarked);
-            bookmarkControl.count.textContent = isBookmarked ? 'Saved' : 'Save';
+            const active = !bookmarkControl.button.classList.contains('is-active');
+            bookmarkControl.button.classList.toggle('is-active', active);
+            const n = Math.max(0, (Number(bookmarkControl.count.dataset.n) || 0) + (active ? 1 : -1));
+            bookmarkControl.count.dataset.n = String(n);
+            bookmarkControl.count.textContent = n > 0 ? formatCount(n) : 'Save';
+            safeStorageSet(bookmarkKey, String(active));
             sendAction(item.id, 'save');
         });
         statsBar.appendChild(bookmarkControl.button);
@@ -349,93 +540,20 @@
         telegramLink.className = 'alv-telegram-btn';
         telegramLink.href = CONFIG.telegramURL;
         telegramLink.target = '_blank';
+        telegramLink.rel = 'noopener';
         telegramLink.innerHTML = `<svg viewBox="0 0 24 24"><path d="m21 3-7.2 18-3.8-7.1L3 10.1 21 3Z"/><path d="m10 13.9 4.1-4.1"/></svg><span>Join Telegram</span>`;
 
         card.append(postHeader, mediaFrame, statsBar, telegramLink);
         return card;
     }
 
-    /* ---------- ২) স্ক্রলে ভিডিও পজ ও একটাই ভিডিও চলার নিয়ম ---------- */
-    document.addEventListener('play', function (e) {
-        var t = e.target;
-        if (!t || t.tagName !== 'VIDEO') return;
-        var all = document.querySelectorAll('video');
-        for (var i = 0; i < all.length; i++) {
-            if (all[i] !== t && !all[i].paused) { try { all[i].pause(); } catch (err) { } }
-        }
-    }, true);
-
-    const pauseObserver = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) {
-            var v = en.target;
-            if (en.intersectionRatio < 0.2 && !v.paused) {
-                try { v.pause(); } catch (e) { }
-            }
-        });
-    }, { threshold: [0, 0.2, 0.5] }) : null;
-
-    /* ---------- ৪) সার্ভার স্ট্যাটস সিঙ্ক (View / Like / Save) ---------- */
-    function jget(url) {
-        return fetch(url, { credentials: 'same-origin' }).then(r => {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
-        });
+    function registerCard(card, item) {
+        mediaCards.set(item.id, card);
+        const video = card.querySelector('video');
+        if (video && pauseObserver) pauseObserver.observe(video);
+        if (viewObserver) viewObserver.observe(card);
+        queueStats(item.id);
     }
-
-    function jpost(url, body) {
-        return fetch(url, {
-            method: 'POST', credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body || {})
-        }).then(r => {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
-        });
-    }
-
-    function applyStats(id, s) {
-        if (!s) return;
-        var posts = document.querySelectorAll('.alv-post[data-oc-id="' + id + '"]');
-        posts.forEach(post => {
-            var viewsEl = post.querySelector('.alv-stat-views .alv-stat-count');
-            var likesEl = post.querySelector('.alv-stat-like .alv-stat-count');
-            var savesEl = post.querySelector('.alv-stat-bookmark .alv-stat-count');
-            
-            if (viewsEl && s.views !== undefined) viewsEl.textContent = formatCount(s.views);
-            if (likesEl && s.likes !== undefined) likesEl.textContent = formatCount(s.likes);
-            if (savesEl && s.saves !== undefined) savesEl.textContent = s.saves > 0 ? formatCount(s.saves) : 'Save';
-            
-            if (s.liked !== undefined) post.querySelector('.alv-stat-like')?.classList.toggle('is-active', !!s.liked);
-            if (s.saved !== undefined) post.querySelector('.alv-stat-bookmark')?.classList.toggle('is-active', !!s.saved);
-        });
-    }
-
-    function sendAction(id, action) {
-        jpost(`${CONFIG.statsURL}/${id}/${action}`, { client_id: clientId })
-            .then(data => { if (data && data.stats) applyStats(id, data.stats); })
-            .catch(() => {});
-    }
-
-    /* ভিউ কাউন্ট হ্যান্ডলার */
-    var viewed = {};
-    try { (JSON.parse(safeStorageGet('oc_viewed') || '[]') || []).forEach(i => { viewed[i] = 1; }); } catch (e) {}
-    
-    function registerView(id) {
-        if (!id || viewed[id]) return;
-        viewed[id] = 1;
-        safeStorageSet('oc_viewed', JSON.stringify(Object.keys(viewed).slice(-500)));
-        jpost(`${CONFIG.statsURL}/${id}/view`, { client_id: clientId })
-            .then(data => { if (data && data.stats) applyStats(id, data.stats); })
-            .catch(() => { delete viewed[id]; });
-    }
-
-    const viewObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
-        entries.forEach(en => {
-            if (en.isIntersecting && en.intersectionRatio >= 0.35) {
-                registerView(en.target.dataset.ocId);
-            }
-        });
-    }, { threshold: [0.35] }) : null;
 
     function ensureSentinel() {
         const container = getContainer();
@@ -453,12 +571,8 @@
         const fragment = document.createDocumentFragment();
         items.forEach(item => {
             const card = createMediaCard(item);
-            mediaCards.set(item.id, card);
             fragment.appendChild(card);
-            
-            var video = card.querySelector('video');
-            if (video && pauseObserver) pauseObserver.observe(video);
-            if (viewObserver) viewObserver.observe(card);
+            registerCard(card, item);
         });
         container.insertBefore(fragment, ensureSentinel());
     }
@@ -470,12 +584,8 @@
         const fragment = document.createDocumentFragment();
         items.forEach(item => {
             const card = createMediaCard(item);
-            mediaCards.set(item.id, card);
             fragment.appendChild(card);
-
-            var video = card.querySelector('video');
-            if (video && pauseObserver) pauseObserver.observe(video);
-            if (viewObserver) viewObserver.observe(card);
+            registerCard(card, item);
         });
         const firstPost = container.querySelector('.alv-post');
         container.insertBefore(fragment, firstPost || ensureSentinel());
@@ -549,9 +659,12 @@
         moveTopbar();
         fetchTelegramMedia();
         pollingTimer = window.setInterval(fetchTelegramMedia, CONFIG.refreshInterval);
-        
-        const obs = new IntersectionObserver(e => { if (e[0].isIntersecting) renderNextBatch(); }, { root: getChannel(), rootMargin: CONFIG.observerRootMargin });
-        obs.observe(ensureSentinel());
+        statsTimer = window.setInterval(() => { if (!document.hidden) refreshAllStats(); }, CONFIG.statsPollInterval);
+
+        if (HAS_IO) {
+            const obs = new IntersectionObserver(e => { if (e[0].isIntersecting) renderNextBatch(); }, { root: getChannel(), rootMargin: CONFIG.observerRootMargin });
+            obs.observe(ensureSentinel());
+        }
 
         byId('ocSearchInput')?.addEventListener('input', e => {
             currentSearchQuery = e.target.value.toLowerCase();
