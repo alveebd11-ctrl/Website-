@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 import hashlib
 import hmac
+import html as html_lib
 from io import BytesIO
 import json
 import mimetypes
@@ -15,6 +16,7 @@ import threading
 import time
 import traceback
 from typing import Optional, Tuple
+from urllib.parse import urljoin
 import uuid
 import cloudscraper
 from bs4 import BeautifulSoup
@@ -115,6 +117,20 @@ STREAM_REQUEST_SIZE = 512 * 1024  # Telethon download chunk (512 KB)
 MSG_CACHE_TTL = 600  # সেকেন্ড
 TELETHON_START_DELAY = float(os.environ.get("TELETHON_START_DELAY", "40") or 0)
 
+# ---- Scraper configuration (NEW) ----
+# TARGET_SITE_URL         : যে ওয়েবসাইট থেকে অ্যালবাম স্ক্র্যাপ হবে (যেমন https://mmsdesi.me)
+# TARGET_CATEGORY_PATHS   : কমা দিয়ে আলাদা পেজ পাথ, ডিফল্ট "/,/trending,/new"
+# SCRAPER_PROXY           : (ঐচ্ছিক) Cloudflare ব্লক করলে প্রক্সি, যেমন http://user:pass@host:port
+# SCRAPER_PAGES           : প্রতিটি ক্যাটাগরির কয়টা পেজ দেখবে (ডিফল্ট 2)
+TARGET_SITE_URL = os.environ.get("TARGET_SITE_URL", "https://mmsdesi.me").strip().rstrip("/")
+SCRAPER_PROXY = os.environ.get("SCRAPER_PROXY", "").strip()
+SCRAPER_PAGES = max(1, int(os.environ.get("SCRAPER_PAGES", "2") or 2))
+TARGET_CATEGORY_PATHS = [
+    p.strip()
+    for p in os.environ.get("TARGET_CATEGORY_PATHS", "/,/trending,/new").split(",")
+    if p.strip()
+]
+
 print("OC & Story Storage Channel ID:", STORAGE_CHANNEL_ID)
 for _name, _val in (
     ("BOT_TOKEN", BOT_TOKEN),
@@ -122,6 +138,7 @@ for _name, _val in (
     ("API_HASH", API_HASH),
     ("ADMIN_ID", ADMIN_ID),
     ("TELETHON_SESSION_STRING", TELETHON_SESSION_STRING),
+    ("TARGET_SITE_URL", TARGET_SITE_URL),
 ):
   if not _val:
     print(f"[Config] WARNING: environment variable {_name} is not set!")
@@ -207,6 +224,7 @@ pending_uploads = {}
 temp_client_sessions = {}
 upload_lock = threading.Lock()
 scan_lock = threading.Lock()
+scrape_lock = threading.Lock()  # NEW: দুইবার চাপ পড়লে ডাবল স্ক্র্যাপ রোধ
 
 telethon_status = {
     "state": "starting" if TELETHON_SESSION_STRING else "not_configured",
@@ -472,19 +490,91 @@ def download_telegram_file(file_id):
     return None, None
 
 
-# mmsdesi.me অটোমেটিক স্ক্র্যাপার লজিক (৫ থেকে ৫০টি মিডিয়া সহ অ্যালবাম ফেচ করা)
-def fetch_mmsdesi_albums(target_count=40):
+# ------------------------------------------------------------
+# অটোমেটিক স্ক্র্যাপার লজিক (FIXED)
+# ------------------------------------------------------------
+
+# সর্বশেষ স্ক্র্যাপের রিপোর্ট — "No new albums found" এর আসল কারণ বটে দেখানোর জন্য
+scrape_diag = {}
+
+
+def _get_base_url():
+  return os.environ.get("TARGET_SITE_URL", TARGET_SITE_URL).strip().rstrip("/")
+
+
+def _make_scraper():
   scraper = cloudscraper.create_scraper(
       browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
   )
-  base_url = 'https://www.mmsdesi.me'
-  category_urls = [
-      'https://www.mmsdesi.me/',
-      'https://www.mmsdesi.me/trending',
-      'https://www.mmsdesi.me/desi-new',
-      'https://www.mmsdesi.me/desi-old-videos',
-      'https://www.mmsdesi.me/live-stream'
-  ]
+  if SCRAPER_PROXY:
+    scraper.proxies = {"http": SCRAPER_PROXY, "https": SCRAPER_PROXY}
+  return scraper
+
+
+def _text_of(tag):
+  return tag.get_text(" ", strip=True) if tag else ""
+
+
+def _find_caption_and_thumb(link_tag, base_url, slug):
+  """লিংকের ভেতরে, না পেলে কয়েক লেভেল উপরের কার্ডে h3 / img খোঁজে।"""
+  caption = ""
+  thumb = ""
+  node = link_tag
+  for _ in range(4):
+    if node is None:
+      break
+    if not caption:
+      h = node.find(['h3', 'h2', 'h4'])
+      caption = _text_of(h)
+    if not thumb:
+      img = node.find('img')
+      if img:
+        thumb = (
+            img.get('src') or img.get('data-src')
+            or img.get('data-lazy-src') or ''
+        )
+        if not thumb and img.get('srcset'):
+          thumb = img.get('srcset').split()[0]
+    if caption and thumb:
+      break
+    node = node.parent
+  if not caption:
+    caption = link_tag.get('aria-label') or link_tag.get('title') or _text_of(link_tag) or slug
+  if thumb:
+    thumb = urljoin(base_url + "/", thumb)
+  return caption.strip(), thumb
+
+
+def fetch_target_albums(target_count=40):
+  global scrape_diag
+  base_url = _get_base_url()
+  diag = {
+      "base_url": base_url,
+      "pages_ok": 0,
+      "pages_failed": [],
+      "links_found": 0,
+      "skipped_posted": 0,
+      "skipped_dup": 0,
+      "blocked": False,
+      "error": "",
+  }
+  scrape_diag = diag
+
+  if not base_url:
+    diag["error"] = "TARGET_SITE_URL সেট করা নেই (Render → Environment-এ যোগ করুন)"
+    print("[Scraper] TARGET_SITE_URL is not set!")
+    return []
+
+  scraper = _make_scraper()
+
+  # ক্যাটাগরি URL + পেজ নম্বর
+  category_urls = []
+  for path in TARGET_CATEGORY_PATHS:
+    full = base_url if path == "/" else f"{base_url}{path if path.startswith('/') else '/' + path}"
+    category_urls.append(full)
+    for page in range(2, SCRAPER_PAGES + 1):
+      sep = "&" if "?" in full else "?"
+      category_urls.append(f"{full}{sep}page={page}")
 
   with db_connect() as conn:
     posted_slugs = {
@@ -498,24 +588,57 @@ def fetch_mmsdesi_albums(target_count=40):
     if len(albums) >= target_count:
       break
     try:
-      res = scraper.get(url, timeout=20)
-      soup = BeautifulSoup(res.text, 'html.parser')
+      res = scraper.get(url, timeout=25)
+      if res.status_code >= 400:
+        diag["pages_failed"].append(f"{url} → HTTP {res.status_code}")
+        if res.status_code in (401, 403, 429, 503):
+          diag["blocked"] = True
+        continue
+      body = res.text or ""
+      if "Just a moment" in body[:3000] or "cf-browser-verification" in body[:5000]:
+        diag["blocked"] = True
+        diag["pages_failed"].append(f"{url} → Cloudflare challenge")
+        continue
 
+      diag["pages_ok"] += 1
+      soup = BeautifulSoup(body, 'html.parser')
+
+      # ধাপ ১: আগের মতো পুরনো কার্ড সিলেক্টর
+      link_pairs = []
       for card in soup.select('div.group.relative.bg-zinc-900'):
-        link_tag = card.find('a', href=re.compile(r'^/watch/'))
-        if not link_tag:
+        link_tag = card.find('a', href=re.compile(r'/watch/'))
+        if link_tag:
+          link_pairs.append((link_tag, card))
+
+      # ধাপ ২: ফলব্যাক — যেকোনো /watch/ লিংক (সাইটের ক্লাস বদলে গেলেও কাজ করবে)
+      if not link_pairs:
+        for link_tag in soup.find_all('a', href=re.compile(r'/watch/')):
+          link_pairs.append((link_tag, link_tag))
+
+      for link_tag, card in link_pairs:
+        href = link_tag.get('href') or ''
+        slug = href.split('/watch/')[-1].split('?')[0].split('#')[0].strip('/')
+        if not slug:
+          continue
+        diag["links_found"] += 1
+        if slug in seen_slugs:
+          diag["skipped_dup"] += 1
+          continue
+        if slug in posted_slugs:
+          diag["skipped_posted"] += 1
           continue
 
-        href = link_tag.get('href')
-        slug = href.split('/watch/')[-1].strip('/')
-        if slug in seen_slugs or slug in posted_slugs:
-          continue
-
-        h3_tag = card.find('h3')
-        caption = h3_tag.get_text(strip=True) if h3_tag else (link_tag.get('aria-label') or slug)
-
-        img_tag = link_tag.find('img')
-        thumb_url = img_tag.get('src') if img_tag else ''
+        if card is link_tag:
+          caption, thumb_url = _find_caption_and_thumb(link_tag, base_url, slug)
+        else:
+          h3_tag = card.find('h3')
+          caption = h3_tag.get_text(strip=True) if h3_tag else (link_tag.get('aria-label') or slug)
+          img_tag = link_tag.find('img') or card.find('img')
+          thumb_url = ''
+          if img_tag:
+            thumb_url = img_tag.get('src') or img_tag.get('data-src') or ''
+            if thumb_url:
+              thumb_url = urljoin(base_url + "/", thumb_url)
 
         seen_slugs.add(slug)
         albums.append({
@@ -527,35 +650,89 @@ def fetch_mmsdesi_albums(target_count=40):
         if len(albums) >= target_count:
           break
     except Exception as e:
+      diag["pages_failed"].append(f"{url} → {type(e).__name__}: {e}")
       print(f"[Scraper Error] {url}: {e}")
 
+  print(
+      f"[Scraper] albums={len(albums)} links={diag['links_found']} "
+      f"posted_skip={diag['skipped_posted']} ok_pages={diag['pages_ok']} "
+      f"failed={diag['pages_failed']}"
+  )
   return albums
 
 
+def describe_scrape_diag():
+  d = scrape_diag or {}
+  if not d:
+    return ""
+  lines = []
+  if d.get("error"):
+    lines.append(f"⚠️ {d['error']}")
+  else:
+    lines.append(f"🌐 সাইট: {d.get('base_url')}")
+    lines.append(f"📄 লোড হয়েছে: {d.get('pages_ok', 0)} পেজ | ব্যর্থ: {len(d.get('pages_failed', []))}")
+    lines.append(
+        f"🔗 অ্যালবাম লিংক পাওয়া গেছে: {d.get('links_found', 0)} "
+        f"(আগে আপলোড করা: {d.get('skipped_posted', 0)})"
+    )
+    if d.get("blocked"):
+      lines.append("🛡️ সাইট বট ব্লক করছে (Cloudflare/403). SCRAPER_PROXY সেট করে দেখুন।")
+    for f in (d.get("pages_failed") or [])[:3]:
+      lines.append(f"❌ {f}")
+    if d.get("links_found", 0) == 0 and not d.get("blocked") and d.get("pages_ok", 0) > 0:
+      lines.append("ℹ️ পেজে কোনো /watch/ লিংক নেই — সাইটের স্ট্রাকচার/TARGET_CATEGORY_PATHS চেক করুন।")
+    if d.get("links_found", 0) > 0 and d.get("skipped_posted", 0) >= d.get("links_found", 0):
+      lines.append("♻️ সব অ্যালবাম আগেই আপলোড হিসেবে লগ আছে। লগ মুছতে /resetslugs পাঠান।")
+  return "\n".join(lines)
+
+
+def _extract_urls(text, exts):
+  pattern = r'https?://[^\s"\'\\<>]+?\.(?:' + exts + r')(?:\?[^\s"\'\\<>]*)?'
+  return re.findall(pattern, text, flags=re.IGNORECASE)
+
+
 def extract_album_media(album_url, fallback_thumb):
-  scraper = cloudscraper.create_scraper(
-      browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
-  )
+  scraper = _make_scraper()
+  base_url = _get_base_url()
   videos = []
   photos = []
   try:
-    res = scraper.get(album_url, timeout=20)
-    html_text = res.text
+    res = scraper.get(album_url, timeout=25)
+    # JSON-এস্কেপ করা (https:\/\/...) ও &amp; URL ঠিক করা
+    html_text = html_lib.unescape((res.text or "").replace('\\/', '/').replace('\\u0026', '&'))
 
-    found_videos = re.findall(r'https://cdn\.mmsdesi\.me/videos/[^\s"\'\\<>]+\.mp4', html_text)
-    for v in found_videos:
+    for v in _extract_urls(html_text, "mp4"):
       if v not in videos:
         videos.append(v)
 
-    found_photos = re.findall(r'https://cdn\.mmsdesi\.me/photos/[^\s"\'\\<>]+\.(?:jpg|jpeg|png|webp)', html_text)
-    for p in found_photos:
+    for p in _extract_urls(html_text, "jpg|jpeg|png|webp"):
       if p not in photos:
         photos.append(p)
+
+    # <video>/<source>/og:video ট্যাগ থেকেও খোঁজা
+    try:
+      soup = BeautifulSoup(res.text or "", 'html.parser')
+      for tag in soup.find_all(['video', 'source']):
+        src = tag.get('src')
+        if src and '.mp4' in src.lower():
+          full = urljoin(album_url, src)
+          if full not in videos:
+            videos.append(full)
+      for meta in soup.find_all('meta', attrs={'property': re.compile(r'^og:video')}):
+        c = meta.get('content')
+        if c and '.mp4' in c.lower():
+          full = urljoin(album_url, c)
+          if full not in videos:
+            videos.append(full)
+    except Exception:
+      pass
 
     if not photos and fallback_thumb:
       photos.append(fallback_thumb)
   except Exception as e:
     print(f"[Inner Page Error] {album_url}: {e}")
+    if fallback_thumb:
+      photos.append(fallback_thumb)
 
   return videos, photos
 
@@ -1491,12 +1668,12 @@ async def _safe_edit(message, text, reply_markup=None):
 
 
 def _download_bytes(url, name, max_mb=50):
-  scraper = cloudscraper.create_scraper(
-      browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
-  )
+  scraper = _make_scraper()
+  base_url = _get_base_url()
+  headers = {'Referer': f"{base_url}/"} if base_url else {}
   res = scraper.get(
       url, timeout=60, stream=True,
-      headers={'Referer': 'https://www.mmsdesi.me/'},
+      headers=headers,
   )
   res.raise_for_status()
   buf = BytesIO()
@@ -1562,77 +1739,92 @@ async def _handle_scan_callback(callback_query, mode="collection"):
     await callback_query.answer("⏳ A scan is already running.", show_alert=True)
     return
 
-  message = callback_query.message
-  await callback_query.answer("Scanning website albums...")
-  await _safe_edit(message, "🔄 Scraping albums from mmsdesi.me and storing to Telegram...")
+  if not scrape_lock.acquire(blocking=False):
+    await callback_query.answer("⏳ Scraping is already running.", show_alert=True)
+    return
 
   try:
-    albums = await asyncio.to_thread(fetch_mmsdesi_albums, 45)
-    if not albums:
-      await _safe_edit(message, "ℹ️ No new albums found.", reply_markup=build_main_keyboard())
-      return
+    message = callback_query.message
+    await callback_query.answer("Scanning website albums...")
+    await _safe_edit(message, "🔄 Scraping albums and storing to Telegram...")
 
-    added_count = 0
-    target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
+    try:
+      albums = await asyncio.to_thread(fetch_target_albums, 45)
+      if not albums:
+        report = describe_scrape_diag()
+        text = "ℹ️ No new albums found."
+        if report:
+          text += "\n\n" + report
+        await _safe_edit(message, text, reply_markup=build_main_keyboard())
+        return
 
-    for album in albums:
-      videos, photos = await asyncio.to_thread(
-          extract_album_media, album['url'], album['thumbnail']
-      )
-      if not videos and not photos:
-        continue
+      added_count = 0
+      failed_count = 0
+      target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
 
-      caption = album['caption']
-      sent_msgs = []
+      for album in albums:
+        videos, photos = await asyncio.to_thread(
+            extract_album_media, album['url'], album['thumbnail']
+        )
+        if not videos and not photos:
+          failed_count += 1
+          continue
 
-      for v in videos:
-        msg = await _send_video_safe(target_chat.id, v, caption)
-        if msg:
-          sent_msgs.append(msg)
+        caption = album['caption']
+        sent_msgs = []
+
+        for v in videos:
+          msg = await _send_video_safe(target_chat.id, v, caption)
+          if msg:
+            sent_msgs.append(msg)
+          await asyncio.sleep(2)
+
+        if photos:
+          sent_msgs.extend(await _send_photos_safe(target_chat.id, photos, caption))
+
+        if not sent_msgs:
+          failed_count += 1
+          continue
+
+        with db_connect() as conn:
+          for s_msg in sent_msgs:
+            text_content = s_msg.caption or s_msg.text or caption
+            m_type = "video" if s_msg.video else "photo"
+            mime = s_msg.video.mime_type if s_msg.video else "image/jpeg"
+            f_id = (
+                s_msg.video.file_id if s_msg.video
+                else (s_msg.photo.file_id if s_msg.photo else None)
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO channel_posts (message_id, text, media_type, mime_type, telegram_file_id, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (s_msg.id, text_content, m_type, mime, f_id, datetime.now(timezone.utc).isoformat()),
+            )
+          conn.execute("INSERT OR IGNORE INTO scraped_slugs (slug) VALUES (?)", (album['slug'],))
+          conn.commit()
+
+        added_count += 1
         await asyncio.sleep(2)
 
-      if photos:
-        sent_msgs.extend(await _send_photos_safe(target_chat.id, photos, caption))
+      if telethon_reader_client:
+        try:
+          fut = asyncio.run_coroutine_threadsafe(scan_channel("all"), telethon_loop)
+          await asyncio.wrap_future(fut)
+        except Exception as e:
+          print("Post-upload scan error:", e)
 
-      # কিছুই আপলোড না হলে slug সেভ করা হবে না, যাতে পরে আবার চেষ্টা হয়
-      if not sent_msgs:
-        continue
-
-      with db_connect() as conn:
-        for s_msg in sent_msgs:
-          text_content = s_msg.caption or s_msg.text or caption
-          m_type = "video" if s_msg.video else "photo"
-          mime = s_msg.video.mime_type if s_msg.video else "image/jpeg"
-          f_id = (
-              s_msg.video.file_id if s_msg.video
-              else (s_msg.photo.file_id if s_msg.photo else None)
-          )
-          conn.execute(
-              "INSERT OR REPLACE INTO channel_posts (message_id, text, media_type, mime_type, telegram_file_id, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-              (s_msg.id, text_content, m_type, mime, f_id, datetime.now(timezone.utc).isoformat()),
-          )
-        conn.execute("INSERT OR IGNORE INTO scraped_slugs (slug) VALUES (?)", (album['slug'],))
-        conn.commit()
-
-      added_count += 1
-      await asyncio.sleep(2)
-
-    # Telethon ক্লায়েন্ট তার নিজের লুপেই চালাতে হবে
-    if telethon_reader_client:
-      try:
-        fut = asyncio.run_coroutine_threadsafe(scan_channel("all"), telethon_loop)
-        await asyncio.wrap_future(fut)
-      except Exception as e:
-        print("Post-upload scan error:", e)
-
-    await _safe_edit(
-        message,
-        f"✅ {added_count} new albums uploaded & website synced! ✔️",
-        reply_markup=build_main_keyboard(),
-    )
-  except Exception as e:
-    print("Scan error:", traceback.format_exc())
-    await _safe_edit(message, f"❌ Scan failed: {str(e)}", reply_markup=build_main_keyboard())
+      done_text = f"✅ {added_count} new albums uploaded & website synced! ✔️"
+      if failed_count:
+        done_text += f"\n⚠️ {failed_count} অ্যালবামে মিডিয়া পাওয়া যায়নি/আপলোড ব্যর্থ (Logs দেখুন)।"
+      await _safe_edit(
+          message,
+          done_text,
+          reply_markup=build_main_keyboard(),
+      )
+    except Exception as e:
+      print("Scan error:", traceback.format_exc())
+      await _safe_edit(message, f"❌ Scan failed: {str(e)}", reply_markup=build_main_keyboard())
+  finally:
+    scrape_lock.release()
 
 
 def _classify_pyro_media(m):
@@ -1697,6 +1889,26 @@ async def start_pyrogram_monitor():
           "👋 Welcome Admin!\n\nClick below to scan and fetch website videos into your channel and website:",
           reply_markup=build_main_keyboard(),
       )
+
+    @client.on_message(filters.command("resetslugs") & filters.private)
+    async def reset_slugs_cmd(client, message):
+      # NEW: আপলোড-করা-অ্যালবাম লগ মুছে ফেলে, যাতে সব অ্যালবাম আবার স্ক্র্যাপ হয়
+      if not message.from_user or message.from_user.id != ADMIN_ID:
+        return
+      try:
+        def _clear():
+          with db_connect() as conn:
+            n = conn.execute("SELECT COUNT(*) FROM scraped_slugs").fetchone()[0]
+            conn.execute("DELETE FROM scraped_slugs")
+            conn.commit()
+          return n
+        n = await asyncio.to_thread(_clear)
+        await message.reply(
+            f"♻️ {n} টি লগ মুছে ফেলা হয়েছে। এখন আবার স্ক্যান করতে পারেন।",
+            reply_markup=build_main_keyboard(),
+        )
+      except Exception as e:
+        await message.reply(f"❌ Reset failed: {e}")
 
     @client.on_callback_query(filters.regex("^scan_media_channel$"))
     async def scan_media_channel_callback(client, callback_query):
