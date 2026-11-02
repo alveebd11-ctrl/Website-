@@ -126,16 +126,16 @@ SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
 # 1 = আগের মতো সাইটেও দেখাবে
 SYNC_WEBSITE_POSTS = os.environ.get("SYNC_WEBSITE_POSTS", "0").strip() == "1"
 
+COLLECTION_INCLUDE_CAPTIONED = (
+    os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "0").strip() == "1"
+)
+
 # OC কালেকশনে (oc-collection.html) ওয়েবসাইটের ফটো/ভিডিও আসবে না।
 # ওয়েবসাইট-আপলোডগুলোর ক্যাপশন থাকে, আর হাতে আপলোড করা OC মিডিয়ার ক্যাপশন খালি।
 if COLLECTION_INCLUDE_CAPTIONED:
   OC_WHERE = "LOWER(COALESCE(text, '')) NOT LIKE '%" + WEBSITE_MARKER.lower() + "%'"
 else:
   OC_WHERE = "TRIM(COALESCE(text, '')) = ''"
-
-COLLECTION_INCLUDE_CAPTIONED = (
-    os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "0").strip() == "1"
-)
 PRECACHE_MEDIA = os.environ.get("PRECACHE_MEDIA", "0").strip() == "1"
 STREAM_REQUEST_SIZE = 512 * 1024  # Telethon download chunk (512 KB)
 MSG_CACHE_TTL = 600  # সেকেন্ড
