@@ -134,7 +134,6 @@ TARGET_SITE_URL = os.environ.get("TARGET_SITE_URL", "https://mmsdesi.me").strip(
 SCRAPER_PROXY = os.environ.get("SCRAPER_PROXY", "").strip()
 SCRAPER_PAGES = max(1, int(os.environ.get("SCRAPER_PAGES", "3") or 3))
 SCRAPE_ALBUM_LIMIT = max(1, int(os.environ.get("SCRAPE_ALBUM_LIMIT", "50") or 50))
-ALBUM_MEDIA_LIMIT = 10  # প্রতি অ্যালবামে সর্বোচ্চ ১০টি মিডিয়া (ভিডিও/ফটো)
 TARGET_CATEGORY_PATHS = [
     p.strip()
     for p in os.environ.get("TARGET_CATEGORY_PATHS", "/,/trending,/new").split(",")
@@ -766,8 +765,8 @@ def _extract_urls(text, exts):
 
 
 def extract_album_media(album_url, fallback_thumb):
+  """অ্যালবামের ভেতর যতগুলো ভিডিও ও ফটো আছে (১০টি হোক বা ১০০টি+) সব খুঁজে বের করে।"""
   scraper = _make_scraper()
-  base_url = _get_base_url()
   videos = []
   photos = []
   try:
@@ -780,15 +779,17 @@ def extract_album_media(album_url, fallback_thumb):
         videos.append(v)
 
     for p in _extract_urls(html_text, "jpg|jpeg|png|webp"):
+      if any(skip in p.lower() for skip in ('logo', 'avatar', 'icon', 'favicon', 'banner')):
+        continue
       if p not in photos:
         photos.append(p)
 
-    # <video>/<source>/og:video/img ট্যাগ থেকেও অ্যালবামের ভেতরের সব মিডিয়া খোঁজা
+    # <video>/<source>/og:video/img/a ট্যাগ থেকেও অ্যালবামের ভেতরের সব মিডিয়া খোঁজা
     try:
       soup = BeautifulSoup(raw_html or "", 'html.parser')
-      for tag in soup.find_all(['video', 'source']):
-        src = tag.get('src') or tag.get('data-src')
-        if src and '.mp4' in src.lower():
+      for tag in soup.find_all(['video', 'source', 'a']):
+        src = tag.get('src') or tag.get('data-src') or tag.get('href')
+        if src and re.search(r'\.mp4(?:\?|$)', src, re.I):
           full = urljoin(album_url, src)
           if full not in videos:
             videos.append(full)
@@ -809,7 +810,7 @@ def extract_album_media(album_url, fallback_thumb):
     except Exception:
       pass
 
-    if not photos and fallback_thumb:
+    if not videos and not photos and fallback_thumb:
       photos.append(fallback_thumb)
   except Exception as e:
     print(f"[Inner Page Error] {album_url}: {e}")
@@ -1811,11 +1812,10 @@ async def _send_photo_single_safe(chat_id, url, caption):
 
 async def _send_album_media_group(chat_id, videos, photos, caption):
   """
-  প্রতিটি অ্যালবামের ভেতরের ভিডিও ও ফটোগুলো ১০টি করে অ্যালবাম (Media Group) আকারে
-  টেলিগ্রাম চ্যানেলে পোস্ট করে।
+  অ্যালবামের ভেতর যতগুলো ভিডিও বা ফটোই থাকুক না কেন (১০, ৫০ বা ১০০+), 
+  সেগুলো টেলিগ্রামের নিয়ম অনুযায়ী ১০টি করে গ্রুপ আকারে চ্যানেলে পোস্ট করবে।
   """
   combined = [("video", v) for v in videos] + [("photo", p) for p in photos]
-  combined = combined[:ALBUM_MEDIA_LIMIT]  # প্রতি অ্যালবামে সর্বোচ্চ ১০টি মিডিয়া
   if not combined:
     return []
 
@@ -1823,7 +1823,7 @@ async def _send_album_media_group(chat_id, videos, photos, caption):
   for i in range(0, len(combined), 10):
     chunk = combined[i:i + 10]
 
-    # যদি শুধুমাত্র ১টি আইটেম থাকে
+    # যদি এই অংশে শুধুমাত্র ১টি আইটেম থাকে
     if len(chunk) == 1:
       m_type, url = chunk[0]
       if m_type == "video":
@@ -1845,7 +1845,7 @@ async def _send_album_media_group(chat_id, videos, photos, caption):
             ext = "mp4" if m_type == "video" else "jpg"
             max_sz = 50 if m_type == "video" else 10
             file_obj = await asyncio.to_thread(
-                _download_bytes, url, f"media_{idx}.{ext}", max_sz
+                _download_bytes, url, f"media_{i + idx}.{ext}", max_sz
             )
           else:
             file_obj = url
@@ -1867,7 +1867,7 @@ async def _send_album_media_group(chat_id, videos, photos, caption):
       except Exception as e:
         print(f"[Album Upload] media_group failed (download={use_download}): {e}")
 
-    # যদি কোনো কারণে গ্রুপ আপলোড ব্যর্থ হয়, তবে একটি একটি করে পোস্ট করবে যাতে কোনো মিডিয়া মিস না হয়
+    # যদি কোনো কারণে গ্রুপ আপলোড ব্যর্থ হয়, তবে একটি একটি করে পোস্ট করবে
     if not group_sent:
       for idx, (m_type, url) in enumerate(chunk):
         if m_type == "video":
@@ -1917,6 +1917,7 @@ async def _handle_scan_callback(callback_query, mode="collection"):
       added_count = 0
       failed_count = 0
       target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
+      total_to_process = len(albums[:SCRAPE_ALBUM_LIMIT])
 
       for album in albums[:SCRAPE_ALBUM_LIMIT]:
         videos, photos = await asyncio.to_thread(
@@ -1929,7 +1930,7 @@ async def _handle_scan_callback(callback_query, mode="collection"):
         # ওয়েবসাইটের ক্যাপশনের সাথে #website যুক্ত করা
         caption = _format_website_caption(album['caption'])
 
-        # অ্যালবাম আকারে (সর্বোচ্চ ১০টি করে ভিডিও/ফটো) চ্যানেলে পোস্ট করা
+        # অ্যালবামের সব মিডিয়া আপলোড করা
         sent_msgs = await _send_album_media_group(
             target_chat.id, videos, photos, caption
         )
@@ -1963,15 +1964,15 @@ async def _handle_scan_callback(callback_query, mode="collection"):
 
         added_count += 1
 
-        # যদি এই অ্যালবামে ১০টি মিডিয়া পূর্ণ হয় অথবা প্রতি ১০টি অ্যালবাম পর চ্যানেলে কনফার্মেশন মেসেজ দেওয়া
-        if len(sent_msgs) >= 10 or (added_count % 10 == 0):
-          try:
-            await pyrogram_client.send_message(
-                target_chat.id,
-                f"✅ অ্যালবাম 10 টা কমপ্লিট (মোট আপলোড: {added_count}/{len(albums[:SCRAPE_ALBUM_LIMIT])})",
-            )
-          except Exception as e:
-            print(f"[Confirm Msg Error]: {e}")
+        # ✅ প্রতিটি অ্যালবাম সম্পূর্ণ আপলোড হওয়া শেষে কনফার্মেশন মেসেজ পাঠানো
+        try:
+          total_media_count = len(videos) + len(photos)
+          await pyrogram_client.send_message(
+              target_chat.id,
+              f"✅ অ্যালবাম কমপ্লিট ({added_count}/{total_to_process})\n📁 নাম: {album['caption']}\n📊 মোট ফাইল আপলোড: {total_media_count}টি",
+          )
+        except Exception as e:
+          print(f"[Confirm Msg Error]: {e}")
 
         await asyncio.sleep(2)
 
