@@ -16,10 +16,16 @@ import threading
 import time
 import traceback
 from typing import Optional, Tuple
-from urllib.parse import urljoin
+from urllib.parse import urljoin, quote
 import uuid
 import cloudscraper
 from bs4 import BeautifulSoup
+
+# Cloudflare 403 বাইপাসের জন্য curl_cffi (Chrome TLS Impersonation)
+try:
+  from curl_cffi import requests as cf_requests
+except ImportError:
+  cf_requests = None
 
 # Python 3.12+ Event Loop Fix (Fixes "There is no current event loop in thread 'MainThread'")
 try:
@@ -491,11 +497,20 @@ def download_telegram_file(file_id):
 
 
 # ------------------------------------------------------------
-# অটোমেটিক স্ক্র্যাপার লজিক (FIXED)
+# অটোমেটিক স্ক্র্যাপার লজিক (Cloudflare Bypass + Fallback)
 # ------------------------------------------------------------
 
-# সর্বশেষ স্ক্র্যাপের রিপোর্ট — "No new albums found" এর আসল কারণ বটে দেখানোর জন্য
 scrape_diag = {}
+
+BROWSER_HEADERS = {
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+}
 
 
 def _get_base_url():
@@ -503,12 +518,71 @@ def _get_base_url():
 
 
 def _make_scraper():
+  if cf_requests is not None:
+    session = cf_requests.Session(impersonate="chrome")
+    session.headers.update(BROWSER_HEADERS)
+    if SCRAPER_PROXY:
+      session.proxies = {"http": SCRAPER_PROXY, "https": SCRAPER_PROXY}
+    return session
+
   scraper = cloudscraper.create_scraper(
       browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
   )
+  scraper.headers.update(BROWSER_HEADERS)
   if SCRAPER_PROXY:
     scraper.proxies = {"http": SCRAPER_PROXY, "https": SCRAPER_PROXY}
   return scraper
+
+
+def _is_cf_blocked(status_code, body):
+  if status_code in (401, 403, 429, 503):
+    return True
+  head = (body or "")[:5000]
+  return "Just a moment" in head or "cf-browser-verification" in head or "Attention Required! | Cloudflare" in head
+
+
+def _fetch_html(scraper, url, timeout=25):
+  """প্রথমে সরাসরি (curl_cffi/cloudscraper), ব্লক হলে ফ্রি ওয়েব প্রক্সি ফলব্যাক দিয়ে চেষ্টা করে।"""
+  last_status = 0
+  last_body = ""
+
+  # ধাপ ১: সরাসরি বা কনফিগার করা প্রক্সি দিয়ে রিকোয়েস্ট
+  try:
+    res = scraper.get(url, timeout=timeout)
+    last_status = res.status_code
+    last_body = res.text or ""
+    if last_status < 400 and not _is_cf_blocked(last_status, last_body):
+      return last_status, last_body
+  except Exception as e:
+    print(f"[Fetch Direct Error] {url}: {e}")
+
+  # ধাপ ২: যদি curl_cffi আলাদাভাবে ব্রাউজার ফিঙ্গারপ্রিন্ট পাল্টে চেষ্টা করতে পারে
+  if cf_requests is not None and not SCRAPER_PROXY:
+    for browser_ver in ("chrome120", "chrome116", "safari17_0"):
+      try:
+        res = cf_requests.get(
+            url, impersonate=browser_ver, headers=BROWSER_HEADERS, timeout=timeout
+        )
+        if res.status_code < 400 and not _is_cf_blocked(res.status_code, res.text):
+          return res.status_code, res.text or ""
+      except Exception:
+        pass
+
+  # ধাপ ৩: ফ্রি প্রক্সি গেটওয়ে ফলব্যাক (ডেটাসেন্টার আইপি ব্লক এড়াতে)
+  fallback_gateways = [
+      f"https://api.allorigins.win/raw?url={quote(url, safe='')}",
+      f"https://api.codetabs.com/v1/proxy?quest={quote(url, safe='')}",
+  ]
+  for gw in fallback_gateways:
+    try:
+      r = requests.get(gw, timeout=timeout)
+      if r.status_code == 200 and r.text and not _is_cf_blocked(200, r.text):
+        if "<a " in r.text or "<html" in r.text.lower():
+          return 200, r.text
+    except Exception:
+      continue
+
+  return last_status or 403, last_body
 
 
 def _text_of(tag):
@@ -588,16 +662,11 @@ def fetch_target_albums(target_count=40):
     if len(albums) >= target_count:
       break
     try:
-      res = scraper.get(url, timeout=25)
-      if res.status_code >= 400:
-        diag["pages_failed"].append(f"{url} → HTTP {res.status_code}")
-        if res.status_code in (401, 403, 429, 503):
+      status_code, body = _fetch_html(scraper, url, timeout=25)
+      if status_code >= 400 or _is_cf_blocked(status_code, body):
+        diag["pages_failed"].append(f"{url} → HTTP {status_code}")
+        if _is_cf_blocked(status_code, body):
           diag["blocked"] = True
-        continue
-      body = res.text or ""
-      if "Just a moment" in body[:3000] or "cf-browser-verification" in body[:5000]:
-        diag["blocked"] = True
-        diag["pages_failed"].append(f"{url} → Cloudflare challenge")
         continue
 
       diag["pages_ok"] += 1
@@ -676,7 +745,8 @@ def describe_scrape_diag():
         f"(আগে আপলোড করা: {d.get('skipped_posted', 0)})"
     )
     if d.get("blocked"):
-      lines.append("🛡️ সাইট বট ব্লক করছে (Cloudflare/403). SCRAPER_PROXY সেট করে দেখুন।")
+      engine_note = "curl_cffi সক্রিয়" if cf_requests else "requirements.txt-এ curl_cffi যোগ করুন"
+      lines.append(f"🛡️ সাইট বট ব্লক করছে (Cloudflare/403) [{engine_note}]. SCRAPER_PROXY সেট করে দেখুন।")
     for f in (d.get("pages_failed") or [])[:3]:
       lines.append(f"❌ {f}")
     if d.get("links_found", 0) == 0 and not d.get("blocked") and d.get("pages_ok", 0) > 0:
@@ -697,9 +767,9 @@ def extract_album_media(album_url, fallback_thumb):
   videos = []
   photos = []
   try:
-    res = scraper.get(album_url, timeout=25)
+    status_code, raw_html = _fetch_html(scraper, album_url, timeout=25)
     # JSON-এস্কেপ করা (https:\/\/...) ও &amp; URL ঠিক করা
-    html_text = html_lib.unescape((res.text or "").replace('\\/', '/').replace('\\u0026', '&'))
+    html_text = html_lib.unescape((raw_html or "").replace('\\/', '/').replace('\\u0026', '&'))
 
     for v in _extract_urls(html_text, "mp4"):
       if v not in videos:
@@ -711,7 +781,7 @@ def extract_album_media(album_url, fallback_thumb):
 
     # <video>/<source>/og:video ট্যাগ থেকেও খোঁজা
     try:
-      soup = BeautifulSoup(res.text or "", 'html.parser')
+      soup = BeautifulSoup(raw_html or "", 'html.parser')
       for tag in soup.find_all(['video', 'source']):
         src = tag.get('src')
         if src and '.mp4' in src.lower():
@@ -1677,10 +1747,18 @@ def _download_bytes(url, name, max_mb=50):
   )
   res.raise_for_status()
   buf = BytesIO()
-  for part in res.iter_content(256 * 1024):
-    buf.write(part)
-    if buf.tell() > max_mb * 1024 * 1024:
+  if hasattr(res, "iter_content"):
+    for part in res.iter_content(256 * 1024):
+      if not part:
+        continue
+      buf.write(part)
+      if buf.tell() > max_mb * 1024 * 1024:
+        raise ValueError("file too large")
+  else:
+    content = res.content
+    if len(content) > max_mb * 1024 * 1024:
       raise ValueError("file too large")
+    buf.write(content)
   buf.seek(0)
   buf.name = name
   return buf
