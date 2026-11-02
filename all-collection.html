@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#09090B">
+<title>ALVEE - Videos & Photos</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+  html, body { min-height: 100%; }
+  body {
+    background: #09090B;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 40px;
+  }
+  .page { max-width: 1100px; margin: 0 auto; padding: 0 14px; }
+
+  /* ---------- HEADER (unchanged, black) ---------- */
+  .site-header {
+    position: sticky; top: 0; z-index: 50;
+    background: #09090B;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    padding: calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .site-header .back {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: grid; place-items: center; text-decoration: none; color: #fff;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  }
+  .site-header .back svg { width: 18px; height: 18px; }
+  .site-header .title { font-size: 15px; font-weight: 600; letter-spacing: .2px; }
+
+  /* ---------- PROFILE CARD ---------- */
+  .profile {
+    margin-top: 16px;
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px;
+    border-radius: 24px;
+    background: linear-gradient(145deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 12px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .avatar {
+    flex: 0 0 96px; width: 96px; height: 96px; border-radius: 22px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,.18);
+    box-shadow: 0 8px 22px rgba(0,0,0,.5);
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .profile-info { min-width: 0; flex: 1; }
+
+  /* Alvee name: gradient placeholder. Replace with the exact dashboard class if you share CSS. */
+  .alvee-name {
+    font-size: 30px; font-weight: 800; font-style: italic; letter-spacing: 1px;
+    background: linear-gradient(90deg, #36B9E8, #ffffff 55%, #ff3b5c);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 0 18px rgba(54,185,232,.25);
+    line-height: 1.1;
+  }
+
+  .uploader-badge {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    padding: 6px 12px; border-radius: 999px;
+    background: rgba(20,20,24,.45);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+    font-size: 12px; font-weight: 600; color: #e5e7eb; letter-spacing: .3px;
+  }
+
+  /* ---------- STATS ---------- */
+  .stats {
+    margin-top: 14px;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-radius: 20px; padding: 14px 6px;
+    background: linear-gradient(145deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,.09);
+    box-shadow: 0 10px 26px rgba(0,0,0,.4);
+  }
+  .stat { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0; }
+  .stat + .stat { border-left: 1px solid rgba(255,255,255,.08); }
+  .stat svg { width: 20px; height: 20px; color: #f5b82e; }
+  .stat .stat-value { font-size: 18px; font-weight: 700; color: #fff; }
+  .stat .stat-label { font-size: 11px; color: #9ca3af; letter-spacing: .3px; }
+  .stat.views svg { color: #a78bfa; }
+
+  /* ---------- HEADING & LATEST UPDATE ---------- */
+  .section-head { margin-top: 26px; text-align: left; }
+  .section-head h2 { font-size: 22px; font-weight: 800; letter-spacing: .2px; }
+
+  .latest-wrap { display: flex; justify-content: center; margin: 18px 0 14px; }
+  .latest {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 999px;
+    background: rgba(255,255,255,.05);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.1);
+    font-size: 13px; font-weight: 600; color: #e5e7eb;
+  }
+  .latest svg { width: 16px; height: 16px; color: #f5b82e; }
+
+  /* ---------- GALLERY ---------- */
+  .grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (min-width: 720px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+  @media (min-width: 1000px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .card {
+    min-width: 0; border-radius: 18px; overflow: hidden;
+    background: #121214;
+    border: 1px solid rgba(255,255,255,.08);
+    box-shadow: 0 8px 20px rgba(0,0,0,.35);
+    transition: transform .25s ease, border-color .25s ease;
+    cursor: pointer;
+  }
+  .card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,.18); }
+  .thumb {
+    position: relative; width: 100%; aspect-ratio: 3 / 4;
+    background: linear-gradient(110deg,#1a1a1e 30%,#26262c 50%,#1a1a1e 70%);
+    background-size: 200% 100%; animation: shimmer 1.4s infinite linear;
+  }
+  .thumb.loaded { animation: none; background: #1a1a1e; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s ease; }
+  .thumb img.ok { opacity: 1; }
+  .caption {
+    padding: 10px 12px 12px; font-size: 12.5px; font-weight: 500; color: #e5e7eb;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .state { grid-column: 1 / -1; text-align: center; color: #9ca3af; font-size: 14px; padding: 30px 10px; }
+  .state.error { color: #f87171; }
+
+  @media (max-width: 360px) {
+    .avatar { flex-basis: 78px; width: 78px; height: 78px; }
+    .alvee-name { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a class="back" href="/dashboard.html" aria-label="Back to dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  </a>
+  <div class="title">OC Collection Universe</div>
+  <span style="width:38px"></span>
+</header>
+
+<main class="page">
+  <section class="profile" aria-label="Profile">
+    <div class="avatar">
+      <img src="https://carder.top/imagens/1793417411592-885991335.jpg" alt="Alvee profile picture">
+    </div>
+    <div class="profile-info">
+      <div class="alvee-name">Alvee</div>
+      <span class="uploader-badge">Uploader</span>
+    </div>
+  </section>
+
+  <section class="stats" aria-label="Statistics">
+    <div class="stat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>
+      <div class="stat-value" id="statVideos">—</div>
+      <div class="stat-label">Video</div>
+    </div>
+    <div class="stat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>
+      <div class="stat-value" id="statPhotos">—</div>
+      <div class="stat-label">Photo</div>
+    </div>
+    <div class="stat views">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+      <div class="stat-value" id="statViews">—</div>
+      <div class="stat-label">Views</div>
+    </div>
+  </section>
+
+  <h2 class="section-head"><span style="font-size:22px;font-weight:800">Videos &amp; Photos</span></h2>
+
+  <div class="latest-wrap">
+    <div class="latest">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      Latest Update
+    </div>
+  </div>
+
+  <div class="grid" id="grid">
+    <div class="state">Loading...</div>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var CAPTIONS = [
+    'A Beautiful Moment', 'Fresh Update', 'Just Uploaded', 'New Collection',
+    'Special Memories', 'Daily Moments', 'Latest Upload', 'A New Story',
+    'Beautiful Memories', 'Explore More'
+  ];
+
+  // একই ID সবসময় একই ক্যাপশন পাবে (রিফ্রেশেও বদলাবে না)
+  function captionFor(id) {
+    var n = 0;
+    var s = String(id);
+    for (var i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) >>> 0;
+    return CAPTIONS[n % CAPTIONS.length];
+  }
+
+  var grid = document.getElementById('grid');
+
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function fmt(n) {
+    n = Number(n) || 0;
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(n);
+  }
+
+  function renderCards(items) {
+    grid.innerHTML = '';
+    if (!items.length) {
+      var empty = document.createElement('div');
+      empty.className = 'state';
+      empty.textContent = 'No videos or photos published yet.';
+      grid.appendChild(empty);
+      return;
+    }
+    var frag = document.createDocumentFragment();
+    items.forEach(function (item) {
+      var card = document.createElement('article');
+      card.className = 'card';
+
+      var thumb = document.createElement('div');
+      thumb.className = 'thumb';
+
+      var img = new Image();
+      img.loading = 'lazy';
+      img.alt = '';
+      img.onload = function () { img.classList.add('ok'); thumb.classList.add('loaded'); };
+      img.onerror = function () { thumb.classList.add('loaded'); };
+      img.src = item.thumb;
+      thumb.appendChild(img);
+
+      var cap = document.createElement('div');
+      cap.className = 'caption';
+      cap.textContent = captionFor(item.id);
+
+      card.appendChild(thumb);
+      card.appendChild(cap);
+      card.addEventListener('click', function () {
+        window.open(item.media, '_blank', 'noopener');
+      });
+      frag.appendChild(card);
+    });
+    grid.appendChild(frag);
+  }
+
+  // ---- Collection counts (video / photo) ----
+  fetch('/api/collection/counts', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      setText('statVideos', fmt(d.videos));
+      setText('statPhotos', fmt(d.photos));
+    })
+    .catch(function () { setText('statVideos', '—'); setText('statPhotos', '—'); });
+
+  // ---- Website-wide views: একবার প্রতি পেজ লোডে ----
+  fetch('/api/site/views', { method: 'POST', cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) { setText('statViews', fmt(d.total)); })
+    .catch(function () { setText('statViews', '—'); });
+
+  // ---- Gallery: নতুন মিডিয়া প্রথমে ----
+  fetch('/api/collection/media', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.ok) throw new Error('bad');
+      renderCards(d.items || []);
+    })
+    .catch(function () {
+      grid.innerHTML = '';
+      var err = document.createElement('div');
+      err.className = 'state error';
+      err.textContent = 'Could not load media. Please refresh.';
+      grid.appendChild(err);
+    });
+})();
+</script>
+</body>
+</html>
