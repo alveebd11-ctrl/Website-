@@ -116,12 +116,22 @@ DEFAULT_STORY_THUMB = "https://carder.top/imagens/1792065174675-662575987.jpg"
 # ওয়েবসাইট থেকে আনা সব মিডিয়া চিহ্নিত করার ক্যাপশন ট্যাগ
 WEBSITE_MARKER = "#website"
 
+# চ্যানেলে আপলোড-সম্পূর্ণ মেসেজে এই কী দিয়ে অ্যালবামের আইডি লেখা থাকে (ডুপ্লিকেট রোধে ব্যবহৃত)
+ALBUM_REF_KEY = "albumref"
+
 SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
 
 # ওয়েবসাইট থেকে আনা (#website) পোস্ট আপনার সাইটে দেখানো হবে কি না।
 # 0 (ডিফল্ট) = শুধু টেলিগ্রাম চ্যানেলে আপলোড হবে, সাইটে দেখাবে না
 # 1 = আগের মতো সাইটেও দেখাবে
 SYNC_WEBSITE_POSTS = os.environ.get("SYNC_WEBSITE_POSTS", "0").strip() == "1"
+
+# OC কালেকশনে (oc-collection.html) ওয়েবসাইটের ফটো/ভিডিও আসবে না।
+# ওয়েবসাইট-আপলোডগুলোর ক্যাপশন থাকে, আর হাতে আপলোড করা OC মিডিয়ার ক্যাপশন খালি।
+if COLLECTION_INCLUDE_CAPTIONED:
+  OC_WHERE = "LOWER(COALESCE(text, '')) NOT LIKE '%" + WEBSITE_MARKER.lower() + "%'"
+else:
+  OC_WHERE = "TRIM(COALESCE(text, '')) = ''"
 
 COLLECTION_INCLUDE_CAPTIONED = (
     os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "0").strip() == "1"
@@ -1355,6 +1365,29 @@ async def scan_channel(mode="all", progress=None):
     scan_lock.release()
 
 
+async def fetch_channel_album_refs():
+  """চ্যানেলের কনফার্মেশন মেসেজ থেকে আগে আপলোড হওয়া সব অ্যালবামের আইডি (slug) বের করে।"""
+  if not telethon_reader_client or not telethon_channel_entity:
+    return None
+  refs = set()
+  pattern = re.compile(re.escape(ALBUM_REF_KEY) + r":\s*(\S+)")
+  async for msg in telethon_reader_client.iter_messages(
+      telethon_channel_entity, search=ALBUM_REF_KEY, limit=None
+  ):
+    for m in pattern.finditer(msg.message or ""):
+      refs.add(m.group(1))
+  return refs
+
+
+def _merge_slugs(slugs):
+  with db_connect() as conn:
+    conn.executemany(
+        "INSERT OR IGNORE INTO scraped_slugs (slug) VALUES (?)",
+        [(x,) for x in slugs],
+    )
+    conn.commit()
+
+
 async def sync_posts_from_channel():
   if not telethon_reader_client or not telethon_channel_entity:
     return
@@ -1541,7 +1574,7 @@ def get_channel_posts_api():
     limit = request.args.get("limit", 1000, type=int) or 1000
     with db_connect() as conn:
       rows = conn.execute(
-          "SELECT * FROM (SELECT * FROM channel_posts ORDER BY message_id DESC LIMIT ?) ORDER BY message_id ASC",
+          f"SELECT * FROM (SELECT * FROM channel_posts WHERE {OC_WHERE} ORDER BY message_id DESC LIMIT ?) ORDER BY message_id ASC",
           (limit,),
       ).fetchall()
 
@@ -1567,9 +1600,26 @@ def get_channel_posts_api():
 @app.route("/api/collection/counts", methods=["GET"])
 def collection_counts_api():
   try:
+    scope = request.args.get("scope", "")
     with db_connect() as conn:
-      videos = conn.execute("SELECT COUNT(*) FROM channel_posts WHERE media_type IN ('video', 'animation')").fetchone()[0]
-      photos = conn.execute("SELECT COUNT(*) FROM channel_posts WHERE media_type NOT IN ('video', 'animation')").fetchone()[0]
+      if scope == "all":
+        # সব মিলিয়ে: OC + ওয়েবসাইট-অ্যালবাম (কভার ছবি বাদে)
+        videos = conn.execute(
+            "SELECT (SELECT COUNT(*) FROM channel_posts WHERE media_type IN ('video', 'animation')) + "
+            "(SELECT COUNT(*) FROM website_album_items WHERE media_type = 'video' AND slug NOT LIKE 'cover:%')"
+        ).fetchone()[0]
+        photos = conn.execute(
+            "SELECT (SELECT COUNT(*) FROM channel_posts WHERE media_type NOT IN ('video', 'animation')) + "
+            "(SELECT COUNT(*) FROM website_album_items WHERE media_type != 'video' AND slug NOT LIKE 'cover:%')"
+        ).fetchone()[0]
+      else:
+        # শুধু OC কালেকশন (ওয়েবসাইটের মিডিয়া বাদ)
+        videos = conn.execute(
+            f"SELECT COUNT(*) FROM channel_posts WHERE {OC_WHERE} AND media_type IN ('video', 'animation')"
+        ).fetchone()[0]
+        photos = conn.execute(
+            f"SELECT COUNT(*) FROM channel_posts WHERE {OC_WHERE} AND media_type NOT IN ('video', 'animation')"
+        ).fetchone()[0]
     return jsonify({"ok": True, "videos": int(videos or 0), "photos": int(photos or 0)})
   except Exception:
     return jsonify({"ok": False, "videos": 0, "photos": 0}), 500
@@ -1579,7 +1629,7 @@ def collection_counts_api():
 def collection_media_api():
   try:
     with db_connect() as conn:
-      rows = conn.execute("SELECT message_id, media_type FROM channel_posts ORDER BY message_id DESC LIMIT 500").fetchall()
+      rows = conn.execute(f"SELECT message_id, media_type FROM channel_posts WHERE {OC_WHERE} ORDER BY message_id DESC LIMIT 500").fetchall()
     items = []
     for row in rows:
       mid = row["message_id"]
@@ -2158,12 +2208,17 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
         f"{status_line}\n"
         f"📁 {album['caption'][:200]}\n"
         f"🎞 ভিডিও: {sent_videos} | 🖼 ফটো: {sent_photos} | মোট: {len(all_sent)}/{total}\n"
+        f"🔖 {ALBUM_REF_KEY}: {album['slug']}\n"
         f"{WEBSITE_MARKER}"
     )
-    try:
-      await pyrogram_client.send_message(chat_id, confirm)
-    except Exception as e:
-      print(f"[Upload] confirmation message failed: {e}")
+    # এই মেসেজটাই "অ্যালবাম চ্যানেলে আছে" তার প্রমাণ, তাই না গেলে কয়েকবার চেষ্টা
+    for _try in range(3):
+      try:
+        await pyrogram_client.send_message(chat_id, confirm)
+        break
+      except Exception as e:
+        print(f"[Upload] confirmation message failed (try {_try + 1}): {e}")
+        await asyncio.sleep(3)
 
   return len(all_sent), total
 
@@ -2187,10 +2242,25 @@ async def _handle_scan_callback(callback_query, mode="collection"):
     await _safe_edit(message, f"🔄 ওয়েবসাইট থেকে অ্যালবাম খোঁজা হচ্ছে (সর্বোচ্চ {ALBUM_SCAN_LIMIT} টি)...")
 
     try:
+      # ধাপ ০: চ্যানেলে যে অ্যালবামগুলো আগেই আপলোড করা আছে সেগুলো খুঁজে বাদ দেওয়া হবে
+      channel_check_note = ""
+      if telethon_reader_client:
+        await _safe_edit(message, "🔎 চ্যানেলে আগে আপলোড হওয়া অ্যালবাম চেক করা হচ্ছে...")
+        try:
+          fut = asyncio.run_coroutine_threadsafe(fetch_channel_album_refs(), telethon_loop)
+          refs = await asyncio.wait_for(asyncio.wrap_future(fut), timeout=300)
+          if refs:
+            await asyncio.to_thread(_merge_slugs, refs)
+        except Exception as e:
+          print("Channel album check error:", e)
+          channel_check_note = "\n\n⚠️ চ্যানেল চেক করা যায়নি, শুধু লোকাল লগ দেখে ডুপ্লিকেট বাদ দেওয়া হয়েছে।"
+      else:
+        channel_check_note = "\n\n⚠️ Telethon সংযুক্ত নেই, চ্যানেল চেক করা যায়নি (শুধু লোকাল লগ ব্যবহৃত)।"
+
       albums = await asyncio.to_thread(fetch_target_albums, ALBUM_SCAN_LIMIT)
       if not albums:
         report = describe_scrape_diag()
-        text = "ℹ️ No new albums found."
+        text = "ℹ️ No new albums found." + channel_check_note
         if report:
           text += "\n\n" + report
         await _safe_edit(message, text, reply_markup=build_main_keyboard())
@@ -2253,6 +2323,7 @@ async def _handle_scan_callback(callback_query, mode="collection"):
       done_text = f"✅ {added_count} টি নতুন অ্যালবাম টেলিগ্রাম চ্যানেলে আপলোড হয়েছে ({total_files} টি ফাইল)! ✔️"
       if SYNC_WEBSITE_POSTS:
         done_text += "\n🌐 ওয়েবসাইট সিঙ্ক হয়েছে।"
+      done_text += channel_check_note
       if failed_count:
         done_text += f"\n⚠️ {failed_count} অ্যালবামে মিডিয়া পাওয়া যায়নি/আপলোড ব্যর্থ (Logs দেখুন)।"
       await _safe_edit(
