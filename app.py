@@ -360,6 +360,37 @@ def init_db():
                 slug TEXT PRIMARY KEY
             )
         """)
+    # ওয়েবসাইট-অ্যালবাম সিস্টেম: একটি অ্যালবাম + তার ভেতরের সব ফটো/ভিডিও
+    conn.execute("""
+            CREATE TABLE IF NOT EXISTS website_albums (
+                slug TEXT PRIMARY KEY,
+                title TEXT,
+                created_at TEXT
+            )
+        """)
+    conn.execute("""
+            CREATE TABLE IF NOT EXISTS website_album_items (
+                message_id INTEGER PRIMARY KEY,
+                slug TEXT NOT NULL,
+                media_type TEXT,
+                mime_type TEXT,
+                pos INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+    conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_album_items_slug
+            ON website_album_items(slug)
+        """)
+    # পুরনো ডাটাবেসে নতুন কলাম যোগ (ক্রম ও কভারের জন্য)
+    for _col, _ddl in (
+        ("batch", "INTEGER DEFAULT 0"),
+        ("site_order", "INTEGER DEFAULT 0"),
+        ("cover_id", "INTEGER"),
+    ):
+      try:
+        conn.execute(f"ALTER TABLE website_albums ADD COLUMN {_col} {_ddl}")
+      except sqlite3.OperationalError:
+        pass
     conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_chat_created_at
             ON chat_messages(created_at)
@@ -433,7 +464,7 @@ def find_media_row(message_id, kind=""):
   else:
     order = (("channel_posts", "post"), ("stories", "story"))
   with db_connect() as conn:
-    for table, row_kind in order:
+    for table, row_kind in order + (("website_album_items", "post"),):
       row = conn.execute(
           f"SELECT * FROM {table} WHERE message_id = ?", (message_id,)
       ).fetchone()
@@ -843,6 +874,10 @@ def extract_album_media(album_url, fallback_thumb):
       pass
 
     # অ্যালবামে ভিডিও/ফটো কিছুই না পেলে তবেই থাম্বনেইল ফলব্যাক হিসেবে নেওয়া হবে
+    # পেজে যে ক্রমে আছে সেই ক্রমে সাজানো (ওয়েবসাইটের সাথে হুবহু মেলাতে)
+    videos.sort(key=lambda u: html_text.find(u) if html_text.find(u) >= 0 else 10**9)
+    photos.sort(key=lambda u: html_text.find(u) if html_text.find(u) >= 0 else 10**9)
+
     if not photos and not videos and fallback_thumb:
       photos.append(fallback_thumb)
   except Exception as e:
@@ -1559,6 +1594,106 @@ def collection_media_api():
     return jsonify({"ok": False, "items": []}), 500
 
 
+def _clean_title(text):
+  return re.sub(re.escape(WEBSITE_MARKER), "", text or "", flags=re.IGNORECASE).strip()
+
+
+def _item_json(mid, media_type):
+  return {
+      "id": str(mid),
+      "type": "video" if media_type in ("video", "animation") else "photo",
+      "thumb": f"/api/channel/thumb/{mid}",
+      "media": f"/api/channel/media/{mid}",
+  }
+
+
+def _legacy_albums():
+  """আগে সেভ হওয়া ক্যাপশনওয়ালা পোস্টগুলোকে একই ক্যাপশন ধরে অ্যালবামে গ্রুপ করে।"""
+  groups = {}
+  with db_connect() as conn:
+    rows = conn.execute(
+        "SELECT message_id, text, media_type FROM channel_posts "
+        "WHERE TRIM(COALESCE(text, '')) != '' ORDER BY message_id ASC"
+    ).fetchall()
+  for r in rows:
+    title = _clean_title(r["text"])
+    if not title:
+      continue
+    slug = "legacy-" + hashlib.md5(title.encode("utf-8")).hexdigest()[:12]
+    g = groups.setdefault(slug, {"title": title, "items": []})
+    g["items"].append((r["message_id"], r["media_type"]))
+  return groups
+
+
+@app.route("/api/albums", methods=["GET"])
+def albums_api():
+  try:
+    albums = []
+    with db_connect() as conn:
+      rows = conn.execute(
+          """
+          SELECT a.slug, a.title, COUNT(i.message_id) AS n,
+                 SUM(CASE WHEN i.media_type = 'video' THEN 1 ELSE 0 END) AS v,
+                 MIN(i.message_id) AS first_id, MAX(i.message_id) AS last_id,
+                 a.cover_id AS cover_id, a.batch AS batch, a.site_order AS site_order
+          FROM website_albums a JOIN website_album_items i ON i.slug = a.slug
+          GROUP BY a.slug
+          """
+      ).fetchall()
+    for r in rows:
+      n, v = int(r["n"] or 0), int(r["v"] or 0)
+      albums.append({
+          "slug": r["slug"],
+          "title": _clean_title(r["title"]) or r["slug"],
+          "count": n, "videos": v, "photos": n - v,
+          "cover": f"/api/channel/thumb/{r['cover_id'] or r['first_id']}",
+          "_key": (-int(r["batch"] or 0), int(r["site_order"] or 0), -int(r["last_id"] or 0)),
+      })
+    for slug, g in _legacy_albums().items():
+      items = g["items"]
+      v = sum(1 for _, t in items if t in ("video", "animation"))
+      albums.append({
+          "slug": slug, "title": g["title"],
+          "count": len(items), "videos": v, "photos": len(items) - v,
+          "cover": f"/api/channel/thumb/{items[0][0]}",
+          "_key": (0, 0, -max(m for m, _ in items)),
+      })
+    albums.sort(key=lambda a: a["_key"])
+    for a in albums:
+      a.pop("_key", None)
+    return jsonify({"ok": True, "albums": albums})
+  except Exception:
+    return jsonify({"ok": False, "albums": []}), 500
+
+
+@app.route("/api/albums/<slug>", methods=["GET"])
+def album_items_api(slug):
+  try:
+    with db_connect() as conn:
+      head = conn.execute("SELECT title, cover_id FROM website_albums WHERE slug = ?", (slug,)).fetchone()
+      rows = conn.execute(
+          "SELECT message_id, media_type FROM website_album_items WHERE slug = ? ORDER BY pos ASC, message_id ASC",
+          (slug,),
+      ).fetchall()
+    if head and rows:
+      return jsonify({
+          "ok": True,
+          "title": _clean_title(head["title"]) or slug,
+          "cover": f"/api/channel/thumb/{head['cover_id'] or rows[0]['message_id']}",
+          "items": [_item_json(r["message_id"], r["media_type"]) for r in rows],
+      })
+    g = _legacy_albums().get(slug)
+    if g:
+      return jsonify({
+          "ok": True, "title": g["title"],
+          "cover": f"/api/channel/thumb/{g['items'][0][0]}",
+          "items": [_item_json(m, t) for m, t in g["items"]],
+      })
+    return jsonify({"ok": False, "items": []}), 404
+  except Exception:
+    return jsonify({"ok": False, "items": []}), 500
+
+
 @app.route("/api/site/views", methods=["GET", "POST"])
 def site_views_api():
   try:
@@ -1927,6 +2062,42 @@ def _save_sent_messages(sent_msgs, fallback_caption):
     conn.commit()
 
 
+def _save_album_items(slug, title, sent_msgs, start_pos=0, batch=0, site_order=0):
+  """চ্যানেলে যাওয়া মেসেজগুলো অ্যালবামের আইটেম হিসেবে সেভ করে (OC কালেকশনের সাথে মেশে না)।"""
+  now = datetime.now(timezone.utc).isoformat()
+  with db_connect() as conn:
+    conn.execute(
+        "INSERT OR IGNORE INTO website_albums (slug, title, created_at, batch, site_order) VALUES (?, ?, ?, ?, ?)",
+        (slug, (title or slug).strip(), now, int(batch), int(site_order)),
+    )
+    for i, m in enumerate(sent_msgs):
+      is_video = bool(getattr(m, "video", None))
+      mime = "video/mp4" if is_video else "image/jpeg"
+      if is_video and getattr(m.video, "mime_type", None):
+        mime = m.video.mime_type
+      conn.execute(
+          "INSERT OR REPLACE INTO website_album_items (message_id, slug, media_type, mime_type, pos) VALUES (?, ?, ?, ?, ?)",
+          (m.id, slug, "video" if is_video else "photo", mime, start_pos + i),
+      )
+    conn.commit()
+
+
+def _save_cover(slug, title, msg, batch=0, site_order=0):
+  """অ্যালবামের কভার ছবি সেভ করে। এটা অ্যালবামের আইটেম গোনায় ধরা হয় না ("cover:" স্লাগ)।"""
+  now = datetime.now(timezone.utc).isoformat()
+  with db_connect() as conn:
+    conn.execute(
+        "INSERT OR IGNORE INTO website_albums (slug, title, created_at, batch, site_order) VALUES (?, ?, ?, ?, ?)",
+        (slug, (title or slug).strip(), now, int(batch), int(site_order)),
+    )
+    conn.execute(
+        "INSERT OR REPLACE INTO website_album_items (message_id, slug, media_type, mime_type, pos) VALUES (?, ?, ?, ?, ?)",
+        (msg.id, "cover:" + slug, "photo", "image/jpeg", -1),
+    )
+    conn.execute("UPDATE website_albums SET cover_id = ? WHERE slug = ?", (msg.id, slug))
+    conn.commit()
+
+
 def _mark_slug_done(slug):
   with db_connect() as conn:
     conn.execute("INSERT OR IGNORE INTO scraped_slugs (slug) VALUES (?)", (slug,))
@@ -1944,6 +2115,20 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
   caption = build_caption(album['caption'])
   chunks = [items[i:i + ALBUM_CHUNK_SIZE] for i in range(0, total, ALBUM_CHUNK_SIZE)]
 
+  batch = int(album.get('batch') or 0)
+  site_order = int(album.get('site_order') or 0)
+
+  # অ্যালবামের শুরুতে কভার ছবি (ওয়েবসাইটের অ্যালবাম থাম্বনেইল) চ্যানেলে পোস্ট হবে
+  cover_src = album.get('thumbnail')
+  if cover_src:
+    try:
+      cover_msgs = await _send_chunk_safe(chat_id, [("photo", cover_src)], caption)
+      if cover_msgs:
+        await asyncio.to_thread(_save_cover, album['slug'], album['caption'], cover_msgs[0], batch, site_order)
+      await asyncio.sleep(2)
+    except Exception as e:
+      print(f"[Upload] cover failed: {e}")
+
   all_sent = []
   for ci, chunk in enumerate(chunks, 1):
     if progress:
@@ -1952,6 +2137,10 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
     sent = await _send_chunk_safe(chat_id, chunk, caption)
     if sent:
       all_sent.extend(sent)
+      await asyncio.to_thread(
+          _save_album_items, album['slug'], album['caption'], sent,
+          len(all_sent) - len(sent), batch, site_order,
+      )
       if SYNC_WEBSITE_POSTS:
         await asyncio.to_thread(_save_sent_messages, sent, caption)
     await asyncio.sleep(3)  # টেলিগ্রাম FloodWait এড়াতে
@@ -2013,7 +2202,10 @@ async def _handle_scan_callback(callback_query, mode="collection"):
       target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
       album_total = len(albums)
 
+      batch_ts = int(time.time())
       for a_idx, album in enumerate(albums, 1):
+        album['batch'] = batch_ts       # একই স্ক্যানের অ্যালবাম একসাথে থাকবে
+        album['site_order'] = a_idx     # ওয়েবসাইটে যে ক্রমে ছিল, সেই ক্রম
         title_short = (album['caption'] or album['slug'])[:40]
         await _safe_edit(
             message,
