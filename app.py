@@ -322,6 +322,12 @@ def init_db():
             )
         """)
     conn.execute("""
+            CREATE TABLE IF NOT EXISTS site_counters (
+                name TEXT PRIMARY KEY,
+                value INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+    conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_chat_created_at
             ON chat_messages(created_at)
         """)
@@ -1541,6 +1547,68 @@ def get_channel_posts_api():
         }),
         502,
     )
+
+
+# ============================================================
+# NEW: Collection counts, gallery list & website-wide views
+# ============================================================
+
+
+@app.route("/api/collection/counts", methods=["GET"])
+def collection_counts_api():
+  try:
+    with db_connect() as conn:
+      videos = conn.execute(
+          "SELECT COUNT(*) FROM channel_posts WHERE media_type IN ('video', 'animation')"
+      ).fetchone()[0]
+      photos = conn.execute(
+          "SELECT COUNT(*) FROM channel_posts WHERE media_type NOT IN ('video', 'animation')"
+      ).fetchone()[0]
+    return jsonify({"ok": True, "videos": int(videos or 0), "photos": int(photos or 0)})
+  except Exception:
+    return jsonify({"ok": False, "videos": 0, "photos": 0}), 500
+
+
+@app.route("/api/collection/media", methods=["GET"])
+def collection_media_api():
+  try:
+    with db_connect() as conn:
+      rows = conn.execute(
+          "SELECT message_id, media_type FROM channel_posts ORDER BY message_id DESC LIMIT 500"
+      ).fetchall()
+    items = []
+    for row in rows:
+      mid = row["message_id"]
+      items.append({
+          "id": str(mid),
+          "type": "video" if row["media_type"] in ("video", "animation") else "photo",
+          "thumb": f"/api/channel/thumb/{mid}",
+          "media": f"/api/channel/media/{mid}",
+      })
+    return jsonify({"ok": True, "items": items})
+  except Exception:
+    return jsonify({"ok": False, "items": []}), 500
+
+
+@app.route("/api/site/views", methods=["GET", "POST"])
+def site_views_api():
+  try:
+    with db_connect() as conn:
+      if request.method == "POST":
+        # প্রতিটি পেজ লোডে একবার: INSERT...ON CONFLICT দিয়ে atomic increment
+        conn.execute(
+            """
+            INSERT INTO site_counters (name, value) VALUES ('site_views', 1)
+            ON CONFLICT(name) DO UPDATE SET value = value + 1
+            """
+        )
+        conn.commit()
+      row = conn.execute(
+          "SELECT value FROM site_counters WHERE name = 'site_views'"
+      ).fetchone()
+    return jsonify({"ok": True, "total": int(row[0]) if row else 0})
+  except Exception:
+    return jsonify({"ok": False, "total": 0}), 500
 
 
 # ============================================================
