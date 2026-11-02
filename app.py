@@ -2209,6 +2209,15 @@ def oc_collection_page():
   return "oc-collection.html not found", 404
 
 
+@app.route("/all-collection", methods=["GET"])
+@app.route("/all-collection.html", methods=["GET"])
+def all_collection_page():
+  page_path = BASE_DIR / "all-collection.html"
+  if page_path.is_file():
+    return send_file(page_path)
+  return "all-collection.html not found", 404
+
+
 def background_file_type(filename):
   ext = Path(filename).suffix.lower()
   if ext in {".mp4", ".mov", ".webm", ".mkv", ".m4v"}:
