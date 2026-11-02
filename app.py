@@ -1490,6 +1490,69 @@ async def _safe_edit(message, text, reply_markup=None):
     pass
 
 
+def _download_bytes(url, name, max_mb=50):
+  scraper = cloudscraper.create_scraper(
+      browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
+  )
+  res = scraper.get(
+      url, timeout=60, stream=True,
+      headers={'Referer': 'https://www.mmsdesi.me/'},
+  )
+  res.raise_for_status()
+  buf = BytesIO()
+  for part in res.iter_content(256 * 1024):
+    buf.write(part)
+    if buf.tell() > max_mb * 1024 * 1024:
+      raise ValueError("file too large")
+  buf.seek(0)
+  buf.name = name
+  return buf
+
+
+async def _send_video_safe(chat_id, url, caption):
+  try:
+    return await pyrogram_client.send_video(chat_id, video=url, caption=caption)
+  except Exception:
+    try:
+      buf = await asyncio.to_thread(_download_bytes, url, "video.mp4", 50)
+      return await pyrogram_client.send_video(
+          chat_id, video=buf, caption=caption, supports_streaming=True
+      )
+    except Exception as e:
+      print(f"[Upload] video failed {url}: {e}")
+      return None
+
+
+async def _send_photos_safe(chat_id, photos, caption):
+  sent = []
+  for i in range(0, len(photos), 10):
+    chunk = photos[i:i + 10]
+    cap = caption if i == 0 else ""
+    for use_download in (False, True):
+      try:
+        items = chunk
+        if use_download:
+          items = []
+          for n, p in enumerate(chunk):
+            items.append(await asyncio.to_thread(_download_bytes, p, f"photo{n}.jpg", 10))
+        if len(items) > 1:
+          media = [
+              InputMediaPhoto(m, caption=cap if idx == 0 else "")
+              for idx, m in enumerate(items)
+          ]
+          msgs = await pyrogram_client.send_media_group(chat_id, media=media)
+          sent.extend(msgs)
+        else:
+          sent.append(
+              await pyrogram_client.send_photo(chat_id, photo=items[0], caption=cap)
+          )
+        break
+      except Exception as e:
+        print(f"[Upload] photos failed (download={use_download}): {e}")
+    await asyncio.sleep(2)
+  return sent
+
+
 async def _handle_scan_callback(callback_query, mode="collection"):
   if callback_query.from_user.id != ADMIN_ID:
     await callback_query.answer("Unauthorized!", show_alert=True)
@@ -1501,61 +1564,52 @@ async def _handle_scan_callback(callback_query, mode="collection"):
 
   message = callback_query.message
   await callback_query.answer("Scanning website albums...")
-  await _safe_edit(message, "🔄 Scraping 40-50 albums from mmsdesi.me and storing to Telegram...")
+  await _safe_edit(message, "🔄 Scraping albums from mmsdesi.me and storing to Telegram...")
 
   try:
-    # ১. ওয়েবসাইট থেকে অ্যালবাম ফেচ করা
-    albums = fetch_mmsdesi_albums(target_count=45)
-    added_count = 0
+    albums = await asyncio.to_thread(fetch_mmsdesi_albums, 45)
+    if not albums:
+      await _safe_edit(message, "ℹ️ No new albums found.", reply_markup=build_main_keyboard())
+      return
 
+    added_count = 0
     target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
 
     for album in albums:
-      videos, photos = extract_album_media(album['url'], album['thumbnail'])
+      videos, photos = await asyncio.to_thread(
+          extract_album_media, album['url'], album['thumbnail']
+      )
       if not videos and not photos:
         continue
 
-      caption = album['caption'] # কোনো #website হ্যাশট্যাগ ছাড়াই আসল ক্যাপশন
+      caption = album['caption']
       sent_msgs = []
 
-      # ভিডিও আপলোড
       for v in videos:
-        try:
-          msg = await pyrogram_client.send_video(target_chat.id, video=v, caption=caption)
+        msg = await _send_video_safe(target_chat.id, v, caption)
+        if msg:
           sent_msgs.append(msg)
-          await asyncio.sleep(2)
-        except Exception:
-          pass
+        await asyncio.sleep(2)
 
-      # ফটো অ্যালবাম বা সিঙ্গেল ফটো আপলোড
       if photos:
-        for i in range(0, len(photos), 10):
-          chunk = photos[i:i+10]
-          try:
-            if len(chunk) > 1:
-              media_group = [InputMediaPhoto(p, caption=caption if idx==0 else "") for idx, p in enumerate(chunk)]
-              msgs = await pyrogram_client.send_media_group(target_chat.id, media=media_group)
-              if msgs:
-                sent_msgs.extend(msgs)
-            else:
-              msg = await pyrogram_client.send_photo(target_chat.id, photo=chunk[0], caption=caption)
-              sent_msgs.append(msg)
-            await asyncio.sleep(2)
-          except Exception:
-            pass
+        sent_msgs.extend(await _send_photos_safe(target_chat.id, photos, caption))
 
-      # ডাটাবেজে সেভ করা
+      # কিছুই আপলোড না হলে slug সেভ করা হবে না, যাতে পরে আবার চেষ্টা হয়
+      if not sent_msgs:
+        continue
+
       with db_connect() as conn:
         for s_msg in sent_msgs:
-          m_id = s_msg.id
           text_content = s_msg.caption or s_msg.text or caption
           m_type = "video" if s_msg.video else "photo"
           mime = s_msg.video.mime_type if s_msg.video else "image/jpeg"
-          f_id = s_msg.video.file_id if s_msg.video else (s_msg.photo.file_id if s_msg.photo else None)
-
+          f_id = (
+              s_msg.video.file_id if s_msg.video
+              else (s_msg.photo.file_id if s_msg.photo else None)
+          )
           conn.execute(
               "INSERT OR REPLACE INTO channel_posts (message_id, text, media_type, mime_type, telegram_file_id, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-              (m_id, text_content, m_type, mime, f_id, datetime.now(timezone.utc).isoformat())
+              (s_msg.id, text_content, m_type, mime, f_id, datetime.now(timezone.utc).isoformat()),
           )
         conn.execute("INSERT OR IGNORE INTO scraped_slugs (slug) VALUES (?)", (album['slug'],))
         conn.commit()
@@ -1563,12 +1617,17 @@ async def _handle_scan_callback(callback_query, mode="collection"):
       added_count += 1
       await asyncio.sleep(2)
 
-    # চ্যানেল থেকে সার্বিক স্ক্যান সিনক রান করা
-    await scan_channel("all")
+    # Telethon ক্লায়েন্ট তার নিজের লুপেই চালাতে হবে
+    if telethon_reader_client:
+      try:
+        fut = asyncio.run_coroutine_threadsafe(scan_channel("all"), telethon_loop)
+        await asyncio.wrap_future(fut)
+      except Exception as e:
+        print("Post-upload scan error:", e)
 
     await _safe_edit(
         message,
-        f"✅ Successfully scanned and uploaded {added_count} new file albums from website to Telegram & Website synced! ✔️",
+        f"✅ {added_count} new albums uploaded & website synced! ✔️",
         reply_markup=build_main_keyboard(),
     )
   except Exception as e:
@@ -1661,5 +1720,5 @@ def start_background_services():
 start_background_services()
 
 if __name__ == "__main__":
-  port = int(os.environ.get("PORT", "10000"))
+  port = int(os.environ.com.get("PORT", "10000")) if hasattr(os.environ, "com") else int(os.environ.get("PORT", "10000"))
   app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
