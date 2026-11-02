@@ -111,34 +111,41 @@ STORY_BACKUP_CHANNEL_ID = int(
     os.environ.get("STORY_BACKUP_CHANNEL_ID", "-1004322205565")
 )
 STORY_MARKER = "#STORY"
-WEBSITE_MARKER = "#website"
 DEFAULT_STORY_THUMB = "https://carder.top/imagens/1792065174675-662575987.jpg"
+
+# ওয়েবসাইট থেকে আনা সব মিডিয়া চিহ্নিত করার ক্যাপশন ট্যাগ
+WEBSITE_MARKER = "#website"
 
 SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
 
-# ক্যাপশনসহ পোস্ট (#website) ওয়েবসাইটে সিঙ্ক করার জন্য ডিফল্ট "1" রাখা হয়েছে
 COLLECTION_INCLUDE_CAPTIONED = (
-    os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "1").strip() == "1"
+    os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "0").strip() == "1"
 )
 PRECACHE_MEDIA = os.environ.get("PRECACHE_MEDIA", "0").strip() == "1"
 STREAM_REQUEST_SIZE = 512 * 1024  # Telethon download chunk (512 KB)
 MSG_CACHE_TTL = 600  # সেকেন্ড
 TELETHON_START_DELAY = float(os.environ.get("TELETHON_START_DELAY", "40") or 0)
 
-# ---- Scraper configuration (NEW) ----
+# ---- Scraper configuration ----
 # TARGET_SITE_URL         : যে ওয়েবসাইট থেকে অ্যালবাম স্ক্র্যাপ হবে (যেমন https://mmsdesi.me)
 # TARGET_CATEGORY_PATHS   : কমা দিয়ে আলাদা পেজ পাথ, ডিফল্ট "/,/trending,/new"
 # SCRAPER_PROXY           : (ঐচ্ছিক) Cloudflare ব্লক করলে প্রক্সি, যেমন http://user:pass@host:port
-# SCRAPER_PAGES           : প্রতিটি ক্যাটাগরির কয়টা পেজ দেখবে (ডিফল্ট 3, যাতে ৫০টি অ্যালবাম পাওয়া যায়)
+# SCRAPER_PAGES           : প্রতিটি ক্যাটাগরির কয়টা পেজ দেখবে (ডিফল্ট 2)
+# ALBUM_SCAN_LIMIT        : এক স্ক্যানে সর্বোচ্চ কতটি অ্যালবাম আনবে (ডিফল্ট 50)
+# ALBUM_CHUNK_SIZE        : টেলিগ্রামে এক অ্যালবাম পোস্টে কয়টি করে মিডিয়া (ডিফল্ট 10, টেলিগ্রামের সর্বোচ্চ সীমা 10)
+# VIDEO_MAX_MB / PHOTO_MAX_MB : ডাউনলোড ফলব্যাকের সর্বোচ্চ ফাইল সাইজ
 TARGET_SITE_URL = os.environ.get("TARGET_SITE_URL", "https://mmsdesi.me").strip().rstrip("/")
 SCRAPER_PROXY = os.environ.get("SCRAPER_PROXY", "").strip()
-SCRAPER_PAGES = max(1, int(os.environ.get("SCRAPER_PAGES", "3") or 3))
-SCRAPE_ALBUM_LIMIT = max(1, int(os.environ.get("SCRAPE_ALBUM_LIMIT", "50") or 50))
+SCRAPER_PAGES = max(1, int(os.environ.get("SCRAPER_PAGES", "2") or 2))
 TARGET_CATEGORY_PATHS = [
     p.strip()
     for p in os.environ.get("TARGET_CATEGORY_PATHS", "/,/trending,/new").split(",")
     if p.strip()
 ]
+ALBUM_SCAN_LIMIT = max(1, int(os.environ.get("ALBUM_SCAN_LIMIT", "50") or 50))
+ALBUM_CHUNK_SIZE = min(10, max(2, int(os.environ.get("ALBUM_CHUNK_SIZE", "10") or 10)))
+VIDEO_MAX_MB = max(5, int(os.environ.get("VIDEO_MAX_MB", "50") or 50))
+PHOTO_MAX_MB = max(1, int(os.environ.get("PHOTO_MAX_MB", "10") or 10))
 
 print("OC & Story Storage Channel ID:", STORAGE_CHANNEL_ID)
 for _name, _val in (
@@ -233,7 +240,7 @@ pending_uploads = {}
 temp_client_sessions = {}
 upload_lock = threading.Lock()
 scan_lock = threading.Lock()
-scrape_lock = threading.Lock()  # NEW: দুইবার চাপ পড়লে ডাবল স্ক্র্যাপ রোধ
+scrape_lock = threading.Lock()  # দুইবার চাপ পড়লে ডাবল স্ক্র্যাপ রোধ
 
 telethon_status = {
     "state": "starting" if TELETHON_SESSION_STRING else "not_configured",
@@ -515,6 +522,12 @@ BROWSER_HEADERS = {
     "Sec-Fetch-User": "?1",
 }
 
+# অ্যালবামের ভেতরের ফটো খোঁজার সময় এই শব্দগুলো থাকলে সেটা সাইটের লোগো/আইকন ধরে বাদ দেওয়া হবে
+JUNK_IMAGE_HINTS = (
+    "logo", "favicon", "icon", "avatar", "sprite", "banner", "placeholder",
+    "loading", "spinner", "emoji",
+)
+
 
 def _get_base_url():
   return os.environ.get("TARGET_SITE_URL", TARGET_SITE_URL).strip().rstrip("/")
@@ -545,11 +558,11 @@ def _is_cf_blocked(status_code, body):
 
 
 def _fetch_html(scraper, url, timeout=25):
-  """প্রথমে সরাসরি (curl_cffi/cloudscraper), ব্লক হলে ফ্রি ওয়েব প্রক্সি ফলব্যাক দিয়ে চেষ্টা করে।"""
+  """প্রথমে সরাসরি (curl_cffi/cloudscraper), ব্লক হলে ফ্রি ওয়েব প্রক্সি ফলব্যাক দিয়ে চেষ্টা করে।"""
   last_status = 0
   last_body = ""
 
-  # ধাপ ১: সরাসরি বা কনফিগার করা প্রক্সি দিয়ে রিকোয়েস্ট
+  # ধাপ ১: সরাসরি বা কনফিগার করা প্রক্সি দিয়ে রিকোয়েস্ট
   try:
     res = scraper.get(url, timeout=timeout)
     last_status = res.status_code
@@ -559,7 +572,7 @@ def _fetch_html(scraper, url, timeout=25):
   except Exception as e:
     print(f"[Fetch Direct Error] {url}: {e}")
 
-  # ধাপ ২: যদি curl_cffi আলাদাভাবে ব্রাউজার ফিঙ্গারপ্রিন্ট পাল্টে চেষ্টা করতে পারে
+  # ধাপ ২: curl_cffi আলাদা ব্রাউজার ফিঙ্গারপ্রিন্ট পাল্টে চেষ্টা করবে
   if cf_requests is not None and not SCRAPER_PROXY:
     for browser_ver in ("chrome120", "chrome116", "safari17_0"):
       try:
@@ -571,7 +584,7 @@ def _fetch_html(scraper, url, timeout=25):
       except Exception:
         pass
 
-  # ধাপ ৩: ফ্রি প্রক্সি গেটওয়ে ফলব্যাক (ডেটাসেন্টার আইপি ব্লক এড়াতে)
+  # ধাপ ৩: ফ্রি প্রক্সি গেটওয়ে ফলব্যাক (ডেটাসেন্টার আইপি ব্লক এড়াতে)
   fallback_gateways = [
       f"https://api.allorigins.win/raw?url={quote(url, safe='')}",
       f"https://api.codetabs.com/v1/proxy?quest={quote(url, safe='')}",
@@ -622,7 +635,7 @@ def _find_caption_and_thumb(link_tag, base_url, slug):
   return caption.strip(), thumb
 
 
-def fetch_target_albums(target_count=50):
+def fetch_target_albums(target_count=ALBUM_SCAN_LIMIT):
   global scrape_diag
   base_url = _get_base_url()
   diag = {
@@ -675,7 +688,7 @@ def fetch_target_albums(target_count=50):
       diag["pages_ok"] += 1
       soup = BeautifulSoup(body, 'html.parser')
 
-      # ধাপ ১: আগের মতো পুরনো কার্ড সিলেক্টর
+      # ধাপ ১: পুরনো কার্ড সিলেক্টর
       link_pairs = []
       for card in soup.select('div.group.relative.bg-zinc-900'):
         link_tag = card.find('a', href=re.compile(r'/watch/'))
@@ -748,7 +761,7 @@ def describe_scrape_diag():
         f"(আগে আপলোড করা: {d.get('skipped_posted', 0)})"
     )
     if d.get("blocked"):
-      engine_note = "curl_cffi সক্রিয়" if cf_requests else "requirements.txt-এ curl_cffi যোগ করুন"
+      engine_note = "curl_cffi সক্রিয়" if cf_requests else "requirements.txt-এ curl_cffi যোগ করুন"
       lines.append(f"🛡️ সাইট বট ব্লক করছে (Cloudflare/403) [{engine_note}]. SCRAPER_PROXY সেট করে দেখুন।")
     for f in (d.get("pages_failed") or [])[:3]:
       lines.append(f"❌ {f}")
@@ -764,9 +777,15 @@ def _extract_urls(text, exts):
   return re.findall(pattern, text, flags=re.IGNORECASE)
 
 
+def _is_junk_image(url):
+  low = url.lower()
+  return any(hint in low for hint in JUNK_IMAGE_HINTS)
+
+
 def extract_album_media(album_url, fallback_thumb):
-  """অ্যালবামের ভেতর যতগুলো ভিডিও ও ফটো আছে (১০টি হোক বা ১০০টি+) সব খুঁজে বের করে।"""
+  """একটি অ্যালবাম পেজের ভেতরের সবগুলো ভিডিও ও ফটো বের করে (সংখ্যার কোনো সীমা নেই)।"""
   scraper = _make_scraper()
+  base_url = _get_base_url()
   videos = []
   photos = []
   try:
@@ -779,17 +798,15 @@ def extract_album_media(album_url, fallback_thumb):
         videos.append(v)
 
     for p in _extract_urls(html_text, "jpg|jpeg|png|webp"):
-      if any(skip in p.lower() for skip in ('logo', 'avatar', 'icon', 'favicon', 'banner')):
-        continue
-      if p not in photos:
+      if p not in photos and not _is_junk_image(p):
         photos.append(p)
 
-    # <video>/<source>/og:video/img/a ট্যাগ থেকেও অ্যালবামের ভেতরের সব মিডিয়া খোঁজা
+    # <video>/<source>/og:video ট্যাগ থেকেও খোঁজা
     try:
       soup = BeautifulSoup(raw_html or "", 'html.parser')
-      for tag in soup.find_all(['video', 'source', 'a']):
-        src = tag.get('src') or tag.get('data-src') or tag.get('href')
-        if src and re.search(r'\.mp4(?:\?|$)', src, re.I):
+      for tag in soup.find_all(['video', 'source']):
+        src = tag.get('src')
+        if src and '.mp4' in src.lower():
           full = urljoin(album_url, src)
           if full not in videos:
             videos.append(full)
@@ -799,22 +816,15 @@ def extract_album_media(album_url, fallback_thumb):
           full = urljoin(album_url, c)
           if full not in videos:
             videos.append(full)
-      for img in soup.find_all('img'):
-        src = img.get('src') or img.get('data-src') or img.get('data-lazy-src')
-        if src and re.search(r'\.(?:jpg|jpeg|png|webp)(?:\?|$)', src, re.I):
-          if any(skip in src.lower() for skip in ('logo', 'avatar', 'icon', 'favicon', 'banner')):
-            continue
-          full = urljoin(album_url, src)
-          if full not in photos:
-            photos.append(full)
     except Exception:
       pass
 
-    if not videos and not photos and fallback_thumb:
+    # অ্যালবামে ভিডিও/ফটো কিছুই না পেলে তবেই থাম্বনেইল ফলব্যাক হিসেবে নেওয়া হবে
+    if not photos and not videos and fallback_thumb:
       photos.append(fallback_thumb)
   except Exception as e:
     print(f"[Inner Page Error] {album_url}: {e}")
-    if fallback_thumb:
+    if fallback_thumb and not videos and not photos:
       photos.append(fallback_thumb)
 
   return videos, photos
@@ -1125,7 +1135,11 @@ def _split_records(records):
     if STORY_MARKER.upper() in text.upper():
       story_ids.add(r["id"])
       stories.append(item)
-    elif not stripped or COLLECTION_INCLUDE_CAPTIONED or (WEBSITE_MARKER.lower() in stripped.lower()):
+    elif (
+        not stripped
+        or COLLECTION_INCLUDE_CAPTIONED
+        or WEBSITE_MARKER.lower() in text.lower()  # #website চিহ্নিত পোস্ট সবসময় কালেকশনে আসবে
+    ):
       posts.append(item)
 
   return stories, posts, story_ids
@@ -1777,110 +1791,165 @@ def _download_bytes(url, name, max_mb=50):
   return buf
 
 
-def _format_website_caption(raw_caption):
-  base = (raw_caption or "").strip()
-  if WEBSITE_MARKER.lower() not in base.lower():
-    return f"{base}\n\n{WEBSITE_MARKER}".strip() if base else WEBSITE_MARKER
-  return base
+# ------------------------------------------------------------
+# অ্যালবাম আপলোড: ১০টি করে মিডিয়া গ্রুপ → সব শেষে কনফার্মেশন মেসেজ
+# ------------------------------------------------------------
 
 
-async def _send_video_safe(chat_id, url, caption):
-  try:
-    return await pyrogram_client.send_video(chat_id, video=url, caption=caption)
-  except Exception:
-    try:
-      buf = await asyncio.to_thread(_download_bytes, url, "video.mp4", 50)
-      return await pyrogram_client.send_video(
-          chat_id, video=buf, caption=caption, supports_streaming=True
+def build_caption(title):
+  """ওয়েবসাইটের ক্যাপশনের নিচে #website ট্যাগ যোগ করে (টেলিগ্রাম ক্যাপশন লিমিট 1024)।"""
+  title = (title or "").strip()
+  tag = WEBSITE_MARKER
+  if not title:
+    return tag
+  max_title = 1024 - len(tag) - 2
+  if len(title) > max_title:
+    title = title[:max_title - 1] + "…"
+  return f"{title}\n{tag}"
+
+
+def _build_input_media(items, caption):
+  """items = [(kind, source)] → Pyrogram InputMedia তালিকা (ক্যাপশন শুধু প্রথমটিতে)।"""
+  media = []
+  for idx, (kind, src) in enumerate(items):
+    cap = caption if idx == 0 else ""
+    if kind == "video":
+      media.append(InputMediaVideo(src, caption=cap, supports_streaming=True))
+    else:
+      media.append(InputMediaPhoto(src, caption=cap))
+  return media
+
+
+async def _send_items(chat_id, items, caption):
+  """১টি হলে সিঙ্গেল পোস্ট, ২-১০টি হলে মিডিয়া গ্রুপ (অ্যালবাম) হিসেবে পাঠায়।"""
+  if len(items) == 1:
+    kind, src = items[0]
+    if kind == "video":
+      msg = await pyrogram_client.send_video(
+          chat_id, video=src, caption=caption, supports_streaming=True
       )
-    except Exception as e:
-      print(f"[Upload] video failed {url}: {e}")
-      return None
+    else:
+      msg = await pyrogram_client.send_photo(chat_id, photo=src, caption=caption)
+    return [msg]
+  return await pyrogram_client.send_media_group(
+      chat_id, media=_build_input_media(items, caption)
+  )
 
 
-async def _send_photo_single_safe(chat_id, url, caption):
+async def _send_chunk_safe(chat_id, chunk, caption):
+  """
+  chunk = সর্বোচ্চ ১০টি (kind, url)।
+  ধাপ ১: URL দিয়ে সরাসরি অ্যালবাম পোস্ট।
+  ধাপ ২: ফেইল করলে ফাইল ডাউনলোড করে অ্যালবাম পোস্ট।
+  ধাপ ৩: তাতেও ফেইল করলে একটা একটা করে পোস্ট।
+  যতগুলো মেসেজ সফলভাবে পাঠানো হলো তার তালিকা ফেরত দেয়।
+  """
+  # ধাপ ১
   try:
-    return await pyrogram_client.send_photo(chat_id, photo=url, caption=caption)
-  except Exception:
+    return await _send_items(chat_id, chunk, caption)
+  except Exception as e:
+    print(f"[Upload] URL group failed ({len(chunk)} items): {e}")
+
+  # ধাপ ২: ডাউনলোড
+  downloaded = []
+  for n, (kind, url) in enumerate(chunk):
     try:
-      buf = await asyncio.to_thread(_download_bytes, url, "photo.jpg", 10)
-      return await pyrogram_client.send_photo(chat_id, photo=buf, caption=caption)
+      if kind == "video":
+        buf = await asyncio.to_thread(_download_bytes, url, f"video{n}.mp4", VIDEO_MAX_MB)
+      else:
+        buf = await asyncio.to_thread(_download_bytes, url, f"photo{n}.jpg", PHOTO_MAX_MB)
+      downloaded.append((kind, buf))
     except Exception as e:
-      print(f"[Upload] single photo failed {url}: {e}")
-      return None
+      print(f"[Upload] download failed {url}: {e}")
 
-
-async def _send_album_media_group(chat_id, videos, photos, caption):
-  """
-  অ্যালবামের ভেতর যতগুলো ভিডিও বা ফটোই থাকুক না কেন (১০, ৫০ বা ১০০+), 
-  সেগুলো টেলিগ্রামের নিয়ম অনুযায়ী ১০টি করে গ্রুপ আকারে চ্যানেলে পোস্ট করবে।
-  """
-  combined = [("video", v) for v in videos] + [("photo", p) for p in photos]
-  if not combined:
+  if not downloaded:
     return []
 
-  sent_msgs = []
-  for i in range(0, len(combined), 10):
-    chunk = combined[i:i + 10]
+  try:
+    return await _send_items(chat_id, downloaded, caption)
+  except Exception as e:
+    print(f"[Upload] downloaded group failed: {e}")
 
-    # যদি এই অংশে শুধুমাত্র ১টি আইটেম থাকে
-    if len(chunk) == 1:
-      m_type, url = chunk[0]
-      if m_type == "video":
-        msg = await _send_video_safe(chat_id, url, caption)
-      else:
-        msg = await _send_photo_single_safe(chat_id, url, caption)
-      if msg:
-        sent_msgs.append(msg)
-      continue
-
-    # ২ থেকে ১০টি আইটেম হলে অ্যালবাম (send_media_group) আকারে পাঠানো
-    group_sent = False
-    for use_download in (False, True):
-      try:
-        media_group = []
-        for idx, (m_type, url) in enumerate(chunk):
-          item_cap = caption if idx == 0 else ""
-          if use_download:
-            ext = "mp4" if m_type == "video" else "jpg"
-            max_sz = 50 if m_type == "video" else 10
-            file_obj = await asyncio.to_thread(
-                _download_bytes, url, f"media_{i + idx}.{ext}", max_sz
-            )
-          else:
-            file_obj = url
-
-          if m_type == "video":
-            media_group.append(
-                InputMediaVideo(file_obj, caption=item_cap, supports_streaming=True)
-            )
-          else:
-            media_group.append(
-                InputMediaPhoto(file_obj, caption=item_cap)
-            )
-
-        msgs = await pyrogram_client.send_media_group(chat_id, media=media_group)
-        if msgs:
-          sent_msgs.extend(msgs)
-          group_sent = True
-          break
-      except Exception as e:
-        print(f"[Album Upload] media_group failed (download={use_download}): {e}")
-
-    # যদি কোনো কারণে গ্রুপ আপলোড ব্যর্থ হয়, তবে একটি একটি করে পোস্ট করবে
-    if not group_sent:
-      for idx, (m_type, url) in enumerate(chunk):
-        if m_type == "video":
-          m = await _send_video_safe(chat_id, url, caption)
-        else:
-          m = await _send_photo_single_safe(chat_id, url, caption)
-        if m:
-          sent_msgs.append(m)
-        await asyncio.sleep(1.5)
-
+  # ধাপ ৩: একটা একটা করে
+  sent = []
+  for idx, (kind, buf) in enumerate(downloaded):
+    try:
+      buf.seek(0)
+      msgs = await _send_items(chat_id, [(kind, buf)], caption if not sent and idx == 0 else "")
+      sent.extend(msgs)
+    except Exception as e:
+      print(f"[Upload] single send failed: {e}")
     await asyncio.sleep(2)
+  return sent
 
-  return sent_msgs
+
+def _save_sent_messages(sent_msgs, fallback_caption):
+  """সফলভাবে চ্যানেলে যাওয়া মেসেজগুলো channel_posts টেবিলে সেভ করে।"""
+  with db_connect() as conn:
+    for s_msg in sent_msgs:
+      text_content = s_msg.caption or s_msg.text or fallback_caption
+      m_type = "video" if s_msg.video else "photo"
+      mime = s_msg.video.mime_type if s_msg.video else "image/jpeg"
+      f_id = (
+          s_msg.video.file_id if s_msg.video
+          else (s_msg.photo.file_id if s_msg.photo else None)
+      )
+      conn.execute(
+          "INSERT OR REPLACE INTO channel_posts (message_id, text, media_type, mime_type, telegram_file_id, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          (s_msg.id, text_content, m_type, mime, f_id, datetime.now(timezone.utc).isoformat()),
+      )
+    conn.commit()
+
+
+def _mark_slug_done(slug):
+  with db_connect() as conn:
+    conn.execute("INSERT OR IGNORE INTO scraped_slugs (slug) VALUES (?)", (slug,))
+    conn.commit()
+
+
+async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None):
+  """
+  একটি ওয়েবসাইট-অ্যালবামের সব ভিডিও/ফটো ১০টি করে গ্রুপে চ্যানেলে আপলোড করে।
+  সব শেষ হলে চ্যানেলে একটি কনফার্মেশন মেসেজ পাঠায়।
+  ফেরত দেয়: (sent_count, total_count)
+  """
+  items = [("video", u) for u in videos] + [("photo", p) for p in photos]
+  total = len(items)
+  caption = build_caption(album['caption'])
+  chunks = [items[i:i + ALBUM_CHUNK_SIZE] for i in range(0, total, ALBUM_CHUNK_SIZE)]
+
+  all_sent = []
+  for ci, chunk in enumerate(chunks, 1):
+    if progress:
+      await progress(ci, len(chunks), len(all_sent), total)
+
+    sent = await _send_chunk_safe(chat_id, chunk, caption)
+    if sent:
+      all_sent.extend(sent)
+      await asyncio.to_thread(_save_sent_messages, sent, caption)
+    await asyncio.sleep(3)  # টেলিগ্রাম FloodWait এড়াতে
+
+  sent_videos = sum(1 for m in all_sent if getattr(m, "video", None))
+  sent_photos = len(all_sent) - sent_videos
+  failed = total - len(all_sent)
+
+  if all_sent:
+    await asyncio.to_thread(_mark_slug_done, album['slug'])
+
+    # সব আপলোড শেষ → চ্যানেলে কনফার্মেশন মেসেজ
+    status_line = "✅ অ্যালবাম আপলোড সম্পূর্ণ" if failed == 0 else "⚠️ অ্যালবাম আপলোড সম্পূর্ণ (কিছু ফাইল বাদ গেছে)"
+    confirm = (
+        f"{status_line}\n"
+        f"📁 {album['caption'][:200]}\n"
+        f"🎞 ভিডিও: {sent_videos} | 🖼 ফটো: {sent_photos} | মোট: {len(all_sent)}/{total}\n"
+        f"{WEBSITE_MARKER}"
+    )
+    try:
+      await pyrogram_client.send_message(chat_id, confirm)
+    except Exception as e:
+      print(f"[Upload] confirmation message failed: {e}")
+
+  return len(all_sent), total
 
 
 async def _handle_scan_callback(callback_query, mode="collection"):
@@ -1898,14 +1967,11 @@ async def _handle_scan_callback(callback_query, mode="collection"):
 
   try:
     message = callback_query.message
-    await callback_query.answer("Scanning website albums (Limit: 50)...")
-    await _safe_edit(
-        message,
-        f"🔄 ওয়েবসাইট থেকে সর্বোচ্চ {SCRAPE_ALBUM_LIMIT}টি অ্যালবাম স্ক্যান ও টেলিগ্রাম চ্যানেলে আপলোড হচ্ছে...",
-    )
+    await callback_query.answer("Scanning website albums...")
+    await _safe_edit(message, f"🔄 ওয়েবসাইট থেকে অ্যালবাম খোঁজা হচ্ছে (সর্বোচ্চ {ALBUM_SCAN_LIMIT} টি)...")
 
     try:
-      albums = await asyncio.to_thread(fetch_target_albums, SCRAPE_ALBUM_LIMIT)
+      albums = await asyncio.to_thread(fetch_target_albums, ALBUM_SCAN_LIMIT)
       if not albums:
         report = describe_scrape_diag()
         text = "ℹ️ No new albums found."
@@ -1916,10 +1982,17 @@ async def _handle_scan_callback(callback_query, mode="collection"):
 
       added_count = 0
       failed_count = 0
+      total_files = 0
       target_chat = await pyrogram_client.get_chat(STORAGE_CHANNEL_ID)
-      total_to_process = len(albums[:SCRAPE_ALBUM_LIMIT])
+      album_total = len(albums)
 
-      for album in albums[:SCRAPE_ALBUM_LIMIT]:
+      for a_idx, album in enumerate(albums, 1):
+        title_short = (album['caption'] or album['slug'])[:40]
+        await _safe_edit(
+            message,
+            f"🔍 অ্যালবাম {a_idx}/{album_total}\n📁 {title_short}\nভেতরের ফটো/ভিডিও স্ক্যান হচ্ছে...",
+        )
+
         videos, photos = await asyncio.to_thread(
             extract_album_media, album['url'], album['thumbnail']
         )
@@ -1927,65 +2000,43 @@ async def _handle_scan_callback(callback_query, mode="collection"):
           failed_count += 1
           continue
 
-        # ওয়েবসাইটের ক্যাপশনের সাথে #website যুক্ত করা
-        caption = _format_website_caption(album['caption'])
-
-        # অ্যালবামের সব মিডিয়া আপলোড করা
-        sent_msgs = await _send_album_media_group(
-            target_chat.id, videos, photos, caption
-        )
-
-        if not sent_msgs:
-          failed_count += 1
-          continue
-
-        # ডাটাবেসে প্রতিটি মিডিয়া পোস্ট #website ক্যাপশনসহ সেভ করা
-        with db_connect() as conn:
-          for s_msg in sent_msgs:
-            text_content = s_msg.caption or s_msg.text or caption
-            text_content = _format_website_caption(text_content)
-            m_type = "video" if getattr(s_msg, "video", None) else "photo"
-            mime = (
-                s_msg.video.mime_type
-                if getattr(s_msg, "video", None)
-                else "image/jpeg"
-            )
-            f_id = (
-                s_msg.video.file_id
-                if getattr(s_msg, "video", None)
-                else (s_msg.photo.file_id if getattr(s_msg, "photo", None) else None)
-            )
-            conn.execute(
-                "INSERT OR REPLACE INTO channel_posts (message_id, text, media_type, mime_type, telegram_file_id, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (s_msg.id, text_content, m_type, mime, f_id, datetime.now(timezone.utc).isoformat()),
-            )
-          conn.execute("INSERT OR IGNORE INTO scraped_slugs (slug) VALUES (?)", (album['slug'],))
-          conn.commit()
-
-        added_count += 1
-
-        # ✅ প্রতিটি অ্যালবাম সম্পূর্ণ আপলোড হওয়া শেষে কনফার্মেশন মেসেজ পাঠানো
-        try:
-          total_media_count = len(videos) + len(photos)
-          await pyrogram_client.send_message(
-              target_chat.id,
-              f"✅ অ্যালবাম কমপ্লিট ({added_count}/{total_to_process})\n📁 নাম: {album['caption']}\n📊 মোট ফাইল আপলোড: {total_media_count}টি",
+        async def progress(ci, cn, done, total, _i=a_idx, _t=title_short):
+          await _safe_edit(
+              message,
+              f"📤 অ্যালবাম {_i}/{album_total}\n📁 {_t}\n"
+              f"গ্রুপ {ci}/{cn} আপলোড হচ্ছে... ({done}/{total} ফাইল শেষ)",
           )
-        except Exception as e:
-          print(f"[Confirm Msg Error]: {e}")
+
+        try:
+          sent_count, total_count = await _upload_album_to_channel(
+              target_chat.id, album, videos, photos, progress
+          )
+        except Exception:
+          print("Album upload error:", traceback.format_exc())
+          sent_count, total_count = 0, len(videos) + len(photos)
+
+        if sent_count == 0:
+          failed_count += 1
+        else:
+          added_count += 1
+          total_files += sent_count
 
         await asyncio.sleep(2)
 
       if telethon_reader_client:
+        await _safe_edit(message, "🔄 ওয়েবসাইট সিঙ্ক হচ্ছে...")
         try:
           fut = asyncio.run_coroutine_threadsafe(scan_channel("all"), telethon_loop)
           await asyncio.wrap_future(fut)
         except Exception as e:
           print("Post-upload scan error:", e)
 
-      done_text = f"✅ {added_count}টি নতুন অ্যালবাম (#website) আপলোড ও ওয়েবসাইটে সিঙ্ক সম্পন্ন হয়েছে! ✔️"
+      done_text = (
+          f"✅ {added_count} টি নতুন অ্যালবাম আপলোড হয়েছে ({total_files} টি ফাইল) "
+          f"এবং ওয়েবসাইট সিঙ্ক হয়েছে! ✔️"
+      )
       if failed_count:
-        done_text += f"\n⚠️ {failed_count}টি অ্যালবামে মিডিয়া পাওয়া যায়নি/আপলোড ব্যর্থ।"
+        done_text += f"\n⚠️ {failed_count} অ্যালবামে মিডিয়া পাওয়া যায়নি/আপলোড ব্যর্থ (Logs দেখুন)।"
       await _safe_edit(
           message,
           done_text,
@@ -2063,7 +2114,7 @@ async def start_pyrogram_monitor():
 
     @client.on_message(filters.command("resetslugs") & filters.private)
     async def reset_slugs_cmd(client, message):
-      # NEW: আপলোড-করা-অ্যালবাম লগ মুছে ফেলে, যাতে সব অ্যালবাম আবার স্ক্র্যাপ হয়
+      # আপলোড-করা-অ্যালবাম লগ মুছে ফেলে, যাতে সব অ্যালবাম আবার স্ক্র্যাপ হয়
       if not message.from_user or message.from_user.id != ADMIN_ID:
         return
       try:
