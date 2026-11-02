@@ -1635,6 +1635,44 @@ async def _handle_scan_callback(callback_query, mode="collection"):
     await _safe_edit(message, f"❌ Scan failed: {str(e)}", reply_markup=build_main_keyboard())
 
 
+def _classify_pyro_media(m):
+  if getattr(m, "photo", None):
+    return "photo", "image/jpeg"
+  if getattr(m, "video", None):
+    return "video", m.video.mime_type or "video/mp4"
+  if getattr(m, "animation", None):
+    return "animation", m.animation.mime_type or "video/mp4"
+  if getattr(m, "document", None):
+    mime = (m.document.mime_type or "").lower()
+    if mime.startswith("video/"):
+      return "video", mime
+    if mime.startswith("image/"):
+      return "photo", mime
+  return None
+
+
+def _save_uploaded_media(msg_id, kind, media_type, mime, caption):
+  now = datetime.now(timezone.utc)
+  with db_connect() as conn:
+    if kind == "story":
+      conn.execute(
+          "INSERT OR REPLACE INTO stories (message_id, media_type, mime_type, telegram_file_id, thumb_file_id, ts, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          (msg_id, "photo" if media_type == "photo" else "video", mime, None, None, int(now.timestamp()), now.isoformat()),
+      )
+    else:
+      conn.execute(
+          "INSERT OR REPLACE INTO channel_posts (message_id, text, media_type, mime_type, telegram_file_id, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          (msg_id, caption, media_type, mime, None, now.isoformat()),
+      )
+    conn.commit()
+
+
+def build_done_keyboard():
+  return InlineKeyboardMarkup([
+      [InlineKeyboardButton("✅ Done", callback_data="upload_done")],
+  ])
+
+
 async def start_pyrogram_monitor():
   global pyrogram_client
   if Client is None or not BOT_TOKEN or not API_ID or not API_HASH:
@@ -1663,6 +1701,82 @@ async def start_pyrogram_monitor():
     @client.on_callback_query(filters.regex("^scan_media_channel$"))
     async def scan_media_channel_callback(client, callback_query):
       await _handle_scan_callback(callback_query, "collection")
+
+    @client.on_callback_query(filters.regex("^(start_upload|add_story)$"))
+    async def start_upload_callback(client, callback_query):
+      if callback_query.from_user.id != ADMIN_ID:
+        await callback_query.answer("Unauthorized!", show_alert=True)
+        return
+      mode = "story" if callback_query.data == "add_story" else "upload"
+      with upload_lock:
+        pending_uploads[ADMIN_ID] = mode
+      await callback_query.answer("Ready!")
+      label = "Story" if mode == "story" else "Media"
+      await _safe_edit(
+          callback_query.message,
+          f"📤 {label} mode on.\n\nSend photos/videos now (you can send many). Press ✅ Done when finished, or send /cancel to stop.",
+          reply_markup=build_done_keyboard(),
+      )
+
+    @client.on_callback_query(filters.regex("^upload_done$"))
+    async def upload_done_callback(client, callback_query):
+      if callback_query.from_user.id != ADMIN_ID:
+        await callback_query.answer("Unauthorized!", show_alert=True)
+        return
+      with upload_lock:
+        pending_uploads.pop(ADMIN_ID, None)
+      await callback_query.answer("Syncing website...")
+      await _safe_edit(callback_query.message, "🔄 Syncing website...")
+      if telethon_reader_client:
+        try:
+          fut = asyncio.run_coroutine_threadsafe(scan_channel("all"), telethon_loop)
+          await asyncio.wrap_future(fut)
+        except Exception as e:
+          print("Upload-done scan error:", e)
+      await _safe_edit(
+          callback_query.message,
+          "✅ Uploaded & website synced! ✔️",
+          reply_markup=build_main_keyboard(),
+      )
+
+    @client.on_message(filters.command("cancel") & filters.private)
+    async def cancel_cmd(client, message):
+      if not message.from_user or message.from_user.id != ADMIN_ID:
+        return
+      with upload_lock:
+        pending_uploads.pop(ADMIN_ID, None)
+      await message.reply("❌ Cancelled.", reply_markup=build_main_keyboard())
+
+    @client.on_message(
+        filters.private
+        & (filters.photo | filters.video | filters.animation | filters.document)
+    )
+    async def upload_media_handler(client, message):
+      if not message.from_user or message.from_user.id != ADMIN_ID:
+        return
+      mode = pending_uploads.get(ADMIN_ID)
+      if not mode:
+        return
+      info = _classify_pyro_media(message)
+      if not info:
+        await message.reply("⚠️ Only photo or video files are supported.")
+        return
+      media_type, mime = info
+      target_id = STORY_BACKUP_CHANNEL_ID if mode == "story" else STORAGE_CHANNEL_ID
+      caption = STORY_MARKER if mode == "story" else ""
+      try:
+        target_chat = await client.get_chat(target_id)
+        copied = await message.copy(target_chat.id, caption=caption)
+        await asyncio.to_thread(
+            _save_uploaded_media, copied.id, mode, media_type, mime, caption
+        )
+        await message.reply(
+            "✅ Added. Send more or press Done.",
+            reply_markup=build_done_keyboard(),
+        )
+      except Exception as e:
+        print("Upload error:", traceback.format_exc())
+        await message.reply(f"❌ Upload failed: {e}")
 
     return True
   except Exception:
