@@ -1,10 +1,9 @@
-Flask
+flask
 flask-cors
 requests
-Pyrogram==2.0.106
-TgCrypto
-Telethon>=1.40,<2
-Werkzeug
-gunicorn
-SQLAlchemy
+telethon
+pyrogram
+tgcrypto
 cloudscraper
+beautifulsoup4
+gunicorn
