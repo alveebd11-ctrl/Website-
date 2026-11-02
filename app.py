@@ -472,7 +472,7 @@ def download_telegram_file(file_id):
     return None, None
 
 
-# mmsdesi.me অটোমেটিক স্ক্র্যাপার লজিক (৫ থেকে ৫০টি মিডিয়া সহ অ্যালবাম ফেচ করা)
+# mmsdesi.me অটোমেটিক স্ক্র্যাপার লজিক (৫ থেকে ৫০টি মিডিয়া সহ অ্যালবাম ফেচ করা)
 def fetch_mmsdesi_albums(target_count=40):
   scraper = cloudscraper.create_scraper(
       browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
@@ -1720,5 +1720,5 @@ def start_background_services():
 start_background_services()
 
 if __name__ == "__main__":
-  port = int(os.environ.com.get("PORT", "10000")) if hasattr(os.environ, "com") else int(os.environ.get("PORT", "10000"))
+  port = int(os.environ.get("PORT", "10000"))
   app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
