@@ -138,7 +138,22 @@
   /* ---------- ALBUM CARDS ---------- */
   .album-card .caption {
     white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-    line-height: 1.35; min-height: calc(2 * 1.35em + 22px);
+    line-height: 1.35; min-height: calc(2 * 1.35em + 26px);
+  }
+  /* অ্যালবাম লিস্ট: আরও উপরে, আরও লম্বা ও পাশাপাশি ২টি বড় কার্ড */
+  #galleryHome .section-head { margin-top: 18px; }
+  #galleryHome .latest-wrap { margin: 10px 0 10px; }
+  .album-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 0 -6px; }
+  .album-card { border-radius: 20px; }
+  .album-card .thumb { aspect-ratio: 9 / 14; }
+  .album-card .caption { font-size: 14px; font-weight: 600; padding: 12px 12px 14px; }
+  .album-card .badge { font-size: 12px; padding: 5px 11px; left: 10px; bottom: 10px; }
+  .thumb img { image-rendering: auto; }
+  @media (min-width: 720px) {
+    .album-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 0; }
+  }
+  @media (min-width: 1000px) {
+    .album-grid { grid-template-columns: repeat(4, 1fr); }
   }
   .badge {
     position: absolute; left: 8px; bottom: 8px; z-index: 2;
@@ -173,6 +188,18 @@
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
   .album-sub { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+  .album-hero {
+    margin-top: 16px; position: relative; width: 100%; aspect-ratio: 16 / 10;
+    border-radius: 20px; overflow: hidden;
+    background: #1a1a1e; border: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 10px 26px rgba(0,0,0,.45);
+  }
+  .album-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s ease; }
+  .album-hero img.ok { opacity: 1; }
+  .album-hero::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0) 55%);
+  }
   #itemsGrid { margin-top: 16px; }
   .item-card .thumb { aspect-ratio: 3 / 4; }
 
@@ -256,7 +283,7 @@
       </div>
     </div>
 
-    <div class="grid" id="albumsGrid">
+    <div class="grid album-grid" id="albumsGrid">
       <div class="state">Loading...</div>
     </div>
   </div>
@@ -272,6 +299,7 @@
         <div class="album-sub" id="albumSub"></div>
       </div>
     </div>
+    <div class="album-hero" id="albumHero" hidden></div>
     <div class="grid" id="itemsGrid"></div>
   </div>
 </main>
@@ -303,6 +331,7 @@
   var albumView = document.getElementById('albumView');
   var albumTitle = document.getElementById('albumTitle');
   var albumSub = document.getElementById('albumSub');
+  var albumHero = document.getElementById('albumHero');
 
   var currentItems = [];
   var lbIndex = 0;
@@ -327,11 +356,12 @@
     parent.appendChild(d);
   }
 
-  function makeThumb(src) {
+  function makeThumb(src, eager) {
     var thumb = document.createElement('div');
     thumb.className = 'thumb';
     var img = new Image();
-    img.loading = 'lazy';
+    img.loading = eager ? 'eager' : 'lazy';
+    img.decoding = 'async';
     img.alt = '';
     img.onload = function () { img.classList.add('ok'); thumb.classList.add('loaded'); };
     img.onerror = function () { thumb.classList.add('loaded'); };
@@ -355,11 +385,11 @@
       return;
     }
     var frag = document.createDocumentFragment();
-    albums.forEach(function (a) {
+    albums.forEach(function (a, i) {
       var card = document.createElement('article');
       card.className = 'card album-card';
 
-      var thumb = makeThumb(a.cover);
+      var thumb = makeThumb(a.cover, i < 6);
       var badge = document.createElement('div');
       badge.className = 'badge';
       badge.textContent = countLabel(a);
@@ -419,6 +449,8 @@
     albumView.hidden = false;
     albumTitle.textContent = '';
     albumSub.textContent = '';
+    albumHero.hidden = true;
+    albumHero.innerHTML = '';
     stateBox(itemsGrid, 'Loading...');
     window.scrollTo(0, 0);
 
@@ -430,6 +462,13 @@
         var v = currentItems.filter(function (i) { return i.type === 'video'; }).length;
         albumTitle.textContent = d.title || '';
         albumSub.textContent = countLabel({ videos: v, photos: currentItems.length - v });
+        if (d.cover) {
+          var himg = new Image();
+          himg.alt = '';
+          himg.onload = function () { himg.classList.add('ok'); albumHero.hidden = false; };
+          himg.src = d.cover;
+          albumHero.appendChild(himg);
+        }
         renderItems(currentItems);
       })
       .catch(function () { stateBox(itemsGrid, 'Could not load this album.', true); });
@@ -533,7 +572,7 @@
   }, { passive: true });
 
   // ---- Collection counts (video / photo) — আগের মতোই ----
-  fetch('/api/collection/counts', { cache: 'no-store' })
+  fetch('/api/collection/counts?scope=all', { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       setText('statVideos', fmt(d.videos));
