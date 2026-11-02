@@ -118,6 +118,11 @@ WEBSITE_MARKER = "#website"
 
 SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
 
+# ওয়েবসাইট থেকে আনা (#website) পোস্ট আপনার সাইটে দেখানো হবে কি না।
+# 0 (ডিফল্ট) = শুধু টেলিগ্রাম চ্যানেলে আপলোড হবে, সাইটে দেখাবে না
+# 1 = আগের মতো সাইটেও দেখাবে
+SYNC_WEBSITE_POSTS = os.environ.get("SYNC_WEBSITE_POSTS", "0").strip() == "1"
+
 COLLECTION_INCLUDE_CAPTIONED = (
     os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "0").strip() == "1"
 )
@@ -363,6 +368,24 @@ def init_db():
 
 
 init_db()
+
+
+def _cleanup_website_posts():
+  """সিঙ্ক বন্ধ থাকলে আগে সেভ হওয়া #website পোস্ট ডাটাবেস থেকে সরিয়ে দেয় (চ্যানেলের পোস্ট অক্ষত থাকে)।"""
+  if SYNC_WEBSITE_POSTS:
+    return
+  try:
+    with db_connect() as conn:
+      conn.execute(
+          "DELETE FROM channel_posts WHERE LOWER(COALESCE(text, '')) LIKE ?",
+          ("%" + WEBSITE_MARKER.lower() + "%",),
+      )
+      conn.commit()
+  except Exception as e:
+    print("[Cleanup] website posts cleanup failed:", e)
+
+
+_cleanup_website_posts()
 
 
 def row_to_message(row):
@@ -1132,13 +1155,16 @@ def _split_records(records):
       continue
 
     item = dict(r, text=text)
+    is_website_post = WEBSITE_MARKER.lower() in text.lower()
+    if is_website_post and not SYNC_WEBSITE_POSTS:
+      continue  # শুধু চ্যানেলে থাকবে, ওয়েবসাইটে আসবে না
     if STORY_MARKER.upper() in text.upper():
       story_ids.add(r["id"])
       stories.append(item)
     elif (
         not stripped
         or COLLECTION_INCLUDE_CAPTIONED
-        or WEBSITE_MARKER.lower() in text.lower()  # #website চিহ্নিত পোস্ট সবসময় কালেকশনে আসবে
+        or is_website_post
     ):
       posts.append(item)
 
@@ -1926,7 +1952,8 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
     sent = await _send_chunk_safe(chat_id, chunk, caption)
     if sent:
       all_sent.extend(sent)
-      await asyncio.to_thread(_save_sent_messages, sent, caption)
+      if SYNC_WEBSITE_POSTS:
+        await asyncio.to_thread(_save_sent_messages, sent, caption)
     await asyncio.sleep(3)  # টেলিগ্রাম FloodWait এড়াতে
 
   sent_videos = sum(1 for m in all_sent if getattr(m, "video", None))
@@ -2023,7 +2050,7 @@ async def _handle_scan_callback(callback_query, mode="collection"):
 
         await asyncio.sleep(2)
 
-      if telethon_reader_client:
+      if SYNC_WEBSITE_POSTS and telethon_reader_client:
         await _safe_edit(message, "🔄 ওয়েবসাইট সিঙ্ক হচ্ছে...")
         try:
           fut = asyncio.run_coroutine_threadsafe(scan_channel("all"), telethon_loop)
@@ -2031,10 +2058,9 @@ async def _handle_scan_callback(callback_query, mode="collection"):
         except Exception as e:
           print("Post-upload scan error:", e)
 
-      done_text = (
-          f"✅ {added_count} টি নতুন অ্যালবাম আপলোড হয়েছে ({total_files} টি ফাইল) "
-          f"এবং ওয়েবসাইট সিঙ্ক হয়েছে! ✔️"
-      )
+      done_text = f"✅ {added_count} টি নতুন অ্যালবাম টেলিগ্রাম চ্যানেলে আপলোড হয়েছে ({total_files} টি ফাইল)! ✔️"
+      if SYNC_WEBSITE_POSTS:
+        done_text += "\n🌐 ওয়েবসাইট সিঙ্ক হয়েছে।"
       if failed_count:
         done_text += f"\n⚠️ {failed_count} অ্যালবামে মিডিয়া পাওয়া যায়নি/আপলোড ব্যর্থ (Logs দেখুন)।"
       await _safe_edit(
