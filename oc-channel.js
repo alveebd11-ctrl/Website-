@@ -15,6 +15,7 @@
         batchSize: 10,
         observerRootMargin: '350px 0px',
         telegramURL: 'https://t.me/ALVEE_BD1',
+        brandLinkURL: '/all-collection',
         brandText: '🫂🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀🫂♥️⟵꯭'
     };
 
@@ -151,8 +152,10 @@
 
         const brand = document.createElement('div');
         brand.className = 'alv-brand';
-        brand.setAttribute('role', 'img');
+        brand.setAttribute('role', 'link');
         brand.setAttribute('aria-label', 'ALVEE');   /* ছবি style.css এর --alv-brand-img থেকে আসে */
+        brand.style.cursor = 'pointer';
+        brand.addEventListener('click', () => { window.location.href = CONFIG.brandLinkURL; });
 
         const subscribe = document.createElement('button');
         subscribe.type = 'button';
