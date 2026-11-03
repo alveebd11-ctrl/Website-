@@ -1006,7 +1006,7 @@ async def get_post_thumb_bytes(message_id, kind="post"):
     if not msg or not getattr(msg, "media", None):
       return None
     is_photo = bool(getattr(msg, "photo", None))
-    for t in ((1, 0, -1) if is_photo else (-1,)):
+    for t in ((-1, 1, 0) if is_photo else (-1,)):
       try:
         data = await telethon_reader_client.download_media(
             msg, file=bytes, thumb=t
@@ -1697,7 +1697,7 @@ def albums_api():
           "title": _clean_title(r["title"]) or r["slug"],
           "count": n, "videos": v, "photos": n - v,
           "cover": f"/api/channel/thumb/{r['cover_id'] or r['first_id']}",
-          "_key": (-int(r["batch"] or 0), int(r["site_order"] or 0), -int(r["last_id"] or 0)),
+          "_key": (-int(r["last_id"] or 0),),
       })
     for slug, g in _legacy_albums().items():
       items = g["items"]
@@ -1706,12 +1706,16 @@ def albums_api():
           "slug": slug, "title": g["title"],
           "count": len(items), "videos": v, "photos": len(items) - v,
           "cover": f"/api/channel/thumb/{items[0][0]}",
-          "_key": (0, 0, -max(m for m, _ in items)),
+          "_key": (-max(m for m, _ in items),),
       })
     albums.sort(key=lambda a: a["_key"])
     for a in albums:
       a.pop("_key", None)
-    return jsonify({"ok": True, "albums": albums})
+    return jsonify({
+        "ok": True,
+        "albums": albums,
+        "syncing": bool(album_sync_state["running"] or album_sync_state["restoring"]),
+    })
   except Exception:
     return jsonify({"ok": False, "albums": []}), 500
 
@@ -1742,6 +1746,178 @@ def album_items_api(slug):
     return jsonify({"ok": False, "items": []}), 404
   except Exception:
     return jsonify({"ok": False, "items": []}), 500
+
+
+# ------------------------------------------------------------
+# টেলিগ্রাম চ্যানেল → ওয়েবসাইট সিঙ্ক (অ্যাডমিন-প্রোটেক্টেড বাটন)
+# ------------------------------------------------------------
+
+album_sync_state = {
+    "running": False, "done": False, "checked": 0, "found": 0,
+    "added": 0, "error": "",
+    # ডিপ্লয়ের পর অ্যালবাম চ্যানেল থেকে ফিরিয়ে আনা পর্যন্ত true থাকে
+    "restoring": bool(TELETHON_SESSION_STRING and API_ID and API_HASH),
+}
+album_sync_lock = threading.Lock()
+
+
+def _admin_key_status():
+  """None = ADMIN_SYNC_KEY সেট করা নেই, True/False = কী মিলেছে কি না।"""
+  expected = os.environ.get("ADMIN_SYNC_KEY", "").strip()
+  if not expected:
+    return None
+  given = (request.headers.get("X-Admin-Key") or "").strip()
+  return hmac.compare_digest(given.encode("utf-8"), expected.encode("utf-8"))
+
+
+def _save_synced_album(slug, title, cover_id, items):
+  """চ্যানেল থেকে পাওয়া একটি সম্পূর্ণ অ্যালবাম ডাটাবেসে সেভ করে। নতুন হলে True।"""
+  now = datetime.now(timezone.utc).isoformat()
+  with db_connect() as conn:
+    existed = conn.execute(
+        "SELECT 1 FROM website_albums WHERE slug = ?", (slug,)
+    ).fetchone() is not None
+    conn.execute(
+        "INSERT OR IGNORE INTO website_albums (slug, title, created_at, batch, site_order, cover_id) VALUES (?, ?, ?, 0, 0, ?)",
+        (slug, title, now, cover_id),
+    )
+    if cover_id:
+      conn.execute("UPDATE website_albums SET cover_id = ? WHERE slug = ?", (cover_id, slug))
+      conn.execute(
+          "INSERT OR REPLACE INTO website_album_items (message_id, slug, media_type, mime_type, pos) VALUES (?, ?, 'photo', 'image/jpeg', -1)",
+          (cover_id, "cover:" + slug),
+      )
+    for pos, (mid, mtype, mime) in enumerate(items):
+      conn.execute(
+          "INSERT OR REPLACE INTO website_album_items (message_id, slug, media_type, mime_type, pos) VALUES (?, ?, ?, ?, ?)",
+          (mid, slug, mtype, mime, pos),
+      )
+    conn.execute("INSERT OR IGNORE INTO scraped_slugs (slug) VALUES (?)", (slug,))
+    conn.commit()
+  return not existed
+
+
+async def sync_albums_from_channel():
+  """
+  চ্যানেল পুরনো → নতুন ক্রমে পড়ে অ্যালবাম বাই অ্যালবাম ওয়েবসাইটে তোলে।
+  একটি অ্যালবামের গঠন: [কভার ছবি] + [১০টি করে মিডিয়া গ্রুপ] + [কনফার্মেশন মেসেজ]।
+  কনফার্মেশন মেসেজ পেলেই অ্যালবাম সম্পূর্ণ ধরা হয় (অসম্পূর্ণ অ্যালবাম বাদ)।
+  """
+  st = album_sync_state
+  client = telethon_reader_client
+  entity = telethon_channel_entity
+  if not client or not entity:
+    raise RuntimeError("Telethon reader সংযুক্ত নেই।")
+
+  ref_re = re.compile(re.escape(ALBUM_REF_KEY) + r":\s*(\S+)")
+  group_caps = {}
+  pending = []
+  pending_title = ""
+
+  async for msg in client.iter_messages(entity, reverse=True, limit=None, wait_time=0.5):
+    st["checked"] += 1
+    text = msg.message or ""
+    info = _classify_media_for_scan(msg)
+
+    if info:
+      gid = getattr(msg, "grouped_id", None)
+      if gid and text.strip():
+        group_caps[gid] = text
+      eff = text if text.strip() else (group_caps.get(gid, "") if gid else "")
+      if WEBSITE_MARKER.lower() not in eff.lower():
+        continue
+      title = _clean_title(eff)
+      if pending and title != pending_title:
+        pending = []  # আগের অসম্পূর্ণ অ্যালবামের অবশিষ্ট বাদ
+      pending_title = title
+      pending.append({
+          "id": msg.id,
+          "type": "video" if info[0] in ("video", "animation") else "photo",
+          "mime": info[1],
+          "group": gid,
+      })
+      continue
+
+    is_confirm = (
+        WEBSITE_MARKER.lower() in text.lower()
+        and (ALBUM_REF_KEY in text or "অ্যালবাম আপলোড সম্পূর্ণ" in text)
+    )
+    if not is_confirm:
+      continue
+
+    if pending:
+      ref = ref_re.search(text)
+      slug = ref.group(1) if ref else f"tg-{msg.id}"
+      title = pending_title
+      if not title:
+        m_title = re.search(r"📁\s*(.+)", text)
+        title = m_title.group(1).strip() if m_title else slug
+
+      cover_id = None
+      items_src = pending
+      # কভার = সবার আগের একক (গ্রুপ-ছাড়া) ছবি
+      if len(pending) >= 2 and pending[0]["group"] is None and pending[0]["type"] == "photo":
+        cover_id = pending[0]["id"]
+        items_src = pending[1:]
+      items = [(x["id"], x["type"], x["mime"]) for x in items_src]
+
+      is_new = await asyncio.to_thread(_save_synced_album, slug, title, cover_id, items)
+      st["found"] += 1
+      if is_new:
+        st["added"] += 1
+
+    pending = []
+    pending_title = ""
+
+
+async def _album_sync_job():
+  st = album_sync_state
+  try:
+    for attempt in range(3):
+      try:
+        st["error"] = ""
+        await sync_albums_from_channel()
+        break
+      except Exception as e:
+        print("Album sync error:", traceback.format_exc())
+        st["error"] = str(e) or type(e).__name__
+        if attempt < 2:
+          await asyncio.sleep(20)  # নেটওয়ার্ক/FloodWait সমস্যায় আবার চেষ্টা
+  finally:
+    st["running"] = False
+    st["done"] = True
+    st["restoring"] = False
+
+
+def _start_album_sync():
+  """সিঙ্ক শুরু করে। আগে থেকে চললে False ফেরত দেয়।"""
+  with album_sync_lock:
+    if album_sync_state["running"]:
+      return False
+    album_sync_state.update(
+        running=True, done=False, checked=0, found=0, added=0, error=""
+    )
+  asyncio.run_coroutine_threadsafe(_album_sync_job(), telethon_loop)
+  return True
+
+
+@app.route("/api/albums/sync", methods=["POST"])
+def album_sync_start():
+  ok = _admin_key_status()
+  if ok is None:
+    return jsonify({"ok": False, "error": "ADMIN_SYNC_KEY সার্ভারে সেট করা নেই (Render → Environment)।"}), 503
+  if not ok:
+    return jsonify({"ok": False, "error": "ভুল Admin key"}), 401
+  if not telethon_reader_client or not telethon_channel_entity:
+    return jsonify({"ok": False, "error": "Telethon সংযুক্ত নেই, একটু পরে চেষ্টা করুন।"}), 503
+
+  _start_album_sync()
+  return jsonify({"ok": True, "running": True})
+
+
+@app.route("/api/albums/sync/status", methods=["GET"])
+def album_sync_status():
+  return jsonify(dict(album_sync_state))
 
 
 @app.route("/api/site/views", methods=["GET", "POST"])
@@ -1839,7 +2015,7 @@ def stream_telegram_media(message_id, kind, size, mime):
 @app.route("/api/channel/thumb/<int:message_id>", methods=["GET"])
 def get_channel_thumb(message_id):
   try:
-    thumb_cache = CACHE_DIR / f"pthumb_{message_id}.jpg"
+    thumb_cache = CACHE_DIR / f"pthumb_hd_{message_id}.jpg"
     if thumb_cache.is_file():
       return send_file(thumb_cache, mimetype="image/jpeg", conditional=True)
     row, row_kind = find_media_row(message_id, request.args.get("kind", ""))
@@ -2266,6 +2442,8 @@ async def _handle_scan_callback(callback_query, mode="collection"):
         await _safe_edit(message, text, reply_markup=build_main_keyboard())
         return
 
+      # সাইটের উপরের অ্যালবাম সবশেষে আপলোড হবে, ফলে আপনার সাইটে ওয়েবসাইটের ক্রম ঠিক থেকে সবচেয়ে নতুন সবার উপরে থাকবে
+      albums = list(reversed(albums))
       added_count = 0
       failed_count = 0
       total_files = 0
@@ -2537,6 +2715,14 @@ def _init_background_services_worker():
           asyncio.run_coroutine_threadsafe(sync_posts_from_channel(), telethon_loop)
         except Exception:
           pass
+        # ডিপ্লয়/রিস্টার্টে ডাটাবেস মুছে গেলেও অ্যালবাম চ্যানেল থেকে স্বয়ংক্রিয়ভাবে ফিরে আসবে
+        try:
+          _start_album_sync()
+        except Exception:
+          album_sync_state["restoring"] = False
+
+  if not album_sync_state["running"]:
+    album_sync_state["restoring"] = False
 
 
 def start_background_services():
