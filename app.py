@@ -2230,20 +2230,92 @@ def build_main_keyboard():
   ])
 
 
+# ------------------------------------------------------------
+# Animated loading bar: white boxes turn black, then black turn white again
+#   [□□□□□□□□□□] → [■■■■■■■■■■] → [□□□□□□□□□□] → ... (loops until the task ends)
+# ------------------------------------------------------------
+
+LOADING_BAR_LEN = 10
+LOADING_FRAME_DELAY = 0.8  # seconds between frames (lower = faster; too low can hit Telegram FloodWait)
+LOADING_STEP = 2            # boxes changed per frame (higher = faster looking animation)
+_animators = {}
+
+
+def _msg_key(message):
+  return (getattr(getattr(message, "chat", None), "id", 0), getattr(message, "id", id(message)))
+
+
+class _LoadingAnimator:
+  def __init__(self, message):
+    self.message = message
+    self.title = ""
+    self.detail = ""
+    self.pct = 0
+    self.tick = 0
+    self.delay = LOADING_FRAME_DELAY
+    self.task = asyncio.ensure_future(self._run())
+
+  def _frame(self):
+    n = LOADING_BAR_LEN
+    cycle = n * 2
+    pos = (self.tick * LOADING_STEP) % cycle
+    filled = pos if pos <= n else cycle - pos  # fills up, then empties
+    return "[" + "■" * filled + "□" * (n - filled) + "]"
+
+  def _text(self):
+    lines = [self.title, f"{self._frame()} {int(self.pct)}%"]
+    if self.detail:
+      lines.append(self.detail)
+    lines.append(f"🕒 {_clock()}")
+    return "\n".join(lines)
+
+  async def _run(self):
+    try:
+      while True:
+        try:
+          await self.message.edit_text(self._text())
+        except asyncio.CancelledError:
+          raise
+        except Exception as e:
+          # FloodWait: automatically slow down a little, keep animating
+          if "flood" in str(e).lower() or "wait" in str(e).lower():
+            self.delay = min(self.delay + 0.4, 3.0)
+            await asyncio.sleep(3)
+        self.tick += 1
+        await asyncio.sleep(self.delay)
+    except asyncio.CancelledError:
+      pass
+
+  async def stop(self):
+    self.task.cancel()
+    try:
+      await self.task
+    except BaseException:
+      pass
+
+
+async def _stop_loading(message):
+  anim = _animators.pop(_msg_key(message), None)
+  if anim:
+    await anim.stop()
+
+
+async def _loading(message, title, pct, detail=""):
+  """Start/update the animated loading bar on this message."""
+  key = _msg_key(message)
+  anim = _animators.get(key)
+  if anim is None:
+    anim = _LoadingAnimator(message)
+    _animators[key] = anim
+  anim.title, anim.pct, anim.detail = title, pct, detail
+
+
 async def _safe_edit(message, text, reply_markup=None):
+  await _stop_loading(message)  # final/static text: stop the animation first
   try:
     await message.edit_text(text, reply_markup=reply_markup)
   except Exception:
     pass
-
-
-async def _loading(message, title, pct, detail=""):
-  """Edit message with a loading bar: title / [■■■□□□□□□□] 30% / detail."""
-  lines = [title, f"{make_bar(pct)} {int(pct)}%"]
-  if detail:
-    lines.append(detail)
-  lines.append(f"🕒 {_clock()}")
-  await _safe_edit(message, "\n".join(lines))
 
 
 def _download_bytes(url, name, max_mb=50):
@@ -2828,10 +2900,11 @@ async def start_pyrogram_monitor():
       media_type, mime = info
       target_id = STORY_BACKUP_CHANNEL_ID if mode == "story" else STORAGE_CHANNEL_ID
       caption = STORY_MARKER if mode == "story" else ""
-      status = await message.reply(f"📤 Uploading...\n{make_bar(30)} 30%")
+      status = await message.reply("📤 Uploading...")
+      await _loading(status, "📤 Uploading", 30, "Connecting to channel")
       try:
         target_chat = await _get_target_chat(target_id)
-        await _safe_edit(status, f"📤 Uploading...\n{make_bar(60)} 60%")
+        await _loading(status, "📤 Uploading", 60, "Sending file")
         copied = await message.copy(target_chat.id, caption=caption)
         await asyncio.to_thread(
             _save_uploaded_media, copied.id, mode, media_type, mime, caption
@@ -2914,19 +2987,4 @@ def start_background_services():
   with _services_lock:
     if _services_started:
       return
-    _services_started = True
-
-  startup_thread = threading.Thread(
-      target=_init_background_services_worker,
-      name="background-services-initializer",
-      daemon=True,
-  )
-  startup_thread.start()
-  threading.Thread(target=_keepalive_loop, name="keepalive", daemon=True).start()
-
-
-start_background_services()
-
-if __name__ == "__main__":
-  port = int(os.environ.get("PORT", "10000"))
-  app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
+    _services_started = Tr
