@@ -2974,4 +2974,35 @@ def _keepalive_loop():
     return
   url = (os.environ.get("KEEPALIVE_URL") or os.environ.get("RENDER_EXTERNAL_URL") or "").strip().rstrip("/")
   if not url:
-    print("[KeepAlive] RENDER_EXTERNAL_URL/KEEPALIVE_URL is not set, disabled"
+    print("[KeepAlive] RENDER_EXTERNAL_URL/KEEPALIVE_URL is not set, disabled")
+    return
+  print(f"[KeepAlive] pinging {url}/health every 4 min")
+  while True:
+    time.sleep(240)
+    try:
+      requests.get(url + "/health", timeout=20)
+    except Exception:
+      pass
+
+
+def start_background_services():
+  global _services_started
+  with _services_lock:
+    if _services_started:
+      return
+    _services_started = True
+
+  startup_thread = threading.Thread(
+      target=_init_background_services_worker,
+      name="background-services-initializer",
+      daemon=True,
+  )
+  startup_thread.start()
+  threading.Thread(target=_keepalive_loop, name="keepalive", daemon=True).start()
+
+
+start_background_services()
+
+if __name__ == "__main__":
+  port = int(os.environ.get("PORT", "10000"))
+  app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
