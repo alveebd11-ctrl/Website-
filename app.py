@@ -165,6 +165,9 @@ CHUNK_TIMEOUT = max(60, int(os.environ.get("CHUNK_TIMEOUT_SEC", "900") or 900))
 # 1 দিলে ভিডিও-সহ গ্রুপেও আগে টেলিগ্রামকে URL থেকে আনার চেষ্টা করাবে (ধীর/অনির্ভরযোগ্য, তাই ডিফল্ট বন্ধ)
 TRY_URL_FIRST = os.environ.get("TRY_URL_FIRST", "0").strip() == "1"
 PHOTO_MAX_MB = max(1, int(os.environ.get("PHOTO_MAX_MB", "10") or 10))
+# Speed settings: parallel downloads per group and pause between uploads (lower pause = faster, but too low can cause Telegram FloodWait)
+DOWNLOAD_PARALLEL = max(1, int(os.environ.get("DOWNLOAD_PARALLEL", "6") or 6))
+CHUNK_PAUSE = max(0.0, float(os.environ.get("CHUNK_PAUSE", "1") or 1))
 
 print("OC & Story Storage Channel ID:", STORAGE_CHANNEL_ID)
 for _name, _val in (
@@ -2236,8 +2239,8 @@ def build_main_keyboard():
 # ------------------------------------------------------------
 
 LOADING_BAR_LEN = 10
-LOADING_FRAME_DELAY = 0.8  # seconds between frames (lower = faster; too low can hit Telegram FloodWait)
-LOADING_STEP = 2            # boxes changed per frame (higher = faster looking animation)
+LOADING_FRAME_DELAY = 0.5  # seconds between frames (lower = faster; too low can hit Telegram FloodWait)
+LOADING_STEP = 3            # boxes changed per frame (higher = faster looking animation)
 _animators = {}
 
 
@@ -2438,7 +2441,7 @@ async def _send_chunk_safe(chat_id, chunk, caption):
 
   tmpdir = tempfile.mkdtemp(prefix="album_")
   try:
-    sem = asyncio.Semaphore(3)
+    sem = asyncio.Semaphore(DOWNLOAD_PARALLEL)
 
     async def fetch(n, kind, url):
       ext = ".mp4" if kind == "video" else ".jpg"
@@ -2472,7 +2475,7 @@ async def _send_chunk_safe(chat_id, chunk, caption):
         sent.extend(msgs)
       except Exception as e:
         print(f"[Upload] single send failed: {e}")
-      await asyncio.sleep(2)
+      await asyncio.sleep(CHUNK_PAUSE)
     return sent
   finally:
     shutil.rmtree(tmpdir, ignore_errors=True)
@@ -2561,7 +2564,7 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
       )
       if cover_msgs:
         await asyncio.to_thread(_save_cover, album['slug'], album['caption'], cover_msgs[0], batch, site_order)
-      await asyncio.sleep(2)
+      await asyncio.sleep(CHUNK_PAUSE)
     except Exception as e:
       print(f"[Upload] cover failed: {e}")
 
@@ -2583,7 +2586,7 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
       )
       if SYNC_WEBSITE_POSTS:
         await asyncio.to_thread(_save_sent_messages, sent, caption)
-    await asyncio.sleep(3)  # টেলিগ্রাম FloodWait এড়াতে
+    await asyncio.sleep(CHUNK_PAUSE)  # টেলিগ্রাম FloodWait এড়াতে
 
   sent_videos = sum(1 for m in all_sent if getattr(m, "video", None))
   sent_photos = len(all_sent) - sent_videos
@@ -2712,7 +2715,7 @@ async def _handle_scan_callback(callback_query, mode="collection"):
           added_count += 1
           total_files += sent_count
 
-        await asyncio.sleep(2)
+        await asyncio.sleep(CHUNK_PAUSE)
 
       if SYNC_WEBSITE_POSTS and telethon_reader_client:
         await _loading(message, "🔄 Syncing website", 98, "Scanning channel")
@@ -2971,20 +2974,4 @@ def _keepalive_loop():
     return
   url = (os.environ.get("KEEPALIVE_URL") or os.environ.get("RENDER_EXTERNAL_URL") or "").strip().rstrip("/")
   if not url:
-    print("[KeepAlive] RENDER_EXTERNAL_URL/KEEPALIVE_URL is not set, disabled")
-    return
-  print(f"[KeepAlive] pinging {url}/health every 4 min")
-  while True:
-    time.sleep(240)
-    try:
-      requests.get(url + "/health", timeout=20)
-    except Exception:
-      pass
-
-
-def start_background_services():
-  global _services_started
-  with _services_lock:
-    if _services_started:
-      return
-    _services_started = Tr
+    print("[KeepAlive] RENDER_EXTERNAL_URL/KEEPALIVE_URL is not set, disabled"
