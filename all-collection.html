@@ -91,7 +91,7 @@
   .section-head { margin-top: 26px; text-align: left; }
   .section-head h2 { font-size: 22px; font-weight: 800; letter-spacing: .2px; }
 
-  .latest-wrap { display: flex; justify-content: center; margin: 18px 0 14px; }
+  .latest-wrap { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; margin: 18px 0 14px; }
   .latest {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 8px 16px; border-radius: 999px;
@@ -101,6 +101,21 @@
     font-size: 13px; font-weight: 600; color: #e5e7eb;
   }
   .latest svg { width: 16px; height: 16px; color: #f5b82e; }
+
+  /* ---------- UPLOAD ALBUM BUTTON (glass) ---------- */
+  .upload-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    text-decoration: none; color: #fff; font-size: 13px; font-weight: 600;
+    background: linear-gradient(135deg, rgba(54,185,232,.28), rgba(255,59,92,.22));
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.18);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 6px 16px rgba(0,0,0,.35);
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .upload-btn[hidden] { display: none; }
+  .upload-btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.32); }
+  .upload-btn svg { width: 16px; height: 16px; }
 
   /* ---------- GALLERY GRID ---------- */
   .grid {
@@ -140,7 +155,6 @@
     white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     line-height: 1.35; min-height: calc(2 * 1.35em + 26px);
   }
-  /* অ্যালবাম লিস্ট: আরও উপরে, আরও লম্বা ও পাশাপাশি ২টি বড় কার্ড */
   #galleryHome .section-head { margin-top: 18px; }
   #galleryHome .latest-wrap { margin: 10px 0 10px; }
   .album-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 0 -6px; }
@@ -173,9 +187,7 @@
   .play svg { width: 13px; height: 13px; fill: #fff; }
 
   /* ---------- ALBUM VIEW ---------- */
-  .album-bar {
-    margin-top: 22px; display: flex; align-items: center; gap: 12px;
-  }
+  .album-bar { margin-top: 22px; display: flex; align-items: center; gap: 12px; }
   .album-back {
     flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%;
     display: grid; place-items: center; color: #fff; cursor: pointer;
@@ -194,6 +206,7 @@
     background: #1a1a1e; border: 1px solid rgba(255,255,255,.1);
     box-shadow: 0 10px 26px rgba(0,0,0,.45);
   }
+  .album-hero[hidden] { display: none; }
   .album-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s ease; }
   .album-hero img.ok { opacity: 1; }
   .album-hero::after {
@@ -281,6 +294,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         Latest Update
       </div>
+      <a class="upload-btn" id="uploadAlbumBtn" href="#" target="_blank" rel="noopener" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
+        Upload Album
+      </a>
     </div>
 
     <div class="grid album-grid" id="albumsGrid">
@@ -332,6 +349,7 @@
   var albumTitle = document.getElementById('albumTitle');
   var albumSub = document.getElementById('albumSub');
   var albumHero = document.getElementById('albumHero');
+  var uploadBtn = document.getElementById('uploadAlbumBtn');
 
   var currentItems = [];
   var lbIndex = 0;
@@ -409,14 +427,16 @@
     albumsGrid.appendChild(frag);
   }
 
-  function loadAlbums() {
+  function loadAlbums(silent) {
     fetch('/api/albums', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.ok) throw new Error('bad');
         renderAlbums(d.albums || []);
       })
-      .catch(function () { stateBox(albumsGrid, 'Could not load albums. Please refresh.', true); });
+      .catch(function () {
+        if (!silent) stateBox(albumsGrid, 'Could not load albums. Please refresh.', true);
+      });
   }
 
   // ---------------- SINGLE ALBUM ----------------
@@ -495,7 +515,6 @@
   document.getElementById('albumBack').addEventListener('click', function () {
     if (location.hash) {
       history.back();
-      // hash না বদলালে (সরাসরি লিংকে ঢুকলে) হোমে ফেরা
       setTimeout(function () { if (/^#album\//.test(location.hash)) location.hash = ''; }, 150);
     } else {
       showHome();
@@ -539,7 +558,7 @@
   function closeLightbox() {
     if (!lb.classList.contains('open')) return;
     lb.classList.remove('open');
-    lbStage.innerHTML = '';   // ভিডিও থামানো
+    lbStage.innerHTML = '';
     document.body.style.overflow = '';
   }
 
@@ -559,7 +578,6 @@
     else if (e.key === 'ArrowRight') step(1);
   });
 
-  // সোয়াইপ (মোবাইল)
   var touchX = null;
   lb.addEventListener('touchstart', function (e) {
     touchX = e.touches.length === 1 ? e.touches[0].clientX : null;
@@ -571,7 +589,7 @@
     if (Math.abs(dx) > 60) step(dx < 0 ? 1 : -1);
   }, { passive: true });
 
-  // ---- Collection counts (video / photo) — আগের মতোই ----
+  // ---- Collection counts (video / photo) ----
   fetch('/api/collection/counts?scope=all', { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) {
@@ -580,11 +598,24 @@
     })
     .catch(function () { setText('statVideos', '—'); setText('statPhotos', '—'); });
 
-  // ---- Website-wide views: একবার প্রতি পেজ লোডে ----
+  // ---- Website-wide views ----
   fetch('/api/site/views', { method: 'POST', cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) { setText('statViews', fmt(d.total)); })
     .catch(function () { setText('statViews', '—'); });
+
+  // ---- Upload Album button -> Telegram bot (/start album) ----
+  fetch('/api/upload-link', { cache: 'no-store' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d.ok && d.url) { uploadBtn.href = d.url; uploadBtn.hidden = false; }
+    })
+    .catch(function () {});
+
+  // Returning from the bot: reload the list so the newest album shows on top
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && !galleryHome.hidden) loadAlbums(true);
+  });
 
   loadAlbums();
   route();
