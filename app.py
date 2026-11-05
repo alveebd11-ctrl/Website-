@@ -21,13 +21,13 @@ import uuid
 import cloudscraper
 from bs4 import BeautifulSoup
 
-# Cloudflare 403 bypass via curl_cffi (Chrome TLS impersonation)
+# Cloudflare 403 বাইপাসের জন্য curl_cffi (Chrome TLS Impersonation)
 try:
   from curl_cffi import requests as cf_requests
 except ImportError:
   cf_requests = None
 
-# Python 3.12+ Event Loop Fix
+# Python 3.12+ Event Loop Fix (Fixes "There is no current event loop in thread 'MainThread'")
 try:
   asyncio.get_event_loop()
 except RuntimeError:
@@ -35,7 +35,7 @@ except RuntimeError:
   asyncio.set_event_loop(_main_loop)
 
 try:
-  import fcntl
+  import fcntl  # Linux (Render) — একই সার্ভারে একাধিক worker হলে সেশন ডুপ্লিকেট রোধ
 except ImportError:
   fcntl = None
 
@@ -45,7 +45,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
-# Telethon imports
+# Telethon imports (Used for Login & Channel Reading)
 from telethon import TelegramClient, utils, events as telethon_events
 from telethon.sessions import StringSession
 from telethon.tl.types import (
@@ -54,7 +54,7 @@ from telethon.tl.types import (
     MessageMediaPhoto,
 )
 
-# Pyrogram imports
+# Pyrogram imports (Used exclusively for Bot & Media Upload Handling)
 try:
   from pyrogram import Client, filters
   from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument
@@ -86,10 +86,12 @@ def _env_int(name):
 
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
-BOT_USERNAME = os.environ.get("BOT_USERNAME", "").strip().lstrip("@")
 API_ID = _env_int("API_ID")
 API_HASH = os.environ.get("API_HASH", "").strip()
 ADMIN_ID = _env_int("ADMIN_ID")
+
+# ওয়েবসাইটের "Upload Album" বাটন যে বটে নিয়ে যাবে (@ ছাড়া ইউজারনেম)
+BOT_USERNAME = os.environ.get("BOT_USERNAME", "").strip().lstrip("@")
 
 # Telethon user session for channel reader
 TELETHON_SESSION_STRING = os.environ.get("TELETHON_SESSION_STRING", "").strip()
@@ -114,27 +116,42 @@ STORY_BACKUP_CHANNEL_ID = int(
 STORY_MARKER = "#STORY"
 DEFAULT_STORY_THUMB = "https://carder.top/imagens/1792065174675-662575987.jpg"
 
-# Website-uploaded media marker
+# ওয়েবসাইট থেকে আনা সব মিডিয়া চিহ্নিত করার ক্যাপশন ট্যাগ
 WEBSITE_MARKER = "#website"
+
+# চ্যানেলে আপলোড-সম্পূর্ণ মেসেজে এই কী দিয়ে অ্যালবামের আইডি লেখা থাকে (ডুপ্লিকেট রোধে ব্যবহৃত)
 ALBUM_REF_KEY = "albumref"
+
 SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
 
+# ওয়েবসাইট থেকে আনা (#website) পোস্ট আপনার সাইটে দেখানো হবে কি না।
+# 0 (ডিফল্ট) = শুধু টেলিগ্রাম চ্যানেলে আপলোড হবে, সাইটে দেখাবে না
+# 1 = আগের মতো সাইটেও দেখাবে
 SYNC_WEBSITE_POSTS = os.environ.get("SYNC_WEBSITE_POSTS", "0").strip() == "1"
 
 COLLECTION_INCLUDE_CAPTIONED = (
     os.environ.get("COLLECTION_INCLUDE_CAPTIONED", "0").strip() == "1"
 )
 
+# OC কালেকশনে (oc-collection.html) ওয়েবসাইটের ফটো/ভিডিও আসবে না।
+# ওয়েবসাইট-আপলোডগুলোর ক্যাপশন থাকে, আর হাতে আপলোড করা OC মিডিয়ার ক্যাপশন খালি।
 if COLLECTION_INCLUDE_CAPTIONED:
   OC_WHERE = "LOWER(COALESCE(text, '')) NOT LIKE '%" + WEBSITE_MARKER.lower() + "%'"
 else:
   OC_WHERE = "TRIM(COALESCE(text, '')) = ''"
 PRECACHE_MEDIA = os.environ.get("PRECACHE_MEDIA", "0").strip() == "1"
-STREAM_REQUEST_SIZE = 512 * 1024
-MSG_CACHE_TTL = 600
+STREAM_REQUEST_SIZE = 512 * 1024  # Telethon download chunk (512 KB)
+MSG_CACHE_TTL = 600  # সেকেন্ড
 TELETHON_START_DELAY = float(os.environ.get("TELETHON_START_DELAY", "40") or 0)
 
 # ---- Scraper configuration ----
+# TARGET_SITE_URL         : যে ওয়েবসাইট থেকে অ্যালবাম স্ক্র্যাপ হবে (যেমন https://mmsdesi.me)
+# TARGET_CATEGORY_PATHS   : কমা দিয়ে আলাদা পেজ পাথ, ডিফল্ট "/,/trending,/new"
+# SCRAPER_PROXY           : (ঐচ্ছিক) Cloudflare ব্লক করলে প্রক্সি, যেমন http://user:pass@host:port
+# SCRAPER_PAGES           : প্রতিটি ক্যাটাগরির কয়টা পেজ দেখবে (ডিফল্ট 2)
+# ALBUM_SCAN_LIMIT        : এক স্ক্যানে সর্বোচ্চ কতটি অ্যালবাম আনবে (ডিফল্ট 50)
+# ALBUM_CHUNK_SIZE        : টেলিগ্রামে এক অ্যালবাম পোস্টে কয়টি করে মিডিয়া (ডিফল্ট 10, টেলিগ্রামের সর্বোচ্চ সীমা 10)
+# VIDEO_MAX_MB / PHOTO_MAX_MB : ডাউনলোড ফলব্যাকের সর্বোচ্চ ফাইল সাইজ
 TARGET_SITE_URL = os.environ.get("TARGET_SITE_URL", "https://mmsdesi.me").strip().rstrip("/")
 SCRAPER_PROXY = os.environ.get("SCRAPER_PROXY", "").strip()
 SCRAPER_PAGES = max(1, int(os.environ.get("SCRAPER_PAGES", "2") or 2))
@@ -144,13 +161,14 @@ TARGET_CATEGORY_PATHS = [
     if p.strip()
 ]
 ALBUM_SCAN_LIMIT = max(1, int(os.environ.get("ALBUM_SCAN_LIMIT", "50") or 50))
-# Telegram media groups accept at most 10 items. This is a per-batch limit,
-# not a limit on the total number of files in an album.
 ALBUM_CHUNK_SIZE = min(10, max(2, int(os.environ.get("ALBUM_CHUNK_SIZE", "10") or 10)))
 VIDEO_MAX_MB = max(5, int(os.environ.get("VIDEO_MAX_MB", "150") or 150))
+# এক গ্রুপ (১০টি ফাইল) আপলোডে সর্বোচ্চ কত সেকেন্ড অপেক্ষা; আটকে গেলে পরের গ্রুপে চলে যাবে
 CHUNK_TIMEOUT = max(60, int(os.environ.get("CHUNK_TIMEOUT_SEC", "900") or 900))
+# 1 দিলে ভিডিও-সহ গ্রুপেও আগে টেলিগ্রামকে URL থেকে আনার চেষ্টা করাবে (ধীর/অনির্ভরযোগ্য, তাই ডিফল্ট বন্ধ)
 TRY_URL_FIRST = os.environ.get("TRY_URL_FIRST", "0").strip() == "1"
 PHOTO_MAX_MB = max(1, int(os.environ.get("PHOTO_MAX_MB", "10") or 10))
+# Speed settings: parallel downloads per group and pause between uploads (lower pause = faster, but too low can cause Telegram FloodWait)
 DOWNLOAD_PARALLEL = max(1, int(os.environ.get("DOWNLOAD_PARALLEL", "6") or 6))
 CHUNK_PAUSE = max(0.0, float(os.environ.get("CHUNK_PAUSE", "1") or 1))
 
@@ -162,7 +180,6 @@ for _name, _val in (
     ("ADMIN_ID", ADMIN_ID),
     ("TELETHON_SESSION_STRING", TELETHON_SESSION_STRING),
     ("TARGET_SITE_URL", TARGET_SITE_URL),
-    ("BOT_USERNAME", BOT_USERNAME),
 ):
   if not _val:
     print(f"[Config] WARNING: environment variable {_name} is not set!")
@@ -248,7 +265,7 @@ pending_uploads = {}
 temp_client_sessions = {}
 upload_lock = threading.Lock()
 scan_lock = threading.Lock()
-scrape_lock = threading.Lock()
+scrape_lock = threading.Lock()  # দুইবার চাপ পড়লে ডাবল স্ক্র্যাপ রোধ
 
 telethon_status = {
     "state": "starting" if TELETHON_SESSION_STRING else "not_configured",
@@ -357,11 +374,13 @@ def init_db():
                 value INTEGER NOT NULL DEFAULT 0
             )
         """)
+    # স্ক্র্যাপ করা অ্যালবামের ডুপ্লিকেট রোধ করার লগ টেবিল
     conn.execute("""
             CREATE TABLE IF NOT EXISTS scraped_slugs (
                 slug TEXT PRIMARY KEY
             )
         """)
+    # ওয়েবসাইট-অ্যালবাম সিস্টেম: একটি অ্যালবাম + তার ভেতরের সব ফটো/ভিডিও
     conn.execute("""
             CREATE TABLE IF NOT EXISTS website_albums (
                 slug TEXT PRIMARY KEY,
@@ -382,6 +401,7 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_album_items_slug
             ON website_album_items(slug)
         """)
+    # পুরনো ডাটাবেসে নতুন কলাম যোগ (ক্রম ও কভারের জন্য)
     for _col, _ddl in (
         ("batch", "INTEGER DEFAULT 0"),
         ("site_order", "INTEGER DEFAULT 0"),
@@ -402,7 +422,7 @@ init_db()
 
 
 def _cleanup_website_posts():
-  """Remove previously saved #website channel posts from DB when website sync is disabled."""
+  """সিঙ্ক বন্ধ থাকলে আগে সেভ হওয়া #website পোস্ট ডাটাবেস থেকে সরিয়ে দেয় (চ্যানেলের পোস্ট অক্ষত থাকে)।"""
   if SYNC_WEBSITE_POSTS:
     return
   try:
@@ -561,7 +581,7 @@ def download_telegram_file(file_id):
 
 
 # ------------------------------------------------------------
-# Automatic scraper logic
+# অটোমেটিক স্ক্র্যাপার লজিক (Cloudflare Bypass + Fallback)
 # ------------------------------------------------------------
 
 scrape_diag = {}
@@ -576,6 +596,7 @@ BROWSER_HEADERS = {
     "Sec-Fetch-User": "?1",
 }
 
+# অ্যালবামের ভেতরের ফটো খোঁজার সময় এই শব্দগুলো থাকলে সেটা সাইটের লোগো/আইকন ধরে বাদ দেওয়া হবে
 JUNK_IMAGE_HINTS = (
     "logo", "favicon", "icon", "avatar", "sprite", "banner", "placeholder",
     "loading", "spinner", "emoji",
@@ -611,9 +632,11 @@ def _is_cf_blocked(status_code, body):
 
 
 def _fetch_html(scraper, url, timeout=25):
-  """Try direct request first, then browser fingerprints and proxy gateways."""
+  """প্রথমে সরাসরি (curl_cffi/cloudscraper), ব্লক হলে ফ্রি ওয়েব প্রক্সি ফলব্যাক দিয়ে চেষ্টা করে।"""
   last_status = 0
   last_body = ""
+
+  # ধাপ ১: সরাসরি বা কনফিগার করা প্রক্সি দিয়ে রিকোয়েস্ট
   try:
     res = scraper.get(url, timeout=timeout)
     last_status = res.status_code
@@ -623,6 +646,7 @@ def _fetch_html(scraper, url, timeout=25):
   except Exception as e:
     print(f"[Fetch Direct Error] {url}: {e}")
 
+  # ধাপ ২: curl_cffi আলাদা ব্রাউজার ফিঙ্গারপ্রিন্ট পাল্টে চেষ্টা করবে
   if cf_requests is not None and not SCRAPER_PROXY:
     for browser_ver in ("chrome120", "chrome116", "safari17_0"):
       try:
@@ -634,6 +658,7 @@ def _fetch_html(scraper, url, timeout=25):
       except Exception:
         pass
 
+  # ধাপ ৩: ফ্রি প্রক্সি গেটওয়ে ফলব্যাক (ডেটাসেন্টার আইপি ব্লক এড়াতে)
   fallback_gateways = [
       f"https://api.allorigins.win/raw?url={quote(url, safe='')}",
       f"https://api.codetabs.com/v1/proxy?quest={quote(url, safe='')}",
@@ -655,7 +680,7 @@ def _text_of(tag):
 
 
 def _find_caption_and_thumb(link_tag, base_url, slug):
-  """Find a caption and thumbnail in the link or its parent cards."""
+  """লিংকের ভেতরে, না পেলে কয়েক লেভেল উপরের কার্ডে h3 / img খোঁজে।"""
   caption = ""
   thumb = ""
   node = link_tag
@@ -705,6 +730,8 @@ def fetch_target_albums(target_count=ALBUM_SCAN_LIMIT):
     return []
 
   scraper = _make_scraper()
+
+  # ক্যাটাগরি URL + পেজ নম্বর
   category_urls = []
   for path in TARGET_CATEGORY_PATHS:
     full = base_url if path == "/" else f"{base_url}{path if path.startswith('/') else '/' + path}"
@@ -734,12 +761,15 @@ def fetch_target_albums(target_count=ALBUM_SCAN_LIMIT):
 
       diag["pages_ok"] += 1
       soup = BeautifulSoup(body, 'html.parser')
+
+      # ধাপ ১: পুরনো কার্ড সিলেক্টর
       link_pairs = []
       for card in soup.select('div.group.relative.bg-zinc-900'):
         link_tag = card.find('a', href=re.compile(r'/watch/'))
         if link_tag:
           link_pairs.append((link_tag, card))
 
+      # ধাপ ২: ফলব্যাক — যেকোনো /watch/ লিংক (সাইটের ক্লাস বদলে গেলেও কাজ করবে)
       if not link_pairs:
         for link_tag in soup.find_all('a', href=re.compile(r'/watch/')):
           link_pairs.append((link_tag, link_tag))
@@ -826,12 +856,14 @@ def _is_junk_image(url):
 
 
 def extract_album_media(album_url, fallback_thumb):
-  """Extract all videos and photos from an album page; no per-album file-count cap."""
+  """একটি অ্যালবাম পেজের ভেতরের সবগুলো ভিডিও ও ফটো বের করে (সংখ্যার কোনো সীমা নেই)।"""
   scraper = _make_scraper()
+  base_url = _get_base_url()
   videos = []
   photos = []
   try:
     status_code, raw_html = _fetch_html(scraper, album_url, timeout=25)
+    # JSON-এস্কেপ করা (https:\/\/...) ও &amp; URL ঠিক করা
     html_text = html_lib.unescape((raw_html or "").replace('\\/', '/').replace('\\u0026', '&'))
 
     for v in _extract_urls(html_text, "mp4"):
@@ -842,6 +874,7 @@ def extract_album_media(album_url, fallback_thumb):
       if p not in photos and not _is_junk_image(p):
         photos.append(p)
 
+    # <video>/<source>/og:video ট্যাগ থেকেও খোঁজা
     try:
       soup = BeautifulSoup(raw_html or "", 'html.parser')
       for tag in soup.find_all(['video', 'source']):
@@ -859,6 +892,8 @@ def extract_album_media(album_url, fallback_thumb):
     except Exception:
       pass
 
+    # অ্যালবামে ভিডিও/ফটো কিছুই না পেলে তবেই থাম্বনেইল ফলব্যাক হিসেবে নেওয়া হবে
+    # পেজে যে ক্রমে আছে সেই ক্রমে সাজানো (ওয়েবসাইটের সাথে হুবহু মেলাতে)
     videos.sort(key=lambda u: html_text.find(u) if html_text.find(u) >= 0 else 10**9)
     photos.sort(key=lambda u: html_text.find(u) if html_text.find(u) >= 0 else 10**9)
 
@@ -955,7 +990,7 @@ async def get_photo_bytes(message_id, kind="post"):
 
   if data:
     _photo_cache[key] = data
-    # Keep only a very small in-memory photo cache.
+    # Zero RAM overhead: কেবল ৩টি ছবি মেমরিতে রাখা হয় (আগে ৪০টি ছিল)
     while len(_photo_cache) > 3:
       _photo_cache.pop(next(iter(_photo_cache)), None)
   return data
@@ -1177,7 +1212,7 @@ def _split_records(records):
     item = dict(r, text=text)
     is_website_post = WEBSITE_MARKER.lower() in text.lower()
     if is_website_post and not SYNC_WEBSITE_POSTS:
-      continue
+      continue  # শুধু চ্যানেলে থাকবে, ওয়েবসাইটে আসবে না
     if STORY_MARKER.upper() in text.upper():
       story_ids.add(r["id"])
       stories.append(item)
@@ -1341,7 +1376,7 @@ async def scan_channel(mode="all", progress=None):
 
 
 async def fetch_channel_album_refs():
-  """Get album slugs from confirmation messages already posted to the channel."""
+  """চ্যানেলের কনফার্মেশন মেসেজ থেকে আগে আপলোড হওয়া সব অ্যালবামের আইডি (slug) বের করে।"""
   if not telethon_reader_client or not telethon_channel_entity:
     return None
   refs = set()
@@ -1364,6 +1399,7 @@ def _merge_slugs(slugs):
 
 
 async def sync_posts_from_channel():
+  # এখন আর অটো-স্টার্টে চলে না (অটো-স্ক্যান বন্ধ)। শুধু ম্যানুয়ালি ডাকলে চলবে।
   if not telethon_reader_client or not telethon_channel_entity:
     return
   try:
@@ -1525,14 +1561,13 @@ def get_stories_api():
 
 @app.route("/api/stories/thumb/<int:message_id>", methods=["GET"])
 def get_story_thumb(message_id):
+  # Zero storage: ডিস্কে কিছু লেখা হয় না, ব্রাউজার ক্যাশ ব্যবহার হয়
   try:
     content = run_async(get_telethon_thumb_bytes(message_id, "story"), timeout=60)
     if not content:
       return redirect(DEFAULT_STORY_THUMB)
     return Response(
-        content,
-        status=200,
-        mimetype="image/jpeg",
+        content, status=200, mimetype="image/jpeg",
         headers={"Cache-Control": "public, max-age=604800"},
     )
   except Exception:
@@ -1575,6 +1610,7 @@ def collection_counts_api():
     scope = request.args.get("scope", "")
     with db_connect() as conn:
       if scope == "all":
+        # সব মিলিয়ে: OC + ওয়েবসাইট-অ্যালবাম (কভার ছবি বাদে)
         videos = conn.execute(
             "SELECT (SELECT COUNT(*) FROM channel_posts WHERE media_type IN ('video', 'animation')) + "
             "(SELECT COUNT(*) FROM website_album_items WHERE media_type = 'video' AND slug NOT LIKE 'cover:%')"
@@ -1584,6 +1620,7 @@ def collection_counts_api():
             "(SELECT COUNT(*) FROM website_album_items WHERE media_type != 'video' AND slug NOT LIKE 'cover:%')"
         ).fetchone()[0]
       else:
+        # শুধু OC কালেকশন (ওয়েবসাইটের মিডিয়া বাদ)
         videos = conn.execute(
             f"SELECT COUNT(*) FROM channel_posts WHERE {OC_WHERE} AND media_type IN ('video', 'animation')"
         ).fetchone()[0]
@@ -1628,7 +1665,7 @@ def _item_json(mid, media_type):
 
 
 def _legacy_albums():
-  """Group old captioned posts with the same caption into legacy albums."""
+  """আগে সেভ হওয়া ক্যাপশনওয়ালা পোস্টগুলোকে একই ক্যাপশন ধরে অ্যালবামে গ্রুপ করে।"""
   groups = {}
   with db_connect() as conn:
     rows = conn.execute(
@@ -1678,6 +1715,7 @@ def albums_api():
           "cover": f"/api/channel/thumb/{items[0][0]}",
           "_key": (-max(m for m, _ in items),),
       })
+    # নতুন আপলোড (সবচেয়ে বড় message_id) সবার উপরে
     albums.sort(key=lambda a: a["_key"])
     for a in albums:
       a.pop("_key", None)
@@ -1719,19 +1757,20 @@ def album_items_api(slug):
 
 
 # ------------------------------------------------------------
-# Telegram channel -> website album restore/sync
+# টেলিগ্রাম চ্যানেল → ওয়েবসাইট সিঙ্ক (অ্যাডমিন-প্রোটেক্টেড বাটন)
 # ------------------------------------------------------------
 
 album_sync_state = {
     "running": False, "done": False, "checked": 0, "found": 0,
     "added": 0, "error": "",
+    # ডিপ্লয়ের পর অ্যালবাম চ্যানেল থেকে ফিরিয়ে আনা পর্যন্ত true থাকে
     "restoring": bool(TELETHON_SESSION_STRING and API_ID and API_HASH),
 }
 album_sync_lock = threading.Lock()
 
 
 def _admin_key_status():
-  """None = ADMIN_SYNC_KEY not configured, True/False = key matches or not."""
+  """None = ADMIN_SYNC_KEY সেট করা নেই, True/False = কী মিলেছে কি না।"""
   expected = os.environ.get("ADMIN_SYNC_KEY", "").strip()
   if not expected:
     return None
@@ -1740,9 +1779,9 @@ def _admin_key_status():
 
 
 def _save_synced_album(slug, title, cover_id, items):
-  """Save one complete album from the channel. A cover that is also an item must not replace that item row."""
+  """চ্যানেল থেকে পাওয়া একটি সম্পূর্ণ অ্যালবাম ডাটাবেসে সেভ করে। নতুন হলে True।"""
   now = datetime.now(timezone.utc).isoformat()
-  item_ids = {int(mid) for mid, _mtype, _mime in items}
+  item_ids = {mid for mid, _, _ in items}
   with db_connect() as conn:
     existed = conn.execute(
         "SELECT 1 FROM website_albums WHERE slug = ?", (slug,)
@@ -1753,9 +1792,8 @@ def _save_synced_album(slug, title, cover_id, items):
     )
     if cover_id:
       conn.execute("UPDATE website_albums SET cover_id = ? WHERE slug = ?", (cover_id, slug))
-      # Older scraper albums used a separate cover message. User-uploaded albums
-      # select the cover from their own media, so do not move that item to cover:slug.
-      if int(cover_id) not in item_ids:
+      # কভার যদি অ্যালবামের নিজস্ব আইটেম হয় (বট-আপলোড), তাহলে আলাদা "cover:" সারি লাগবে না
+      if cover_id not in item_ids:
         conn.execute(
             "INSERT OR REPLACE INTO website_album_items (message_id, slug, media_type, mime_type, pos) VALUES (?, ?, 'photo', 'image/jpeg', -1)",
             (cover_id, "cover:" + slug),
@@ -1771,7 +1809,11 @@ def _save_synced_album(slug, title, cover_id, items):
 
 
 async def sync_albums_from_channel():
-  """Restore complete albums from channel confirmation messages, oldest to newest."""
+  """
+  চ্যানেল পুরনো → নতুন ক্রমে পড়ে অ্যালবাম বাই অ্যালবাম ওয়েবসাইটে তোলে।
+  একটি অ্যালবামের গঠন: [কভার ছবি] + [১০টি করে মিডিয়া গ্রুপ] + [কনফার্মেশন মেসেজ]।
+  কনফার্মেশন মেসেজ পেলেই অ্যালবাম সম্পূর্ণ ধরা হয় (অসম্পূর্ণ অ্যালবাম বাদ)।
+  """
   st = album_sync_state
   client = telethon_reader_client
   entity = telethon_channel_entity
@@ -1797,7 +1839,7 @@ async def sync_albums_from_channel():
         continue
       title = _clean_title(eff)
       if pending and title != pending_title:
-        pending = []
+        pending = []  # আগের অসম্পূর্ণ অ্যালবামের অবশিষ্ট বাদ
       pending_title = title
       pending.append({
           "id": msg.id,
@@ -1807,12 +1849,12 @@ async def sync_albums_from_channel():
       })
       continue
 
+    # New English text + old Bengali text (so previously uploaded albums still restore)
     is_confirm = (
         WEBSITE_MARKER.lower() in text.lower()
         and (
             ALBUM_REF_KEY in text
             or "Album upload complete" in text
-            or "Album upload completed" in text
             or "অ্যালবাম আপলোড সম্পূর্ণ" in text
         )
     )
@@ -1829,17 +1871,17 @@ async def sync_albums_from_channel():
 
       cover_id = None
       items_src = pending
-      cover_m = re.search(r"coverref:\s*(\d+)", text, flags=re.IGNORECASE)
-      if cover_m:
-        # In manual uploads the selected cover is one of the actual album items.
-        # Keep it in items_src so the cover is not accidentally removed from the album.
-        cover_id = int(cover_m.group(1))
-      elif len(pending) >= 2 and pending[0]["group"] is None and pending[0]["type"] == "photo":
-        # Legacy scraper albums have a separate, standalone cover message.
+      # কভার = সবার আগের একক (গ্রুপ-ছাড়া) ছবি
+      if len(pending) >= 2 and pending[0]["group"] is None and pending[0]["type"] == "photo":
         cover_id = pending[0]["id"]
         items_src = pending[1:]
-
+      # বট থেকে আপলোড করা অ্যালবামে কভারের মেসেজ আইডি কনফার্মেশনে লেখা থাকে
+      cover_m = re.search(r"coverref:\s*(\d+)", text)
+      if cover_m and any(x["id"] == int(cover_m.group(1)) for x in pending):
+        cover_id = int(cover_m.group(1))
+        items_src = pending
       items = [(x["id"], x["type"], x["mime"]) for x in items_src]
+
       is_new = await asyncio.to_thread(_save_synced_album, slug, title, cover_id, items)
       st["found"] += 1
       if is_new:
@@ -1861,7 +1903,7 @@ async def _album_sync_job():
         print("Album sync error:", traceback.format_exc())
         st["error"] = str(e) or type(e).__name__
         if attempt < 2:
-          await asyncio.sleep(20)
+          await asyncio.sleep(20)  # নেটওয়ার্ক/FloodWait সমস্যায় আবার চেষ্টা
   finally:
     st["running"] = False
     st["done"] = True
@@ -1869,7 +1911,7 @@ async def _album_sync_job():
 
 
 def _start_album_sync():
-  """Start restore/sync unless one is already running."""
+  """সিঙ্ক শুরু করে। আগে থেকে চললে False ফেরত দেয়।"""
   with album_sync_lock:
     if album_sync_state["running"]:
       return False
@@ -1897,6 +1939,15 @@ def album_sync_start():
 @app.route("/api/albums/sync/status", methods=["GET"])
 def album_sync_status():
   return jsonify(dict(album_sync_state))
+
+
+@app.route("/api/upload-link", methods=["GET"])
+def upload_link_api():
+  """all-collection.html-এর "Upload Album" বাটন এই লিংকে টেলিগ্রাম বট খুলবে।"""
+  return jsonify({
+      "ok": bool(BOT_USERNAME),
+      "url": f"https://t.me/{BOT_USERNAME}?start=album" if BOT_USERNAME else "",
+  })
 
 
 @app.route("/api/site/views", methods=["GET", "POST"])
@@ -1993,6 +2044,7 @@ def stream_telegram_media(message_id, kind, size, mime):
 
 @app.route("/api/channel/thumb/<int:message_id>", methods=["GET"])
 def get_channel_thumb(message_id):
+  # Zero storage: ডিস্কে কিছু লেখা হয় না, ব্রাউজার ক্যাশ ব্যবহার হয়
   try:
     row, row_kind = find_media_row(message_id, request.args.get("kind", ""))
     if not row:
@@ -2001,9 +2053,7 @@ def get_channel_thumb(message_id):
     if not content:
       return "", 404
     return Response(
-        content,
-        status=200,
-        mimetype="image/jpeg",
+        content, status=200, mimetype="image/jpeg",
         headers={"Cache-Control": "public, max-age=604800"},
     )
   except Exception:
@@ -2029,7 +2079,10 @@ def get_channel_media(message_id):
       if info["is_photo"]:
         photo_data = run_async(get_photo_bytes(message_id, row_kind), timeout=120)
         if photo_data:
-          return Response(photo_data, mimetype=info["mime"] or default_mime)
+          return Response(
+              photo_data, mimetype=info["mime"] or default_mime,
+              headers={"Cache-Control": "public, max-age=3600"},
+          )
       elif info["size"] > 0:
         return stream_telegram_media(message_id, row_kind, info["size"], info["mime"] or default_mime)
 
@@ -2102,15 +2155,6 @@ def style_css_file():
   return send_file(BASE_DIR / "style.css", mimetype="text/css") if (BASE_DIR / "style.css").is_file() else ("style.css not found", 404)
 
 
-@app.route("/api/upload-link", methods=["GET"])
-def upload_link_api():
-  username = os.environ.get("BOT_USERNAME", "").strip().lstrip("@")
-  return jsonify({
-      "ok": bool(username),
-      "url": f"https://t.me/{username}?start=album" if username else "",
-  })
-
-
 @app.route("/health", methods=["GET"])
 def health_check():
   return "ok", 200
@@ -2122,7 +2166,7 @@ def health_check():
 
 
 def _clock():
-  """Bangladesh time (GMT+6) for progress messages."""
+  """বাংলাদেশ সময় (GMT+6) — প্রোগ্রেস মেসেজে শেষ আপডেটের সময় দেখাতে।"""
   return datetime.fromtimestamp(time.time() + 6 * 3600, timezone.utc).strftime("%H:%M:%S")
 
 
@@ -2177,8 +2221,8 @@ def render_error(code_or_exc, reason=None):
 
 async def _get_target_chat(chat_id):
   """
-  After a server restart Pyrogram's peer cache may be empty. Reuse Telethon's
-  channel access_hash to populate Pyrogram's peer storage and retry.
+  সার্ভার রিস্টার্টের পর বটের পিয়ার-ক্যাশ খালি থাকে, তখন get_chat 'Peer id invalid' দেয়।
+  সেক্ষেত্রে Telethon-এর কাছে থাকা চ্যানেলের access_hash বটের স্টোরেজে বসিয়ে আবার চেষ্টা করে।
   """
   try:
     return await pyrogram_client.get_chat(chat_id)
@@ -2202,19 +2246,20 @@ async def _get_target_chat(chat_id):
 def build_main_keyboard():
   return InlineKeyboardMarkup([
       [InlineKeyboardButton("📡 Scanning Website Videos", callback_data="scan_media_channel")],
-      [InlineKeyboardButton("📤 Upload Media", callback_data="start_upload")],
       [InlineKeyboardButton("🖼 Album Upload", callback_data="album_upload")],
+      [InlineKeyboardButton("📤 Upload Media", callback_data="start_upload")],
       [InlineKeyboardButton("➕ Add Story", callback_data="add_story")],
   ])
 
 
 # ------------------------------------------------------------
-# Animated loading bar
+# Animated loading bar: white boxes turn black, then black turn white again
+#   [□□□□□□□□□□] → [■■■■■■■■■■] → [□□□□□□□□□□] → ... (loops until the task ends)
 # ------------------------------------------------------------
 
 LOADING_BAR_LEN = 10
-LOADING_FRAME_DELAY = 0.5
-LOADING_STEP = 3
+LOADING_FRAME_DELAY = 0.5  # seconds between frames (lower = faster; too low can hit Telegram FloodWait)
+LOADING_STEP = 3            # boxes changed per frame (higher = faster looking animation)
 _animators = {}
 
 
@@ -2236,7 +2281,7 @@ class _LoadingAnimator:
     n = LOADING_BAR_LEN
     cycle = n * 2
     pos = (self.tick * LOADING_STEP) % cycle
-    filled = pos if pos <= n else cycle - pos
+    filled = pos if pos <= n else cycle - pos  # fills up, then empties
     return "[" + "■" * filled + "□" * (n - filled) + "]"
 
   def _text(self):
@@ -2254,6 +2299,7 @@ class _LoadingAnimator:
         except asyncio.CancelledError:
           raise
         except Exception as e:
+          # FloodWait: automatically slow down a little, keep animating
           if "flood" in str(e).lower() or "wait" in str(e).lower():
             self.delay = min(self.delay + 0.4, 3.0)
             await asyncio.sleep(3)
@@ -2287,7 +2333,7 @@ async def _loading(message, title, pct, detail=""):
 
 
 async def _safe_edit(message, text, reply_markup=None):
-  await _stop_loading(message)
+  await _stop_loading(message)  # final/static text: stop the animation first
   try:
     await message.edit_text(text, reply_markup=reply_markup)
   except Exception:
@@ -2322,12 +2368,12 @@ def _download_bytes(url, name, max_mb=50):
 
 
 # ------------------------------------------------------------
-# Website-scraper album uploads (Telegram media groups: max 10 each)
+# অ্যালবাম আপলোড: ১০টি করে মিডিয়া গ্রুপ → সব শেষে কনফার্মেশন মেসেজ
 # ------------------------------------------------------------
 
 
 def build_caption(title):
-  """Append #website to a title while respecting Telegram's caption limit."""
+  """ওয়েবসাইটের ক্যাপশনের নিচে #website ট্যাগ যোগ করে (টেলিগ্রাম ক্যাপশন লিমিট 1024)।"""
   title = (title or "").strip()
   tag = WEBSITE_MARKER
   if not title:
@@ -2339,7 +2385,7 @@ def build_caption(title):
 
 
 def _build_input_media(items, caption):
-  """items = [(kind, source)] -> Pyrogram InputMedia list (caption only on first item)."""
+  """items = [(kind, source)] → Pyrogram InputMedia তালিকা (ক্যাপশন শুধু প্রথমটিতে)।"""
   media = []
   for idx, (kind, src) in enumerate(items):
     cap = caption if idx == 0 else ""
@@ -2351,7 +2397,7 @@ def _build_input_media(items, caption):
 
 
 async def _send_items(chat_id, items, caption):
-  """Send one item singly or 2-10 items as one Telegram media group."""
+  """১টি হলে সিঙ্গেল পোস্ট, ২-১০টি হলে মিডিয়া গ্রুপ (অ্যালবাম) হিসেবে পাঠায়।"""
   if len(items) == 1:
     kind, src = items[0]
     if kind == "video":
@@ -2361,15 +2407,13 @@ async def _send_items(chat_id, items, caption):
     else:
       msg = await pyrogram_client.send_photo(chat_id, photo=src, caption=caption)
     return [msg]
-  if not 2 <= len(items) <= 10:
-    raise ValueError("Telegram media groups must contain 2 to 10 items")
   return await pyrogram_client.send_media_group(
       chat_id, media=_build_input_media(items, caption)
   )
 
 
 def _download_to_file(url, path, max_mb=50):
-  """Download to disk (not RAM) for scraper uploads of large files."""
+  """ফাইল ডিস্কে নামায় (RAM-এ না), যাতে ১০টি বড় ভিডিওতে মেমরি শেষ হয়ে সার্ভার রিস্টার্ট না হয়।"""
   scraper = _make_scraper()
   base_url = _get_base_url()
   headers = {'Referer': f"{base_url}/"} if base_url else {}
@@ -2396,13 +2440,18 @@ def _download_to_file(url, path, max_mb=50):
 
 async def _send_chunk_safe(chat_id, chunk, caption):
   """
-  Send a scraper chunk (at most 10 files): try URLs first when applicable,
-  then download files and retry, then send individually as a final fallback.
+  chunk = সর্বোচ্চ ১০টি (kind, url)।
+  ধাপ ১: (শুধু ফটোর গ্রুপে) URL দিয়ে সরাসরি অ্যালবাম পোস্ট — ১২০ সেকেন্ডের টাইমআউটসহ।
+  ধাপ ২: ফাইলগুলো ডিস্কে নামিয়ে (একসাথে ৩টি) অ্যালবাম পোস্ট।
+  ধাপ ৩: তাতেও ফেইল করলে একটা একটা করে পোস্ট।
+  যতগুলো মেসেজ সফলভাবে পাঠানো হলো তার তালিকা ফেরত দেয়।
   """
   import shutil
   import tempfile
 
   has_video = any(k == "video" for k, _ in chunk)
+
+  # ধাপ ১: ভিডিও থাকলে এটা বাদ, কারণ টেলিগ্রাম বড় ভিডিও URL থেকে ধীরে আনে বা আটকে থাকে
   if not has_video or TRY_URL_FIRST:
     try:
       return await asyncio.wait_for(_send_items(chat_id, chunk, caption), timeout=120)
@@ -2437,6 +2486,7 @@ async def _send_chunk_safe(chat_id, chunk, caption):
     except Exception as e:
       print(f"[Upload] downloaded group failed: {type(e).__name__}: {e}")
 
+    # ধাপ ৩: একটা একটা করে
     sent = []
     for kind, path in downloaded:
       try:
@@ -2451,7 +2501,7 @@ async def _send_chunk_safe(chat_id, chunk, caption):
 
 
 def _save_sent_messages(sent_msgs, fallback_caption):
-  """Save successfully sent channel messages in channel_posts."""
+  """সফলভাবে চ্যানেলে যাওয়া মেসেজগুলো channel_posts টেবিলে সেভ করে।"""
   with db_connect() as conn:
     for s_msg in sent_msgs:
       text_content = s_msg.caption or s_msg.text or fallback_caption
@@ -2469,7 +2519,7 @@ def _save_sent_messages(sent_msgs, fallback_caption):
 
 
 def _save_album_items(slug, title, sent_msgs, start_pos=0, batch=0, site_order=0):
-  """Save channel messages as items of a website album (separate from OC posts)."""
+  """চ্যানেলে যাওয়া মেসেজগুলো অ্যালবামের আইটেম হিসেবে সেভ করে (OC কালেকশনের সাথে মেশে না)।"""
   now = datetime.now(timezone.utc).isoformat()
   with db_connect() as conn:
     conn.execute(
@@ -2489,7 +2539,7 @@ def _save_album_items(slug, title, sent_msgs, start_pos=0, batch=0, site_order=0
 
 
 def _save_cover(slug, title, msg, batch=0, site_order=0):
-  """Save a separate scraper cover message; it is not counted as an album item."""
+  """অ্যালবামের কভার ছবি সেভ করে। এটা অ্যালবামের আইটেম গোনায় ধরা হয় না ("cover:" স্লাগ)।"""
   now = datetime.now(timezone.utc).isoformat()
   with db_connect() as conn:
     conn.execute(
@@ -2505,9 +2555,9 @@ def _save_cover(slug, title, msg, batch=0, site_order=0):
 
 
 def _set_cover_id(slug, message_id):
-  """Set the cover to an item already stored in the album."""
+  """অ্যালবামের কভার হিসেবে একটি বিদ্যমান আইটেমের মেসেজ আইডি সেট করে (বট-আপলোডের জন্য)।"""
   with db_connect() as conn:
-    conn.execute("UPDATE website_albums SET cover_id = ? WHERE slug = ?", (int(message_id), slug))
+    conn.execute("UPDATE website_albums SET cover_id = ? WHERE slug = ?", (message_id, slug))
     conn.commit()
 
 
@@ -2519,8 +2569,9 @@ def _mark_slug_done(slug):
 
 async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None):
   """
-  Upload every scraper album item in batches of at most 10, then post one
-  confirmation message. Returns (sent_count, total_count).
+  একটি ওয়েবসাইট-অ্যালবামের সব ভিডিও/ফটো ১০টি করে গ্রুপে চ্যানেলে আপলোড করে।
+  সব শেষ হলে চ্যানেলে একটি কনফার্মেশন মেসেজ পাঠায়।
+  ফেরত দেয়: (sent_count, total_count)
   """
   items = [("video", u) for u in videos] + [("photo", p) for p in photos]
   total = len(items)
@@ -2530,6 +2581,7 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
   batch = int(album.get('batch') or 0)
   site_order = int(album.get('site_order') or 0)
 
+  # অ্যালবামের শুরুতে কভার ছবি (ওয়েবসাইটের অ্যালবাম থাম্বনেইল) চ্যানেলে পোস্ট হবে
   cover_src = album.get('thumbnail')
   if cover_src:
     try:
@@ -2560,7 +2612,7 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
       )
       if SYNC_WEBSITE_POSTS:
         await asyncio.to_thread(_save_sent_messages, sent, caption)
-    await asyncio.sleep(CHUNK_PAUSE)
+    await asyncio.sleep(CHUNK_PAUSE)  # টেলিগ্রাম FloodWait এড়াতে
 
   sent_videos = sum(1 for m in all_sent if getattr(m, "video", None))
   sent_photos = len(all_sent) - sent_videos
@@ -2568,7 +2620,9 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
 
   if all_sent:
     await asyncio.to_thread(_mark_slug_done, album['slug'])
-    status_line = "Album upload complete" if failed == 0 else "Album upload complete (some files failed)"
+
+    # সব আপলোড শেষ → চ্যানেলে কনফার্মেশন মেসেজ
+    status_line = "✅ Album upload complete" if failed == 0 else "⚠️ Album upload complete (some files skipped)"
     confirm = (
         f"{status_line}\n"
         f"📁 {album['caption'][:200]}\n"
@@ -2576,6 +2630,7 @@ async def _upload_album_to_channel(chat_id, album, videos, photos, progress=None
         f"🔖 {ALBUM_REF_KEY}: {album['slug']}\n"
         f"{WEBSITE_MARKER}"
     )
+    # এই মেসেজটাই "অ্যালবাম চ্যানেলে আছে" তার প্রমাণ, তাই না গেলে কয়েকবার চেষ্টা
     for _try in range(3):
       try:
         await pyrogram_client.send_message(chat_id, confirm)
@@ -2606,6 +2661,7 @@ async def _handle_scan_callback(callback_query, mode="collection"):
     await _loading(message, "🔄 Starting scan", 0, f"Looking for albums (max {ALBUM_SCAN_LIMIT})")
 
     try:
+      # ধাপ ০: চ্যানেলে যে অ্যালবামগুলো আগেই আপলোড করা আছে সেগুলো খুঁজে বাদ দেওয়া হবে
       channel_check_note = ""
       if telethon_reader_client:
         await _loading(message, "🔎 Checking channel", 5, "Looking for previously uploaded albums")
@@ -2631,6 +2687,7 @@ async def _handle_scan_callback(callback_query, mode="collection"):
         await _safe_edit(message, text, reply_markup=build_main_keyboard())
         return
 
+      # সাইটের উপরের অ্যালবাম সবশেষে আপলোড হবে, ফলে আপনার সাইটে ওয়েবসাইটের ক্রম ঠিক থেকে সবচেয়ে নতুন সবার উপরে থাকবে
       albums = list(reversed(albums))
       added_count = 0
       failed_count = 0
@@ -2640,12 +2697,13 @@ async def _handle_scan_callback(callback_query, mode="collection"):
       album_total = len(albums)
 
       def overall(a_idx, frac=0.0):
+        # 15% .. 100% spread across all albums
         return 15 + 85 * ((a_idx - 1) + frac) / album_total
 
       batch_ts = int(time.time())
       for a_idx, album in enumerate(albums, 1):
-        album['batch'] = batch_ts
-        album['site_order'] = a_idx
+        album['batch'] = batch_ts       # একই স্ক্যানের অ্যালবাম একসাথে থাকবে
+        album['site_order'] = a_idx     # ওয়েবসাইটে যে ক্রমে ছিল, সেই ক্রম
         title_short = (album['caption'] or album['slug'])[:40]
         await _loading(
             message, f"🔍 Album {a_idx}/{album_total}", overall(a_idx, 0),
@@ -2750,10 +2808,12 @@ def build_done_keyboard():
 
 
 # ------------------------------------------------------------
-# Manual album upload: unlimited total files, sent in batches of <= 10
+# অ্যালবাম আপলোড (বট): সর্বোচ্চ ১০টি ফটো/ভিডিও → 💾 Scan/Save → স্টোরেজ চ্যানেলে পার্মানেন্ট সেভ
+# ফাইল file_id দিয়ে পাঠানো হয়, তাই Render সার্ভারে কিছু ডাউনলোড/সেভ হয় না (Zero storage/RAM)
 # ------------------------------------------------------------
 
-album_drafts = {}  # ADMIN_ID -> draft metadata and async lock
+MAX_ALBUM_FILES = 10
+album_drafts = {}  # ADMIN_ID -> {"items": [...], "caption": "", "status": msg, "lock": asyncio.Lock}
 
 
 def build_album_keyboard(count):
@@ -2767,17 +2827,10 @@ def build_album_keyboard(count):
 async def _begin_album_draft(message):
   with upload_lock:
     pending_uploads[ADMIN_ID] = "album"
-  draft = {
-      "items": [],
-      "caption": "",
-      "status": None,
-      "lock": asyncio.Lock(),
-      "saving": False,
-  }
-  album_drafts[ADMIN_ID] = draft
-  draft["status"] = await message.reply(
-      "🖼 Album upload mode\n\nSend as many photos/videos as you want (there is no total file-count limit). "
-      "You can put a caption on any one file. When finished, press 💾 Scan/Save.",
+  album_drafts[ADMIN_ID] = {"items": [], "caption": "", "status": None, "lock": asyncio.Lock()}
+  await message.reply(
+      f"🖼 Album upload mode\n\nSend up to {MAX_ALBUM_FILES} photos/videos (put a caption on any one). "
+      "When all are uploaded, press 💾 Scan/Save.",
       reply_markup=build_album_keyboard(0),
   )
 
@@ -2788,12 +2841,11 @@ async def _album_collect(message):
     return
   media = message.photo or message.video
   if not media:
-    await message.reply(render_error(415, "Send as photo or video (not as file/document/animation)"))
+    await message.reply(render_error(415, "Send as photo or video (not as file)"))
     return
-
   async with draft["lock"]:
-    if draft.get("saving"):
-      await message.reply("⏳ Album saving is already in progress. Please wait.")
+    if len(draft["items"]) >= MAX_ALBUM_FILES:
+      await message.reply(f"⚠️ Max {MAX_ALBUM_FILES} files. Press 💾 Scan/Save.")
       return
     kind = "video" if message.video else "photo"
     draft["items"].append({
@@ -2805,65 +2857,15 @@ async def _album_collect(message):
     if message.caption and not draft["caption"]:
       draft["caption"] = message.caption.strip()
     n = len(draft["items"])
-    text = f"✅ {n} files uploaded. Send more or press 💾 Scan/Save.\nNo total file-count limit."
+    text = f"✅ {n}/{MAX_ALBUM_FILES} uploaded. Send more or press 💾 Scan/Save."
     st = draft.get("status")
-    try:
-      if st:
+    if st:
+      try:
         await st.edit_text(text, reply_markup=build_album_keyboard(n))
         return
-    except Exception:
-      pass
+      except Exception:
+        pass
     draft["status"] = await message.reply(text, reply_markup=build_album_keyboard(n))
-
-
-async def _send_manual_album_chunk(chat_id, chunk, caption):
-  """Send one <=10 item chunk; retry FloodWait and fall back to individual sends.
-
-  Returns (item, sent_message) pairs so the chosen cover can be mapped correctly.
-  """
-  async def send_with_flood_retry(payload, cap):
-    for attempt in range(4):
-      try:
-        return await _send_items(chat_id, payload, cap)
-      except Exception as exc:
-        msg = str(exc)
-        wait_seconds = getattr(exc, "value", None) or getattr(exc, "x", None)
-        if not wait_seconds:
-          match = re.search(r"FLOOD_WAIT[_ ]?(\d+)", msg, flags=re.IGNORECASE)
-          if match:
-            wait_seconds = int(match.group(1))
-        if wait_seconds and attempt < 3:
-          delay = max(1, int(wait_seconds)) + 1
-          print(f"[Album] Telegram FloodWait: sleeping {delay}s")
-          await asyncio.sleep(delay)
-          continue
-        raise
-
-  payload = [(item["kind"], item["file_id"]) for item in chunk]
-  try:
-    sent = await send_with_flood_retry(payload, caption)
-    pairs = list(zip(chunk, sent))
-    if len(pairs) == len(chunk):
-      return pairs
-    print(f"[Album] Telegram returned {len(sent)} messages for {len(chunk)} items")
-    remaining = chunk[len(pairs):]
-  except Exception as e:
-    print(f"[Album] media-group send failed ({len(chunk)} items): {type(e).__name__}: {e}")
-    pairs = []
-    remaining = chunk
-
-  for item in remaining:
-    try:
-      one = await send_with_flood_retry(
-          [(item["kind"], item["file_id"])],
-          caption,
-      )
-      if one:
-        pairs.append((item, one[0]))
-    except Exception as e:
-      print(f"[Album] individual send failed: {e}")
-    await asyncio.sleep(CHUNK_PAUSE)
-  return pairs
 
 
 async def _album_save(callback_query):
@@ -2871,113 +2873,56 @@ async def _album_save(callback_query):
   if not draft or not draft["items"]:
     await callback_query.answer("Nothing to save yet", show_alert=True)
     return
-
-  async with draft["lock"]:
-    if draft.get("saving"):
-      await callback_query.answer("Saving is already in progress", show_alert=True)
-      return
-    draft["saving"] = True
+  await callback_query.answer("Saving...")
+  message = callback_query.message
+  try:
+    await _loading(message, "💾 Saving album", 40, "Sending to storage channel")
+    target = await _get_target_chat(STORAGE_CHANNEL_ID)
     items = list(draft["items"])
     title = draft["caption"] or "Untitled album"
+    caption = build_caption(draft["caption"])
 
-  await callback_query.answer("Saving album...")
-  message = callback_query.message
-  slug = "up-" + uuid.uuid4().hex[:10]
-  try:
-    await _loading(message, "💾 Saving album", 2, "Connecting to storage channel")
-    target = await _get_target_chat(STORAGE_CHANNEL_ID)
-    caption = build_caption(title)
-    total = len(items)
-    chunks = [items[i:i + ALBUM_CHUNK_SIZE] for i in range(0, total, ALBUM_CHUNK_SIZE)]
-    sent_pairs = []
+    # file_id দিয়ে পাঠানো হয়: সার্ভারে কিছু ডাউনলোড হয় না
+    sent = await _send_items(target.id, [(i["kind"], i["file_id"]) for i in items], caption)
 
-    for ci, chunk in enumerate(chunks, 1):
-      pct = int(5 + 85 * ((ci - 1) / max(1, len(chunks))))
-      await _loading(
-          message,
-          "💾 Saving album",
-          pct,
-          f"Sending batch {ci}/{len(chunks)} · {len(sent_pairs)}/{total} files saved",
-      )
-      pairs = await _send_manual_album_chunk(target.id, chunk, caption)
-      if pairs:
-        sent_pairs.extend(pairs)
-        sent_msgs = [sent_msg for _item, sent_msg in pairs]
-        await asyncio.to_thread(
-            _save_album_items,
-            slug,
-            title,
-            sent_msgs,
-            len(sent_pairs) - len(sent_msgs),
-            0,
-            0,
-        )
-      await asyncio.sleep(CHUNK_PAUSE)
+    # কভার: সবচেয়ে বেশি রেজোলিউশনের ছবি; ছবি না থাকলে প্রথম ভিডিও (টেলিগ্রামের নিজস্ব ভিডিও-থাম্বনেইল)
+    photo_idx = [k for k, i in enumerate(items) if i["kind"] == "photo"]
+    best = max(photo_idx, key=lambda k: items[k]["w"] * items[k]["h"]) if photo_idx else 0
+    cover_msg = sent[best] if best < len(sent) else sent[0]
 
-    if not sent_pairs:
-      raise RuntimeError("Telegram could not save any album files")
-
-    # Highest-resolution photo becomes the cover. If there is no photo, use first video.
-    photo_pairs = [pair for pair in sent_pairs if pair[0]["kind"] == "photo"]
-    if photo_pairs:
-      cover_item, cover_msg = max(
-          photo_pairs,
-          key=lambda pair: int(pair[0].get("w", 0)) * int(pair[0].get("h", 0)),
-      )
-    else:
-      cover_item, cover_msg = sent_pairs[0]
+    slug = "up-" + uuid.uuid4().hex[:10]
+    await asyncio.to_thread(_save_album_items, slug, title, sent, 0, int(time.time()), 0)
     await asyncio.to_thread(_set_cover_id, slug, cover_msg.id)
     await asyncio.to_thread(_mark_slug_done, slug)
 
-    sent_videos = sum(1 for item, _msg in sent_pairs if item["kind"] == "video")
-    sent_photos = len(sent_pairs) - sent_videos
-    failed = total - len(sent_pairs)
-    status_line = "Album upload complete" if failed == 0 else "Album upload complete (some files failed)"
+    v = sum(1 for m in sent if getattr(m, "video", None))
     confirm = (
-        f"{status_line}\n"
+        "✅ Album upload complete\n"
         f"📁 {title[:200]}\n"
-        f"🎞 Videos: {sent_videos} | 🖼 Photos: {sent_photos} | Total: {len(sent_pairs)}/{total}\n"
+        f"🎞 Videos: {v} | 🖼 Photos: {len(sent) - v} | Total: {len(sent)}/{len(items)}\n"
         f"🔖 {ALBUM_REF_KEY}: {slug}\n"
         f"🖼 coverref: {cover_msg.id}\n"
         f"{WEBSITE_MARKER}"
     )
-
-    confirm_sent = False
     for _try in range(3):
       try:
         await pyrogram_client.send_message(target.id, confirm)
-        confirm_sent = True
         break
       except Exception as e:
-        print(f"[Album] confirmation failed (try {_try + 1}): {e}")
+        print(f"[Album] confirm failed (try {_try + 1}): {e}")
         await asyncio.sleep(3)
-
-    if not confirm_sent:
-      print("[Album] WARNING: album saved, but confirmation message could not be sent")
 
     album_drafts.pop(ADMIN_ID, None)
     with upload_lock:
       pending_uploads.pop(ADMIN_ID, None)
-    result_text = (
-        f"{make_bar(100)} 100%\n"
-        f"✅ Album upload complete ({len(sent_pairs)}/{total} files saved).\n"
-        f"📁 {title[:150]}\n"
-        f"🔖 {slug}"
-    )
-    if failed:
-      result_text += f"\n⚠️ {failed} file(s) could not be uploaded."
-    if not confirm_sent:
-      result_text += "\n⚠️ Storage confirmation message could not be sent."
-    await _safe_edit(message, result_text, reply_markup=build_main_keyboard())
-  except Exception as e:
-    print("Album save error:", traceback.format_exc())
-    async with draft["lock"]:
-      draft["saving"] = False
     await _safe_edit(
         message,
-        render_error(e),
-        reply_markup=build_album_keyboard(len(draft["items"])),
+        f"{make_bar(100)} 100%\n✅ Album saved ({len(sent)} files). It is now on top of all-collection.",
+        reply_markup=build_main_keyboard(),
     )
+  except Exception as e:
+    print("Album save error:", traceback.format_exc())
+    await _safe_edit(message, render_error(e), reply_markup=build_album_keyboard(len(draft["items"])))
 
 
 async def start_pyrogram_monitor():
@@ -2998,18 +2943,20 @@ async def start_pyrogram_monitor():
 
     @client.on_message(filters.command("start") & filters.private)
     async def start_cmd(client, message):
-      if not message.from_user or message.from_user.id != ADMIN_ID:
+      if message.from_user.id != ADMIN_ID:
         return
-      if len(message.command) > 1 and message.command[1].lower() == "album":
+      # ওয়েবসাইটের "Upload Album" বাটন থেকে এলে সরাসরি অ্যালবাম আপলোড মোড
+      if len(message.command) > 1 and message.command[1] == "album":
         await _begin_album_draft(message)
         return
       await message.reply(
-          "👋 Welcome Admin!\n\nTap a button below to scan website albums, upload media, add a story, or upload a manual album:",
+          "👋 Welcome Admin!\n\nTap a button below to scan website albums, upload media, or add a story:",
           reply_markup=build_main_keyboard(),
       )
 
     @client.on_message(filters.command("resetslugs") & filters.private)
     async def reset_slugs_cmd(client, message):
+      # আপলোড-করা-অ্যালবাম লগ মুছে ফেলে, যাতে সব অ্যালবাম আবার স্ক্র্যাপ হয়
       if not message.from_user or message.from_user.id != ADMIN_ID:
         return
       status = await message.reply(f"♻️ Clearing log...\n{make_bar(0)} 0%")
@@ -3023,213 +2970,4 @@ async def start_pyrogram_monitor():
         n = await asyncio.to_thread(_clear)
         await _safe_edit(
             status,
-            f"{make_bar(100)} 100%\n♻️ {n} log entries cleared. You can scan again now.",
-            reply_markup=build_main_keyboard(),
-        )
-      except Exception as e:
-        await _safe_edit(status, render_error(e))
-
-    @client.on_callback_query(filters.regex("^scan_media_channel$"))
-    async def scan_media_channel_callback(client, callback_query):
-      await _handle_scan_callback(callback_query, "collection")
-
-    @client.on_callback_query(filters.regex("^(start_upload|add_story)$"))
-    async def start_upload_callback(client, callback_query):
-      if callback_query.from_user.id != ADMIN_ID:
-        await callback_query.answer("Error Code 403: Unauthorized", show_alert=True)
-        return
-      mode = "story" if callback_query.data == "add_story" else "upload"
-      with upload_lock:
-        pending_uploads[ADMIN_ID] = mode
-      await callback_query.answer("Ready!")
-      label = "Story" if mode == "story" else "Media"
-      await _safe_edit(
-          callback_query.message,
-          f"📤 {label} mode on.\n\nSend photos/videos now (you can send many). Press ✅ Done when finished, or send /cancel to stop.",
-          reply_markup=build_done_keyboard(),
-      )
-
-    @client.on_callback_query(filters.regex("^album_upload$"))
-    async def album_upload_cb(client, callback_query):
-      if callback_query.from_user.id != ADMIN_ID:
-        await callback_query.answer("Error Code 403: Unauthorized", show_alert=True)
-        return
-      await callback_query.answer("Ready!")
-      await _begin_album_draft(callback_query.message)
-
-    @client.on_callback_query(filters.regex("^album_save$"))
-    async def album_save_cb(client, callback_query):
-      if callback_query.from_user.id != ADMIN_ID:
-        await callback_query.answer("Error Code 403: Unauthorized", show_alert=True)
-        return
-      await _album_save(callback_query)
-
-    @client.on_callback_query(filters.regex("^album_cancel$"))
-    async def album_cancel_cb(client, callback_query):
-      if callback_query.from_user.id != ADMIN_ID:
-        await callback_query.answer("Error Code 403: Unauthorized", show_alert=True)
-        return
-      album_drafts.pop(ADMIN_ID, None)
-      with upload_lock:
-        pending_uploads.pop(ADMIN_ID, None)
-      await callback_query.answer("Cancelled")
-      await _safe_edit(callback_query.message, "❌ Cancelled.", reply_markup=build_main_keyboard())
-
-    @client.on_callback_query(filters.regex("^upload_done$"))
-    async def upload_done_callback(client, callback_query):
-      if callback_query.from_user.id != ADMIN_ID:
-        await callback_query.answer("Error Code 403: Unauthorized", show_alert=True)
-        return
-      with upload_lock:
-        pending_uploads.pop(ADMIN_ID, None)
-      await callback_query.answer("Syncing website...")
-      message = callback_query.message
-      await _loading(message, "🔄 Syncing website", 10, "Starting channel scan")
-      if telethon_reader_client:
-        try:
-          fut = asyncio.run_coroutine_threadsafe(scan_channel("all"), telethon_loop)
-          await asyncio.wrap_future(fut)
-        except Exception as e:
-          print("Upload-done scan error:", e)
-          await _safe_edit(message, render_error(e), reply_markup=build_main_keyboard())
-          return
-      else:
-        await _safe_edit(
-            message, render_error(503, "Telethon not connected"),
-            reply_markup=build_main_keyboard(),
-        )
-        return
-      await _safe_edit(
-          message,
-          f"{make_bar(100)} 100%\n✅ Uploaded & website synced!",
-          reply_markup=build_main_keyboard(),
-      )
-
-    @client.on_message(filters.command("cancel") & filters.private)
-    async def cancel_cmd(client, message):
-      if not message.from_user or message.from_user.id != ADMIN_ID:
-        return
-      album_drafts.pop(ADMIN_ID, None)
-      with upload_lock:
-        pending_uploads.pop(ADMIN_ID, None)
-      await message.reply("❌ Cancelled.", reply_markup=build_main_keyboard())
-
-    @client.on_message(
-        filters.private
-        & (filters.photo | filters.video | filters.animation | filters.document)
-    )
-    async def upload_media_handler(client, message):
-      if not message.from_user or message.from_user.id != ADMIN_ID:
-        return
-      mode = pending_uploads.get(ADMIN_ID)
-      if not mode:
-        return
-      if mode == "album":
-        await _album_collect(message)
-        return
-      info = _classify_pyro_media(message)
-      if not info:
-        await message.reply(render_error(415, "Only photo or video files are supported"))
-        return
-      media_type, mime = info
-      target_id = STORY_BACKUP_CHANNEL_ID if mode == "story" else STORAGE_CHANNEL_ID
-      caption = STORY_MARKER if mode == "story" else ""
-      status = await message.reply("📤 Uploading...")
-      await _loading(status, "📤 Uploading", 30, "Connecting to channel")
-      try:
-        target_chat = await _get_target_chat(target_id)
-        await _loading(status, "📤 Uploading", 60, "Sending file")
-        copied = await message.copy(target_chat.id, caption=caption)
-        await asyncio.to_thread(
-            _save_uploaded_media, copied.id, mode, media_type, mime, caption
-        )
-        await _safe_edit(
-            status,
-            f"{make_bar(100)} 100%\n✅ Added. Send more or press Done.",
-            reply_markup=build_done_keyboard(),
-        )
-      except Exception as e:
-        print("Upload error:", traceback.format_exc())
-        await _safe_edit(status, render_error(e), reply_markup=build_done_keyboard())
-
-    return True
-  except Exception:
-    print("Pyrogram startup error:", traceback.format_exc())
-    return False
-
-
-# ============================================================
-# Background Services Startup
-# ============================================================
-
-
-def _init_background_services_worker():
-  if Client and BOT_TOKEN and API_ID and API_HASH:
-    if not pyrogram_thread.is_alive():
-      pyrogram_thread.start()
-    if pyrogram_loop_ready.wait(timeout=10):
-      try:
-        run_pyrogram_async(start_pyrogram_monitor(), timeout=120)
-      except Exception:
-        pass
-
-  if TELETHON_SESSION_STRING and API_ID and API_HASH:
-    if TELETHON_START_DELAY > 0:
-      time.sleep(TELETHON_START_DELAY)
-    if not telethon_thread.is_alive():
-      telethon_thread.start()
-    if telethon_loop_ready.wait(timeout=10):
-      try:
-        reader_ok = run_async(start_telethon_reader(), timeout=180)
-      except Exception:
-        reader_ok = False
-      if reader_ok:
-        # Automatic channel scan on startup is intentionally disabled.
-        # Keep only album restore so website albums can be rebuilt after a deploy.
-        try:
-          _start_album_sync()
-        except Exception:
-          album_sync_state["restoring"] = False
-
-  if not album_sync_state["running"]:
-    album_sync_state["restoring"] = False
-
-
-def _keepalive_loop():
-  """Keep a Render service awake with a health request every four minutes."""
-  if os.environ.get("KEEPALIVE", "1").strip() == "0":
-    return
-  url = (os.environ.get("KEEPALIVE_URL") or os.environ.get("RENDER_EXTERNAL_URL") or "").strip().rstrip("/")
-  if not url:
-    print("[KeepAlive] RENDER_EXTERNAL_URL/KEEPALIVE_URL is not set, disabled")
-    return
-  print(f"[KeepAlive] pinging {url}/health every 4 min")
-  while True:
-    time.sleep(240)
-    try:
-      requests.get(url + "/health", timeout=20)
-    except Exception:
-      pass
-
-
-def start_background_services():
-  global _services_started
-  with _services_lock:
-    if _services_started:
-      return
-    _services_started = True
-
-  startup_thread = threading.Thread(
-      target=_init_background_services_worker,
-      name="background-services-initializer",
-      daemon=True,
-  )
-  startup_thread.start()
-  threading.Thread(target=_keepalive_loop, name="keepalive", daemon=True).start()
-
-
-start_background_services()
-
-if __name__ == "__main__":
-  port = int(os.environ.get("PORT", "10000"))
-  app.run(host="0.0.0.0", port=port, threaded=True, debug=False, use_reloader=False)
+            f"{make_bar(100)} 100%
