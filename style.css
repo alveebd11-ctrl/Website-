@@ -236,19 +236,6 @@ body {
     text-align: center; font-size: 13px; font-weight: 600; color: #e5e7eb; pointer-events: none;
 }
 
-/* oc-collection.html এবং অন্যান্য পেজের অতিরিক্ত লেআউট স্টাইল */
-#ocChannelWindow {
-    display: flex; flex-direction: column; height: 100vh; width: 100vw;
-    background: var(--oc-bg); position: relative;
-}
-.oc-channel-header {
-    position: relative; z-index: 10; display: flex; align-items: center; gap: 10px;
-    padding: 14px 12px; width: 100%; background: rgba(10, 5, 20, 0.6);
-    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-    border-bottom: 1px solid rgba(138, 43, 226, 0.2);
-}
-.oc-channel-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-
 @media (max-width: 360px) {
     .avatar { flex-basis: 78px; width: 78px; height: 78px; }
     .alvee-name { font-size: 24px; }
