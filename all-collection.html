@@ -11,33 +11,32 @@
   html, body { min-height: 100%; }
   body { background: #09090B; color: #fff; -webkit-font-smoothing: antialiased; }
   .page { max-width: 1100px; margin: 0 auto; padding: 0 14px 40px; }
- 
-  /* ---------- HEADER (new) ---------- */
+
+  /* ---------- HEADER (updated: logo + Alvee + search) ---------- */
   .site-header {
     position: sticky; top: 0; z-index: 50; background: #09090B;
     border-bottom: 1px solid rgba(255,255,255,.08);
     padding: calc(env(safe-area-inset-top,0px) + 10px) 14px 10px;
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
   }
-  .brand-link { display: flex; align-items: center; gap: 10px; text-decoration: none; min-width: 0; }
-  .brand-logo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,.2); flex: 0 0 auto; }
-  .brand-name {
-    font-size: 22px; font-weight: 800; font-style: italic; letter-spacing: .5px; line-height: 1;
-    background: linear-gradient(90deg, #36B9E8, #ffffff 55%, #ff3b5c); -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
+  .site-header .bar { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .brand-link { display: flex; align-items: center; gap: 12px; text-decoration: none; color: #fff; min-width: 0; }
+  .brand-logo { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; display: block; border: 1px solid rgba(255,255,255,.2); background: #1a1a1e; flex: 0 0 auto; }
+  .brand-name { font-size: 22px; font-weight: 800; letter-spacing: .5px; }
   .search-btn {
-    width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #fff; cursor: pointer; flex: 0 0 auto;
-    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: #e5e7eb; cursor: pointer;
+    background: transparent; border: none; flex: 0 0 auto;
   }
-  .search-btn svg { width: 19px; height: 19px; }
-  .search-bar { display: none; position: sticky; top: 61px; z-index: 49; background: #09090B; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.08); }
-  .search-bar.open { display: block; }
-  .search-bar input {
-    width: 100%; max-width: 1100px; display: block; margin: 0 auto; padding: 11px 16px; border-radius: 999px; outline: none;
-    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); color: #fff; font-size: 14px;
+  .search-btn:hover { color: #fff; background: rgba(255,255,255,.06); }
+  .search-btn svg { width: 24px; height: 24px; }
+  .search-row { max-width: 1100px; margin: 10px auto 0; display: none; }
+  .search-row.open { display: block; }
+  .search-row input {
+    width: 100%; padding: 11px 16px; border-radius: 999px; font-size: 14px; color: #fff; outline: none;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
   }
-  .search-bar input:focus { border-color: #f5b82e; }
- 
+  .search-row input:focus { border-color: #f5b82e; }
+  .search-row input::placeholder { color: #9ca3af; }
+
   /* ---------- PROFILE ---------- */
   .profile {
     margin-top: 16px; display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 24px;
@@ -61,7 +60,7 @@
     border: 1px solid rgba(255,255,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
     font-size: 12px; font-weight: 600; color: #e5e7eb; letter-spacing: .3px;
   }
- 
+
   /* ---------- STATS ---------- */
   .stats {
     margin-top: 14px; display: grid; grid-template-columns: repeat(3, 1fr); border-radius: 20px; padding: 14px 6px;
@@ -75,34 +74,7 @@
   .stat .stat-value { font-size: 18px; font-weight: 700; color: #fff; }
   .stat .stat-label { font-size: 11px; color: #9ca3af; letter-spacing: .3px; }
   .stat.views svg { color: #a78bfa; }
- 
-  /* ---------- TELEGRAM BUTTON + PROMO BOX (new) ---------- */
-  .tg-join {
-    margin-top: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 14px;
-    color: #fff; font-size: 14px; font-weight: 600; text-decoration: none; background: linear-gradient(90deg, #229ed9, #1a7bb0);
-    box-shadow: 0 6px 16px rgba(34,158,217,.25);
-  }
-  .tg-join svg { width: 18px; height: 18px; }
-  .promo {
-    position: relative; margin-top: 14px; min-height: 250px; border-radius: 20px; overflow: hidden; background: #000;
-    border: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: flex-end;
-  }
-  .promo > img { position: absolute; left: 0; top: 0; height: 100%; width: 70%; object-fit: cover; }
-  .promo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,0) 25%, rgba(0,0,0,.88) 58%, #000 78%); }
-  .promo-body { position: relative; z-index: 2; width: 62%; padding: 16px 16px 14px 6px; display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
-  .promo-hl { display: inline-block; padding: 2px 8px; border-radius: 6px; background: rgba(245,184,46,.16); color: #ffd54a; font-weight: 800; line-height: 1.25; }
-  .promo-hl.l1 { font-size: clamp(17px, 4.6vw, 26px); }
-  .promo-hl.l2 { font-size: clamp(13px, 3.6vw, 18px); }
-  .promo-line { color: #fff; font-size: clamp(8.5px, 2.4vw, 12px); white-space: nowrap; }
-  .promo-btn {
-    margin-top: 4px; padding: 10px 14px; border-radius: 10px; background: #000; color: #ffd54a; font-weight: 800; font-size: clamp(11px, 3vw, 14px);
-    text-decoration: none; border: 1px solid #ffd54a; letter-spacing: .4px; white-space: nowrap;
-  }
-  .promo-cap { font-size: 8.5px; color: #9ca3af; line-height: 1.4; font-weight: 400; }
-  #promoAlbum:empty { display: none; }
-  .promo-album-wrap { margin-top: 0; }
- 
-  /* ---------- SECTION HEAD / SHUFFLE ---------- */
+
   .section-head { margin-top: 26px; text-align: left; }
   .section-head h2 { font-size: 22px; font-weight: 800; letter-spacing: .2px; }
   .latest-wrap { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; margin: 18px 0 14px; }
@@ -112,14 +84,7 @@
     border: 1px solid rgba(255,255,255,.1); font-size: 13px; font-weight: 600; color: #e5e7eb;
   }
   .latest svg { width: 16px; height: 16px; color: #f5b82e; }
-  .shuffle-btn {
-    display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 700;
-    background: #f5b82e; color: #1a1204; border: 1px solid #f5b82e; transition: transform .2s ease;
-  }
-  .shuffle-btn:hover { transform: translateY(-2px); }
-  .shuffle-btn:active { transform: scale(.96); }
-  .shuffle-btn svg { width: 16px; height: 16px; }
- 
+
   .upload-btn {
     display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; cursor: pointer;
     text-decoration: none; color: #fff; font-size: 13px; font-weight: 600;
@@ -131,7 +96,7 @@
   .upload-btn[hidden] { display: none; }
   .upload-btn:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.32); }
   .upload-btn svg { width: 16px; height: 16px; }
- 
+
   /* ---------- GRID ---------- */
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
   @media (min-width: 720px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
@@ -153,7 +118,7 @@
   .caption { padding: 10px 12px 12px; font-size: 12.5px; font-weight: 500; color: #e5e7eb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .state { grid-column: 1 / -1; text-align: center; color: #9ca3af; font-size: 14px; padding: 30px 10px; }
   .state.error { color: #f87171; }
- 
+
   /* ---------- ALBUM CARDS ---------- */
   .album-card .caption { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35; min-height: calc(2 * 1.35em + 26px); }
   #galleryHome .section-head { margin-top: 18px; }
@@ -177,7 +142,7 @@
     display: grid; place-items: center; background: rgba(10,10,12,.6); border: 1px solid rgba(255,255,255,.2);
   }
   .play svg { width: 13px; height: 13px; fill: #fff; }
- 
+
   /* ---------- ALBUM VIEW (watch layout) ---------- */
   .album-bar { margin-top: 22px; display: flex; align-items: center; gap: 12px; }
   .album-back {
@@ -188,7 +153,7 @@
   .album-meta { min-width: 0; flex: 1; }
   .album-title { font-size: 17px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .album-sub { font-size: 12px; color: #9ca3af; margin-top: 2px; }
- 
+
   .tabs { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .tabs[hidden] { display: none; }
   .tab {
@@ -198,16 +163,16 @@
   }
   .tab:hover { border-color: rgba(255,255,255,.28); }
   .tab.active { background: #f5b82e; color: #1a1204; border-color: #f5b82e; }
- 
+
   .player-wrap { margin-top: 16px; }
   .player-wrap[hidden] { display: none; }
   .player { border-radius: 20px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 10px 26px rgba(0,0,0,.45); }
   .player video, .player img { display: block; width: 100%; max-height: 72vh; background: #000; object-fit: contain; }
- 
+
   #itemsGrid { margin-top: 16px; }
   .item-card .thumb { aspect-ratio: 3 / 4; }
   .item-card.active { border-color: #f5b82e; }
- 
+
   .watch-stats {
     margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; border-radius: 20px;
     background: linear-gradient(145deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
@@ -224,8 +189,66 @@
   button.ws:hover, a.ws:hover { border-color: rgba(255,255,255,.3); }
   .ws.views svg { color: #a78bfa; }
   .ws.like[aria-pressed="true"] { color: #fb7185; border-color: rgba(251,113,133,.6); }
-  .ws.tg { flex-basis: 100%; color: #fff; border-color: transparent; background: linear-gradient(90deg, #229ed9, #1a7bb0); }
- 
+
+  /* ---------- TELEGRAM JOIN BUTTON ---------- */
+  .tg-join {
+    margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+    padding: 15px 18px; border-radius: 999px; text-decoration: none; color: #fff; font-size: 17px; font-weight: 700;
+    background: linear-gradient(90deg, #00a3ff, #1a5cff);
+    box-shadow: 0 8px 26px rgba(0,120,255,.45);
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .tg-join:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,120,255,.6); }
+  .tg-join svg { width: 22px; height: 22px; }
+
+  /* ---------- PROMO BOX ---------- */
+  .promo {
+    margin-top: 16px; padding: 12px; border-radius: 22px; background: #000;
+    border: 1px solid rgba(255,255,255,.1); box-shadow: 0 10px 26px rgba(0,0,0,.5);
+  }
+  .promo-img { position: relative; width: 100%; aspect-ratio: 1238 / 884; border-radius: 16px; overflow: hidden; background: #0d0d10; }
+  .promo-img > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .promo-text {
+    position: absolute; z-index: 2; inset: 0; padding: 12px 12px 10px; display: flex; flex-direction: column;
+    align-items: flex-end; justify-content: center; text-align: right; gap: 8px;
+  }
+  .hl {
+    display: inline-block; max-width: 70%; padding: 4px 10px; border-radius: 8px; background: rgba(0,0,0,.82); color: #f5d90a;
+    font-weight: 800; line-height: 1.25; font-size: clamp(12px, 4vw, 20px); box-shadow: 0 2px 10px rgba(0,0,0,.6);
+  }
+  .promo-line {
+    position: absolute; z-index: 2; left: 50%; bottom: 8px; transform: translateX(-50%); max-width: calc(100% - 12px);
+    padding: 3px 9px; border-radius: 6px; background: rgba(0,0,0,.82); box-shadow: 0 2px 10px rgba(0,0,0,.6);
+    text-align: center; white-space: nowrap; color: #fff; font-size: clamp(7.5px, 2.4vw, 12px); font-weight: 500;
+  }
+  .promo-btn {
+    margin-top: 12px; display: block; width: 100%; padding: 13px 16px; text-align: center; text-decoration: none;
+    background: #000; color: #f5d90a; font-weight: 800; font-size: 15px; letter-spacing: .6px; border-radius: 999px;
+    border: 1.5px solid #f5d90a; transition: transform .2s ease, background .2s ease;
+  }
+  .promo-btn:hover { transform: translateY(-2px); background: #15130a; }
+  .promo-serial {
+    margin-top: 10px; text-align: center; font-size: 9px; line-height: 1.5; color: #6b7280;
+    -webkit-user-select: none; user-select: none; background: none;
+  }
+
+  /* ---------- ALL ALBUMS + SHUFFLE ---------- */
+  .related-head { margin-top: 30px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .related-title { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; line-height: 1.2; }
+  .related-title::before { content: ""; width: 5px; height: 28px; border-radius: 3px; background: #ff9500; flex: 0 0 auto; }
+  .rel-actions { display: flex; gap: 8px; }
+  .pill-btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; cursor: pointer;
+    background: #1c1c20; color: #fff; font-size: 14px; font-weight: 600; border: 1px solid rgba(255,255,255,.14);
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .pill-btn:hover { border-color: rgba(255,255,255,.35); }
+  .pill-btn.active { background: #f5b82e; color: #1a1204; border-color: #f5b82e; }
+  .pill-btn svg { width: 17px; height: 17px; }
+  .pill-btn.spin svg { animation: spin .5s ease; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #allAlbumsGrid { margin-top: 16px; }
+
   /* ---------- FOOTER ---------- */
   .site-footer { border-top: 1px solid rgba(255,255,255,.08); background: #0c0c10; color: #9ca3af; font-size: 12.5px; }
   .site-footer .inner { max-width: 1100px; margin: 0 auto; padding: 22px 14px calc(env(safe-area-inset-bottom,0px) + 22px); display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; }
@@ -233,7 +256,7 @@
   .site-footer nav { display: flex; gap: 14px; flex-wrap: wrap; }
   .site-footer a { color: #9ca3af; text-decoration: none; }
   .site-footer a:hover { color: #fff; }
- 
+
   /* ---------- LIGHTBOX ---------- */
   .lb { position: fixed; inset: 0; z-index: 100; display: none; background: rgba(0,0,0,.94); align-items: center; justify-content: center; }
   .lb.open { display: flex; }
@@ -248,27 +271,29 @@
   .lb-prev { left: 10px; top: 50%; transform: translateY(-50%); }
   .lb-next { right: 10px; top: 50%; transform: translateY(-50%); }
   .lb-count { position: absolute; top: calc(env(safe-area-inset-top,0px) + 22px); left: 0; right: 0; text-align: center; font-size: 13px; font-weight: 600; color: #e5e7eb; pointer-events: none; }
- 
-  @media (max-width: 360px) { .avatar { flex-basis: 78px; width: 78px; height: 78px; } .alvee-name { font-size: 24px; } .brand-name { font-size: 19px; } }
+
+  @media (max-width: 360px) { .avatar { flex-basis: 78px; width: 78px; height: 78px; } .alvee-name { font-size: 24px; } .related-title { font-size: 17px; } }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
- 
-<!-- ===== HEADER: logo + Alvee (left), Search icon only (right) ===== -->
+
+<!-- ===== HEADER: logo + "Alvee" + search ===== -->
 <header class="site-header">
-  <a class="brand-link" href="/all-collection" aria-label="Alvee">
-    <img class="brand-logo" src="https://carder.top/imagens/1793417411592-885991335.jpg" alt="Alvee logo">
-    <span class="brand-name">Alvee</span>
-  </a>
-  <div class="search-btn" id="searchBtn" role="button" aria-label="Search" tabindex="0">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+  <div class="bar">
+    <a class="brand-link" href="/all-collection.html" aria-label="Alvee home">
+      <img class="brand-logo" src="https://carder.top/imagens/1793417411592-885991335.jpg" alt="Alvee logo">
+      <span class="brand-name">Alvee</span>
+    </a>
+    <button class="search-btn" id="searchBtn" type="button" aria-label="Search" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"/><path d="M21 21l-4.3-4.3"/></svg>
+    </button>
+  </div>
+  <div class="search-row" id="searchRow">
+    <input type="search" id="searchInput" placeholder="Search albums..." autocomplete="off" aria-label="Search albums">
   </div>
 </header>
-<div class="search-bar" id="searchBar">
-  <input type="search" id="searchInput" placeholder="Search albums..." autocomplete="off">
-</div>
- 
+
 <main class="page">
   <section class="profile" aria-label="Profile">
     <div class="avatar"><img src="https://carder.top/imagens/1793417411592-885991335.jpg" alt="Alvee profile picture"></div>
@@ -277,7 +302,7 @@
       <span class="uploader-badge">Uploader</span>
     </div>
   </section>
- 
+
   <section class="stats" aria-label="Statistics">
     <div class="stat">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>
@@ -292,22 +317,15 @@
       <div class="stat-value" id="statViews">—</div><div class="stat-label">Views</div>
     </div>
   </section>
- 
-  <!-- ===== ALBUM LIST (home) ===== -->
+
+  <!-- ===== ALBUM LIST (home, top = latest albums) ===== -->
   <div id="galleryHome">
-    <!-- Join Telegram button + promo box (filled by script) -->
-    <div id="promoHome"></div>
- 
     <h2 class="section-head"><span style="font-size:22px;font-weight:800">Videos &amp; Photos</span></h2>
     <div class="latest-wrap">
       <div class="latest">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
         Latest Update
       </div>
-      <button class="shuffle-btn" id="shuffleBtn" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
-        Shuffle
-      </button>
       <a class="upload-btn" id="uploadAlbumBtn" href="#" target="_blank" rel="noopener" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg>
         Upload Album
@@ -315,7 +333,7 @@
     </div>
     <div class="grid album-grid" id="albumsGrid"><div class="state">Loading...</div></div>
   </div>
- 
+
   <!-- ===== SINGLE ALBUM VIEW (watch layout) ===== -->
   <div id="albumView" hidden>
     <div class="album-bar">
@@ -327,15 +345,15 @@
         <div class="album-sub" id="albumSub"></div>
       </div>
     </div>
- 
+
     <div class="tabs" id="tabs" hidden>
       <div class="tab" id="tabVideos" role="button" data-tab="video">Watch</div>
       <div class="tab" id="tabPhotos" role="button" data-tab="photo">Photos</div>
     </div>
- 
+
     <div class="player-wrap" id="playerWrap" hidden></div>
     <div class="grid" id="itemsGrid"></div>
- 
+
     <div class="watch-stats" id="watchStats" hidden>
       <div class="ws views" title="Views">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -349,16 +367,45 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
         <span id="wsShareT">Share</span>
       </button>
-      <a class="ws tg" id="wsTg" href="https://t.me/ALVEE_BD1" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
-        Join Telegram
-      </a>
     </div>
-    <!-- Promo box under the Join Telegram button (filled by script) -->
-    <div id="promoAlbum"></div>
   </div>
+
+  <!-- ===== TELEGRAM BUTTON (below images / view-like-share row) ===== -->
+  <a class="tg-join" id="tgJoin" href="https://t.me/ALVEE_BD1" target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2.5 10.2 13.8M21.5 2.5l-6.7 19-4.6-8.4-8.4-4.6z"/></svg>
+    Join Telegram
+  </a>
+
+  <!-- ===== PROMOTION BOX ===== -->
+  <section class="promo" aria-label="Premium membership">
+    <div class="promo-img">
+      <img src="https://res.cloudinary.com/djsbbzas/image/upload/f_auto,q_auto/emily-walters-wifey-005-aspect-ratio-350-250" alt="Premium" loading="lazy" decoding="async">
+      <div class="promo-text">
+        <span class="hl">Joining Premium</span>
+        <span class="hl">Limited time, buy quickly</span>
+      </div>
+      <div class="promo-line">Don't delay, join the Telegram channel now and inbox us.</div>
+    </div>
+    <a class="promo-btn" id="promoBtn" href="https://t.me/ALVEE_BD" target="_blank" rel="noopener noreferrer">BYE FOR MEMBERSHIP</a>
+    <div class="promo-serial">Serial: 001 &bull; 002 &bull; 003 &nbsp;|&nbsp; Premium Access &bull; Limited Slots &bull; Inbox @ALVEE_BD</div>
+  </section>
+
+  <!-- ===== ALL ALBUMS + SHUFFLE ===== -->
+  <section aria-label="All albums">
+    <div class="related-head">
+      <div class="related-title">All Albums</div>
+      <div class="rel-actions">
+        <button class="pill-btn" id="shuffleBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+          Shuffle
+        </button>
+        <button class="pill-btn active" id="recommendedBtn" type="button">Recommended</button>
+      </div>
+    </div>
+    <div class="grid album-grid" id="allAlbumsGrid"><div class="state">Loading...</div></div>
+  </section>
 </main>
- 
+
 <footer class="site-footer">
   <div class="inner">
     <div><span class="brand">AlveeCommunity</span> &copy; <span id="yr"></span></div>
@@ -370,7 +417,7 @@
     </nav>
   </div>
 </footer>
- 
+
 <!-- ===== LIGHTBOX ===== -->
 <div class="lb" id="lb" aria-modal="true" role="dialog">
   <div class="lb-count" id="lbCount"></div>
@@ -379,21 +426,16 @@
   <div class="lb-btn lb-next" id="lbNext" role="button" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
   <div class="lb-stage" id="lbStage"></div>
 </div>
- 
+
 <script>
 (function () {
   'use strict';
- 
-  // ---- Links & promo content (edit here) ----
-  var TELEGRAM_URL = 'https://t.me/ALVEE_BD1';   // Join Telegram button
-  var MEMBERSHIP_URL = 'https://t.me/ALVEE_BD';  // BYE FOR MEMBERSHIP button
-  var PROMO_IMG = 'https://res.cloudinary.com/djsbbzas/image/upload/f_auto,q_auto/emily-walters-wifey-005-aspect-ratio-350-250';
-  var PROMO_CAPTION = 'Serial 001 • 002 • 003 • 004 • 005 • 006'; // tiny caption under the button
- 
+
   var PLAY_SVG = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-  var TG_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>';
- 
+  var TOP_COUNT = 4;   // how many latest albums to show in the top section
+
   var albumsGrid = document.getElementById('albumsGrid');
+  var allAlbumsGrid = document.getElementById('allAlbumsGrid');
   var itemsGrid = document.getElementById('itemsGrid');
   var galleryHome = document.getElementById('galleryHome');
   var albumView = document.getElementById('albumView');
@@ -403,14 +445,20 @@
   var tabsEl = document.getElementById('tabs');
   var playerWrap = document.getElementById('playerWrap');
   var watchStats = document.getElementById('watchStats');
-  var searchBar = document.getElementById('searchBar');
+  var shuffleBtn = document.getElementById('shuffleBtn');
+  var recommendedBtn = document.getElementById('recommendedBtn');
+  var searchBtn = document.getElementById('searchBtn');
+  var searchRow = document.getElementById('searchRow');
   var searchInput = document.getElementById('searchInput');
- 
-  var currentItems = [];
+
+  var currentItems = [];   // lightbox list (photos)
   var albumVideos = [], albumPhotos = [];
   var albumSlug = '', albumData = null, activeTab = 'video', lbIndex = 0;
-  var allAlbums = [], shuffled = false, query = '';
- 
+
+  var allAlbums = [];      // original order from the API
+  var orderedAlbums = [];  // current order of the bottom grid (original or shuffled)
+  var query = '';
+
   function setText(id, value) { var el = document.getElementById(id); if (el) el.textContent = value; }
   function fmt(n) {
     n = Number(n) || 0;
@@ -444,32 +492,13 @@
     if (a.photos) parts.push(a.photos + (a.photos === 1 ? ' Photo' : ' Photos'));
     return parts.join(' • ');
   }
- 
-  // ---------------- PROMO BOX + TELEGRAM BUTTON ----------------
-  function promoHTML() {
-    return '<div class="promo">' +
-      '<img src="' + PROMO_IMG + '" alt="Premium" loading="lazy" decoding="async">' +
-      '<div class="promo-body">' +
-        '<div class="promo-hl l1">Joining Premium</div>' +
-        '<div class="promo-hl l2">Limited time, buy quickly</div>' +
-        '<div class="promo-line">Don\u2019t delay, join the Telegram channel now and inbox us.</div>' +
-        '<a class="promo-btn" href="' + MEMBERSHIP_URL + '" target="_blank" rel="noopener noreferrer">BYE FOR MEMBERSHIP</a>' +
-        '<div class="promo-cap">' + PROMO_CAPTION + '</div>' +
-      '</div></div>';
-  }
-  document.getElementById('promoHome').innerHTML =
-    '<a class="tg-join" href="' + TELEGRAM_URL + '" target="_blank" rel="noopener noreferrer">' + TG_SVG + 'Join Telegram</a>' + promoHTML();
-  document.getElementById('promoAlbum').innerHTML = promoHTML();
- 
+
   // ---------------- ALBUM LIST ----------------
-  function renderAlbums() {
-    albumsGrid.innerHTML = '';
-    var q = query.trim().toLowerCase();
-    var list = q ? allAlbums.filter(function (a) { return (a.title || '').toLowerCase().indexOf(q) !== -1; }) : allAlbums;
-    if (!allAlbums.length) { stateBox(albumsGrid, 'No albums published yet.'); return; }
-    if (!list.length) { stateBox(albumsGrid, 'No albums found.'); return; }
+  function renderAlbums(grid, albums, emptyText) {
+    grid.innerHTML = '';
+    if (!albums.length) { stateBox(grid, emptyText || 'No albums published yet.'); return; }
     var frag = document.createDocumentFragment();
-    list.forEach(function (a, i) {
+    albums.forEach(function (a, i) {
       var card = document.createElement('article');
       card.className = 'card album-card';
       var thumb = makeThumb(a.cover, i < 6);
@@ -485,45 +514,79 @@
       card.addEventListener('click', function () { location.hash = 'album/' + encodeURIComponent(a.slug); });
       frag.appendChild(card);
     });
-    albumsGrid.appendChild(frag);
+    grid.appendChild(frag);
   }
+
+  function matches(a) {
+    if (!query) return true;
+    return String(a.title || '').toLowerCase().indexOf(query) !== -1;
+  }
+  function renderBoth() {
+    var emptyMsg = query ? 'No albums match your search.' : 'No albums published yet.';
+    var top = allAlbums.filter(matches).slice(0, TOP_COUNT);
+    var all = orderedAlbums.filter(matches);
+    renderAlbums(albumsGrid, top, emptyMsg);
+    renderAlbums(allAlbumsGrid, all, emptyMsg);
+  }
+
   function loadAlbums(silent) {
     fetch('/api/albums', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d.ok) throw new Error('bad');
-        if (silent && shuffled) return; // keep the shuffled order on background refresh
         allAlbums = d.albums || [];
-        renderAlbums();
+        // keep current shuffled order if the list did not change; otherwise reset
+        if (orderedAlbums.length !== allAlbums.length) orderedAlbums = allAlbums.slice();
+        renderBoth();
       })
-      .catch(function () { if (!silent) stateBox(albumsGrid, 'Could not load albums. Please refresh.', true); });
+      .catch(function () {
+        if (!silent) {
+          stateBox(albumsGrid, 'Could not load albums. Please refresh.', true);
+          stateBox(allAlbumsGrid, 'Could not load albums. Please refresh.', true);
+        }
+      });
   }
- 
-  // ---------------- SHUFFLE (Fisher-Yates) ----------------
-  function shuffleAlbums() {
-    for (var i = allAlbums.length - 1; i > 0; i--) {
+
+  // ---------------- SHUFFLE ----------------
+  function shuffleArray(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
-      var t = allAlbums[i]; allAlbums[i] = allAlbums[j]; allAlbums[j] = t;
+      var t = a[i]; a[i] = a[j]; a[j] = t;
     }
-    shuffled = true;
-    renderAlbums();
+    return a;
   }
-  document.getElementById('shuffleBtn').addEventListener('click', shuffleAlbums);
- 
-  // ---------------- SEARCH ----------------
-  function toggleSearch() {
-    var open = searchBar.classList.toggle('open');
-    if (open) { searchInput.focus(); }
-    else { searchInput.value = ''; query = ''; renderAlbums(); }
-  }
-  document.getElementById('searchBtn').addEventListener('click', toggleSearch);
-  document.getElementById('searchBtn').addEventListener('keydown', function (e) { if (e.key === 'Enter') toggleSearch(); });
-  searchInput.addEventListener('input', function () {
-    query = searchInput.value;
-    if (location.hash) location.hash = '';
-    else renderAlbums();
+  shuffleBtn.addEventListener('click', function () {
+    if (allAlbums.length < 2) return;
+    var next = shuffleArray(allAlbums);
+    // make sure the order really changes
+    var tries = 0;
+    while (tries < 5 && next.every(function (a, i) { return a === orderedAlbums[i]; })) { next = shuffleArray(allAlbums); tries++; }
+    orderedAlbums = next;
+    shuffleBtn.classList.add('spin');
+    setTimeout(function () { shuffleBtn.classList.remove('spin'); }, 520);
+    recommendedBtn.classList.remove('active');
+    renderAlbums(allAlbumsGrid, orderedAlbums.filter(matches), query ? 'No albums match your search.' : '');
   });
- 
+  recommendedBtn.addEventListener('click', function () {
+    orderedAlbums = allAlbums.slice();
+    recommendedBtn.classList.add('active');
+    renderAlbums(allAlbumsGrid, orderedAlbums.filter(matches), query ? 'No albums match your search.' : '');
+  });
+
+  // ---------------- SEARCH ----------------
+  searchBtn.addEventListener('click', function () {
+    var open = !searchRow.classList.contains('open');
+    searchRow.classList.toggle('open', open);
+    searchBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) { searchInput.focus(); }
+    else { searchInput.value = ''; query = ''; renderBoth(); }
+  });
+  searchInput.addEventListener('input', function () {
+    query = searchInput.value.trim().toLowerCase();
+    renderBoth();
+  });
+
   // ---------------- SINGLE ALBUM (watch layout) ----------------
   function playVideo(i) {
     var v = albumVideos[i];
@@ -537,13 +600,13 @@
     el.playsInline = true;
     el.preload = 'metadata';
     if (v.thumb) el.poster = v.thumb;
-    el.src = v.media;
+    el.src = v.media;   // streamed straight from CDN / storage, not through our server
     box.appendChild(el);
     playerWrap.appendChild(box);
     var cards = itemsGrid.querySelectorAll('.item-card');
     for (var k = 0; k < cards.length; k++) cards[k].classList.toggle('active', k === i);
   }
- 
+
   function renderItems(items, type) {
     itemsGrid.innerHTML = '';
     if (!items.length) { stateBox(itemsGrid, 'This album is empty.'); return; }
@@ -567,7 +630,7 @@
     });
     itemsGrid.appendChild(frag);
   }
- 
+
   function setTab(t) {
     activeTab = t;
     document.getElementById('tabVideos').classList.toggle('active', t === 'video');
@@ -583,12 +646,12 @@
       renderItems(albumPhotos, 'photo');
     }
   }
- 
+
   function setupStats(d) {
     watchStats.hidden = false;
     var views = (d.views !== undefined && d.views !== null) ? fmt(d.views) : (document.getElementById('statViews').textContent || '—');
     setText('wsViews', views);
- 
+
     var baseLikes = Number(d.likes) || 0;
     var key = 'alvee:liked:' + albumSlug;
     var liked = false;
@@ -604,7 +667,7 @@
       paintLike();
     };
     paintLike();
- 
+
     setText('wsShareT', 'Share');
     document.getElementById('wsShare').onclick = function () {
       var data = { title: d.title || document.title, url: location.href };
@@ -617,7 +680,7 @@
       }
     };
   }
- 
+
   function showAlbum(slug) {
     albumSlug = slug;
     galleryHome.hidden = true;
@@ -630,7 +693,7 @@
     watchStats.hidden = true;
     stateBox(itemsGrid, 'Loading...');
     window.scrollTo(0, 0);
- 
+
     fetch('/api/albums/' + encodeURIComponent(slug), { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
@@ -653,10 +716,10 @@
       })
       .catch(function () { stateBox(itemsGrid, 'Could not load this album.', true); });
   }
- 
+
   document.getElementById('tabVideos').addEventListener('click', function () { setTab('video'); });
   document.getElementById('tabPhotos').addEventListener('click', function () { setTab('photo'); });
- 
+
   function showHome() {
     closeLightbox();
     albumView.hidden = true;
@@ -664,7 +727,6 @@
     currentItems = []; albumVideos = []; albumPhotos = [];
     playerWrap.innerHTML = '';
     document.title = 'AlveeCommunity - Videos & Photos';
-    renderAlbums();
   }
   function route() {
     var m = /^#album\/(.+)$/.exec(location.hash);
@@ -685,12 +747,12 @@
     }
   });
   window.addEventListener('hashchange', route);
- 
+
   // ---------------- LIGHTBOX (photos) ----------------
   var lb = document.getElementById('lb');
   var lbStage = document.getElementById('lbStage');
   var lbCount = document.getElementById('lbCount');
- 
+
   function renderLightbox() {
     var item = currentItems[lbIndex];
     if (!item) return;
@@ -735,35 +797,33 @@
     touchX = null;
     if (Math.abs(dx) > 60) step(dx < 0 ? 1 : -1);
   }, { passive: true });
- 
+
   // ---- Collection counts ----
   fetch('/api/collection/counts?scope=all', { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) { setText('statVideos', fmt(d.videos)); setText('statPhotos', fmt(d.photos)); })
     .catch(function () { setText('statVideos', '—'); setText('statPhotos', '—'); });
- 
+
   // ---- Website-wide views ----
   fetch('/api/site/views', { method: 'POST', cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) { setText('statViews', fmt(d.total)); if (albumData && albumData.views == null) setText('wsViews', fmt(d.total)); })
     .catch(function () { setText('statViews', '—'); });
- 
+
   // ---- Upload Album button -> Telegram bot ----
   fetch('/api/upload-link', { cache: 'no-store' })
     .then(function (r) { return r.json(); })
     .then(function (d) { if (d.ok && d.url) { uploadBtn.href = d.url; uploadBtn.hidden = false; } })
     .catch(function () {});
- 
+
   document.getElementById('yr').textContent = new Date().getFullYear();
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && !galleryHome.hidden) loadAlbums(true);
   });
- 
+
   loadAlbums();
   route();
 })();
 </script>
 </body>
 </html>
- 
-Claude finished the response
