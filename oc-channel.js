@@ -778,6 +778,16 @@
 .alv-post[hidden]{display:none !important;}
 .oc-al-wrap{width:100%;max-width:420px;flex-shrink:0;}
 #ocAlbumsHome [hidden], #ocAlbumView [hidden]{display:none !important;}
+.oc-stats{display:grid;grid-template-columns:repeat(3,1fr);width:100%;max-width:420px;margin:-6px auto 16px;padding:8px 6px;flex-shrink:0;
+background:linear-gradient(135deg,rgba(255,255,255,.13),rgba(255,255,255,.04));backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+border:1px solid rgba(255,255,255,.18);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.14);}
+.oc-stat{display:flex;flex-direction:column;align-items:center;gap:1px;text-align:center;min-width:0;}
+.oc-stat + .oc-stat{border-left:1px solid rgba(255,255,255,.1);}
+.oc-stat-top{display:flex;align-items:center;justify-content:center;gap:6px;}
+.oc-stat svg{width:16px;height:16px;color:#f5b82e;flex:0 0 auto;}
+.oc-stat.views svg{color:#a78bfa;}
+.oc-stat-value{font-size:15px;font-weight:700;color:#fff;line-height:1.2;}
+.oc-stat-label{font-size:10px;color:#9ca3af;letter-spacing:.3px;line-height:1.2;}
 .oc-al-head{margin:4px 0 12px;font-size:22px;font-weight:800;letter-spacing:.2px;color:#fff;text-align:left;}
 .oc-al-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
 .oc-al-state{grid-column:1 / -1;text-align:center;color:#9ca3af;font-size:14px;padding:30px 10px;}
@@ -1006,8 +1016,43 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
                 '<nav aria-label="Footer"><a href="/all-collection">Collection</a><a href="/contact">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>' +
             '</footer>';
 
+        /* Video / Photo / Views কার্ড (ALVEE-Subscribe-Trending কার্ডের ঠিক নিচে) */
+        const stats = document.createElement('section');
+        stats.id = 'ocStats';
+        stats.className = 'oc-stats';
+        stats.setAttribute('aria-label', 'Statistics');
+        stats.innerHTML =
+            '<div class="oc-stat">' +
+                '<div class="oc-stat-top">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></svg>' +
+                    '<span class="oc-stat-value" id="ocStatVideos">—</span>' +
+                '</div><div class="oc-stat-label">Video</div>' +
+            '</div>' +
+            '<div class="oc-stat">' +
+                '<div class="oc-stat-top">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>' +
+                    '<span class="oc-stat-value" id="ocStatPhotos">—</span>' +
+                '</div><div class="oc-stat-label">Photo</div>' +
+            '</div>' +
+            '<div class="oc-stat views">' +
+                '<div class="oc-stat-top">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>' +
+                    '<span class="oc-stat-value" id="ocStatViews">—</span>' +
+                '</div><div class="oc-stat-label">Views</div>' +
+            '</div>';
+
+        parent.insertBefore(stats, container);
         parent.insertBefore(home, container);
         parent.insertBefore(view, container);
+
+        fetch('/api/collection/counts?scope=all', { cache: 'no-store' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { setText('ocStatVideos', fmtN(d.videos)); setText('ocStatPhotos', fmtN(d.photos)); })
+            .catch(function () { });
+        fetch('/api/site/views', { method: 'POST', cache: 'no-store' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { setText('ocStatViews', fmtN(d.total)); })
+            .catch(function () { });
 
         /* লাইটবক্স (ছবির জন্য) */
         if (!byId('ocLb')) {
