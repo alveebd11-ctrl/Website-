@@ -2049,10 +2049,11 @@ def oc_collection_page():
   return send_file(BASE_DIR / "oc-collection.html") if (BASE_DIR / "oc-collection.html").is_file() else ("oc-collection.html not found", 404)
 
 
+# all-collection সেকশন বন্ধ — পুরনো লিংকে ক্লিক করলে এখন সরাসরি oc-collection এ চলে যাবে
 @app.route("/all-collection", methods=["GET"])
 @app.route("/all-collection.html", methods=["GET"])
 def all_collection_page():
-  return send_file(BASE_DIR / "all-collection.html") if (BASE_DIR / "all-collection.html").is_file() else ("all-collection.html not found", 404)
+  return redirect("/oc-collection.html", code=301)
 
 
 @app.route("/get-random-background", methods=["GET"])
@@ -2161,10 +2162,9 @@ async def _get_target_chat(chat_id):
 
 
 def build_main_keyboard():
-  # ওয়েবসাইট স্ক্যানিং বাটন সরানো হয়েছে
+  # ওয়েবসাইট স্ক্যানিং বাটন ও পুরনো "Upload Media" বাটন সরানো হয়েছে
   return InlineKeyboardMarkup([
       [InlineKeyboardButton("🖼 Album Upload", callback_data="album_upload")],
-      [InlineKeyboardButton("📤 Upload Media", callback_data="start_upload")],
       [InlineKeyboardButton("➕ Add Story", callback_data="add_story")],
   ])
 
@@ -2669,7 +2669,7 @@ async def _album_save(callback_query):
       pending_uploads.pop(ADMIN_ID, None)
     await _safe_edit(
         message,
-        f"{make_bar(100)} 100%\n✅ Album saved ({len(sent)} files). It is now on top of all-collection.",
+        f"{make_bar(100)} 100%\n✅ Album saved ({len(sent)} files). It is now on top of oc-collection.",
         reply_markup=build_main_keyboard(),
     )
   except Exception as e:
@@ -2701,7 +2701,7 @@ async def start_pyrogram_monitor():
         await _begin_album_draft(message)
         return
       await message.reply(
-          "👋 Welcome Admin!\n\nTap a button below to upload an album, upload media, or add a story:",
+          "👋 Welcome Admin!\n\nTap a button below to upload an album or add a story:",
           reply_markup=build_main_keyboard(),
       )
 
@@ -2753,19 +2753,19 @@ async def start_pyrogram_monitor():
       await callback_query.answer("Cancelled")
       await _safe_edit(callback_query.message, "❌ Cancelled.", reply_markup=build_main_keyboard())
 
-    @client.on_callback_query(filters.regex("^(start_upload|add_story)$"))
+    # পুরনো "Upload Media" (start_upload) বন্ধ — এখন শুধু Add Story চালু
+    @client.on_callback_query(filters.regex("^add_story$"))
     async def start_upload_callback(client, callback_query):
       if callback_query.from_user.id != ADMIN_ID:
         await callback_query.answer("Error Code 403: Unauthorized", show_alert=True)
         return
-      mode = "story" if callback_query.data == "add_story" else "upload"
+      mode = "story"
       with upload_lock:
         pending_uploads[ADMIN_ID] = mode
       await callback_query.answer("Ready!")
-      label = "Story" if mode == "story" else "Media"
       await _safe_edit(
           callback_query.message,
-          f"📤 {label} mode on.\n\nSend photos/videos now (you can send many). Press ✅ Done when finished, or send /cancel to stop.",
+          "📤 Story mode on.\n\nSend photos/videos now (you can send many). Press ✅ Done when finished, or send /cancel to stop.",
           reply_markup=build_done_keyboard(),
       )
 
@@ -2781,7 +2781,8 @@ async def start_pyrogram_monitor():
       await _loading(message, "🔄 Syncing website", 10, "Starting channel scan")
       if telethon_reader_client:
         try:
-          fut = asyncio.run_coroutine_threadsafe(scan_channel("all"), telethon_loop)
+          # শুধু স্টোরি সিঙ্ক হবে; oc-collection এর পুরনো পোস্ট-ফিড আর আপডেট হবে না
+          fut = asyncio.run_coroutine_threadsafe(scan_channel("story"), telethon_loop)
           await asyncio.wrap_future(fut)
         except Exception as e:
           print("Upload-done scan error:", e)
@@ -2820,6 +2821,10 @@ async def start_pyrogram_monitor():
 
       if mode == "album":
         await _album_collect(message)
+        return
+
+      # পুরনো মিডিয়া-আপলোড মোড বন্ধ; শুধু story মোডে ফাইল নেওয়া হবে
+      if mode != "story":
         return
 
       info = _classify_pyro_media(message)
