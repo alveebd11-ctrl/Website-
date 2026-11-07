@@ -835,6 +835,31 @@ text-decoration:none;color:#fff;font-size:17px;font-weight:700;background:linear
 box-shadow:0 8px 26px rgba(0,120,255,.45);transition:transform .2s ease,box-shadow .2s ease;}
 .oc-al-tg:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,120,255,.6);}
 .oc-al-tg svg{width:22px;height:22px;}
+.oc-al-promo{margin-top:16px;padding:12px;border-radius:22px;background:#000;border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 26px rgba(0,0,0,.5);}
+.oc-al-promo-img{position:relative;width:100%;aspect-ratio:1238 / 884;border-radius:16px;overflow:hidden;background:#0d0d10;}
+.oc-al-promo-img > img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
+.oc-al-promo-text{position:absolute;z-index:2;inset:0;padding:12px 12px 10px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;text-align:right;gap:8px;}
+.oc-al-hl{display:inline-block;max-width:70%;padding:4px 10px;border-radius:8px;background:rgba(0,0,0,.82);color:#f5d90a;font-weight:800;line-height:1.25;font-size:clamp(12px,4vw,20px);box-shadow:0 2px 10px rgba(0,0,0,.6);}
+.oc-al-promo-line{position:absolute;z-index:2;left:50%;bottom:8px;transform:translateX(-50%);max-width:calc(100% - 12px);padding:3px 9px;border-radius:6px;background:rgba(0,0,0,.82);box-shadow:0 2px 10px rgba(0,0,0,.6);text-align:center;white-space:nowrap;color:#fff;font-size:clamp(7.5px,2.4vw,12px);font-weight:500;}
+.oc-al-promo-btn{margin-top:12px;display:block;width:100%;padding:13px 16px;text-align:center;text-decoration:none;background:#000;color:#f5d90a;font-weight:800;font-size:15px;letter-spacing:.6px;border-radius:999px;border:1.5px solid #f5d90a;transition:transform .2s ease,background .2s ease;}
+.oc-al-promo-btn:hover{transform:translateY(-2px);background:#15130a;}
+.oc-al-promo-serial{margin-top:10px;text-align:center;font-size:9px;line-height:1.5;color:#6b7280;-webkit-user-select:none;user-select:none;}
+.oc-al-related-head{margin-top:30px;padding-top:22px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.oc-al-related-title{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;line-height:1.2;color:#fff;}
+.oc-al-related-title::before{content:"";width:5px;height:28px;border-radius:3px;background:#ff9500;flex:0 0 auto;}
+.oc-al-rel-actions{display:flex;gap:8px;}
+.oc-al-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:999px;cursor:pointer;background:#1c1c20;color:#fff;font-family:inherit;font-size:14px;font-weight:600;border:1px solid rgba(255,255,255,.14);transition:border-color .2s ease,background .2s ease;}
+.oc-al-pill:hover{border-color:rgba(255,255,255,.35);}
+.oc-al-pill.active{background:#f5b82e;color:#1a1204;border-color:#f5b82e;}
+.oc-al-pill svg{width:17px;height:17px;}
+.oc-al-pill.spin svg{animation:ocAlSpin .5s ease;}
+@keyframes ocAlSpin{to{transform:rotate(360deg);}}
+#ocAllAlbumsGrid{margin-top:16px;}
+.oc-al-footer{margin-top:30px;padding:22px 4px 40px;border-top:1px solid rgba(255,255,255,.08);color:#9ca3af;font-size:12.5px;display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;}
+.oc-al-fbrand{font-weight:800;font-style:italic;letter-spacing:.5px;color:#fff;}
+.oc-al-footer nav{display:flex;gap:14px;flex-wrap:wrap;}
+.oc-al-footer a{color:#9ca3af;text-decoration:none;}
+.oc-al-footer a:hover{color:#fff;}
 .oc-al-sep{margin:22px 0 4px;padding-top:18px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;
 font-size:20px;font-weight:800;line-height:1.2;color:#fff;}
 .oc-al-sep::before{content:"";width:5px;height:28px;border-radius:3px;background:#ff9500;flex:0 0 auto;}
@@ -954,7 +979,32 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
             '<a class="oc-al-tg" href="' + CONFIG.telegramURL + '" target="_blank" rel="noopener noreferrer">' +
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2.5 10.2 13.8M21.5 2.5l-6.7 19-4.6-8.4-8.4-4.6z"/></svg>' +
                 'Join Telegram' +
-            '</a>';
+            '</a>' +
+            '<section class="oc-al-promo" aria-label="Premium membership">' +
+                '<div class="oc-al-promo-img">' +
+                    '<img src="https://res.cloudinary.com/djsbbzas/image/upload/f_auto,q_auto/emily-walters-wifey-005-aspect-ratio-350-250" alt="Premium" loading="lazy" decoding="async" draggable="false">' +
+                    '<div class="oc-al-promo-text"><span class="oc-al-hl">Joining Premium</span><span class="oc-al-hl">Limited time, buy quickly</span></div>' +
+                    '<div class="oc-al-promo-line">Don\'t delay, join the Telegram channel now and inbox us.</div>' +
+                '</div>' +
+                '<a class="oc-al-promo-btn" href="https://t.me/ALVEE_BD" target="_blank" rel="noopener noreferrer">BYE FOR MEMBERSHIP</a>' +
+                '<div class="oc-al-promo-serial">Serial: 001 &bull; 002 &bull; 003 &nbsp;|&nbsp; Premium Access &bull; Limited Slots &bull; Inbox @ALVEE_BD</div>' +
+            '</section>' +
+            '<section aria-label="All albums">' +
+                '<div class="oc-al-related-head">' +
+                    '<div class="oc-al-related-title">All Albums</div>' +
+                    '<div class="oc-al-rel-actions">' +
+                        '<button class="oc-al-pill" id="ocAlShuffle" type="button">' +
+                            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>Shuffle' +
+                        '</button>' +
+                        '<button class="oc-al-pill active" id="ocAlRecommended" type="button">Recommended</button>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="oc-al-grid" id="ocAllAlbumsGrid"><div class="oc-al-state">Loading...</div></div>' +
+            '</section>' +
+            '<footer class="oc-al-footer">' +
+                '<div><span class="oc-al-fbrand">AlveeCommunity</span> &copy; ' + new Date().getFullYear() + '</div>' +
+                '<nav aria-label="Footer"><a href="/all-collection">Collection</a><a href="/contact">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>' +
+            '</footer>';
 
         parent.insertBefore(home, container);
         parent.insertBefore(view, container);
@@ -985,6 +1035,7 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         });
         byId('ocAlTabV').addEventListener('click', function () { setTab('video'); });
         byId('ocAlTabP').addEventListener('click', function () { setTab('photo'); });
+        bindShuffle();
 
         byId('ocLbClose').addEventListener('click', closeLightbox);
         byId('ocLbPrev').addEventListener('click', function () { stepLightbox(-1); });
@@ -1005,6 +1056,68 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
             touchX = null;
             if (Math.abs(dx) > 60) stepLightbox(dx < 0 ? 1 : -1);
         }, { passive: true });
+    }
+
+    /* ---------------- All Albums + Shuffle (অ্যালবাম ভিউর নিচে) ---------------- */
+    let orderedAlbums = [];
+
+    function renderAllAlbums() {
+        const grid = byId('ocAllAlbumsGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        if (!orderedAlbums.length) { stateBox(grid, 'No albums published yet.'); return; }
+        const frag = document.createDocumentFragment();
+        orderedAlbums.forEach(function (a, i) {
+            const card = document.createElement('article');
+            card.className = 'oc-al-card';
+            const thumb = makeAlThumb(a.cover, i < 6);
+            const label = albumCountLabel(a);
+            if (label) {
+                const badge = document.createElement('div');
+                badge.className = 'oc-al-badge';
+                badge.textContent = label;
+                thumb.appendChild(badge);
+            }
+            const cap = document.createElement('div');
+            cap.className = 'oc-al-caption';
+            cap.textContent = a.title || a.slug;
+            card.appendChild(thumb);
+            card.appendChild(cap);
+            card.addEventListener('click', function () { location.hash = 'album/' + encodeURIComponent(a.slug); });
+            frag.appendChild(card);
+        });
+        grid.appendChild(frag);
+    }
+
+    function shuffleArray(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+        return a;
+    }
+
+    function bindShuffle() {
+        const shuffleBtn = byId('ocAlShuffle');
+        const recBtn = byId('ocAlRecommended');
+        if (!shuffleBtn || !recBtn) return;
+        shuffleBtn.addEventListener('click', function () {
+            if (albumsList.length < 2) return;
+            let next = shuffleArray(albumsList);
+            let tries = 0;
+            while (tries < 5 && next.every(function (a, i) { return a === orderedAlbums[i]; })) { next = shuffleArray(albumsList); tries++; }
+            orderedAlbums = next;
+            shuffleBtn.classList.add('spin');
+            window.setTimeout(function () { shuffleBtn.classList.remove('spin'); }, 520);
+            recBtn.classList.remove('active');
+            renderAllAlbums();
+        });
+        recBtn.addEventListener('click', function () {
+            orderedAlbums = albumsList.slice();
+            recBtn.classList.add('active');
+            renderAllAlbums();
+        });
     }
 
     /* ---------------- অ্যালবাম লিস্ট (গ্রিড) ---------------- */
@@ -1064,7 +1177,11 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
             if (sig !== albumsSig) {
                 albumsSig = sig;
                 albumsList = list;
+                orderedAlbums = list.slice();
+                const rec = byId('ocAlRecommended');
+                if (rec) rec.classList.add('active');
                 renderAlbumGrid();
+                renderAllAlbums();
             }
         } catch (error) {
             console.error('Albums fetch error:', error);
