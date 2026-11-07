@@ -3,6 +3,35 @@
     if (window.__ocEnhancedClientLoaded) return;
     window.__ocEnhancedClientLoaded = true;
 
+    /* ================= ANTI-DOWNLOAD PROTECTIONS =================
+       style.css এ কিছু বদলাতে হবে না — দরকারি CSS এখান থেকেই যোগ হয়। */
+    (function antiDownload() {
+        try {
+            var st = document.createElement('style');
+            st.setAttribute('data-oc-protect', '1');
+            st.textContent =
+                'img, video, .alv-media-frame, .alv-thumb-bg, .oc-channel-avatar {' +
+                '-webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-user-drag:none; }' +
+                '.alv-media-frame img, .alv-thumb-bg, .oc-channel-avatar img { pointer-events:none; }';
+            (document.head || document.documentElement).appendChild(st);
+        } catch (e) { }
+
+        /* ইমেজ/ভিডিও/ফ্রেমে রাইট-ক্লিক বন্ধ */
+        document.addEventListener('contextmenu', function (e) {
+            if (e.target && e.target.closest && e.target.closest('img, video, .alv-media-frame, .alv-thumb-bg, .alv-post')) {
+                e.preventDefault();
+            }
+        });
+        /* ড্র্যাগ করে সেভ বন্ধ */
+        document.addEventListener('dragstart', function (e) {
+            if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO')) e.preventDefault();
+        });
+        /* Ctrl+S / Cmd+S বন্ধ */
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) e.preventDefault();
+        });
+    })();
+
     const CONFIG = {
         containerId: 'channelPostsContainer',
         channelId: 'ocChannelWindow',
@@ -545,6 +574,10 @@
         if (item.mediaType === 'video') {
             const video = document.createElement('video');
             video.controls = true; video.playsInline = true;
+            /* ডাউনলোড বাটন, স্পিড মেনু, Picture-in-Picture ও রাইট-ক্লিক বন্ধ */
+            video.setAttribute('controlsList', 'nodownload noplaybackrate');
+            video.disablePictureInPicture = true;
+            video.oncontextmenu = function (e) { e.preventDefault(); return false; };
             /* কাছাকাছি এলে (বা ফোনে ট্যাপ করলে) লোড হয় — একসাথে সব ভিডিও লোড হয় না */
             video.preload = HAS_IO ? 'none' : 'metadata';
             if (thumbURL) video.poster = thumbURL;
