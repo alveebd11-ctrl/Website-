@@ -46,7 +46,9 @@
         batchSize: 10,
         observerRootMargin: '350px 0px',
         telegramURL: 'https://t.me/ALVEE_BD1',
-        brandLinkURL: '/all-collection',
+        brandLinkURL: '/oc-collection.html',
+        /* false = পুরনো চ্যানেল-পোস্ট ফিড বন্ধ; শুধু বট থেকে আপলোড হওয়া অ্যালবাম দেখাবে। আগের ফিড ফেরাতে true দিন */
+        showChannelFeed: false,
         brandText: '🫂🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀🫂♥️⟵꯭'
     };
 
@@ -1013,7 +1015,7 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
             '</section>' +
             '<footer class="oc-al-footer">' +
                 '<div><span class="oc-al-fbrand">AlveeCommunity</span> &copy; ' + new Date().getFullYear() + '</div>' +
-                '<nav aria-label="Footer"><a href="/all-collection">Collection</a><a href="/contact">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>' +
+                '<nav aria-label="Footer"><a href="/oc-collection.html">Collection</a><a href="/contact">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>' +
             '</footer>';
 
         /* Video / Photo / Views কার্ড (ALVEE-Subscribe-Trending কার্ডের ঠিক নিচে) */
@@ -1401,7 +1403,7 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         const wasOpen = isAlbumOpen();
         if (view) view.hidden = true;
         if (home) home.hidden = false;
-        if (container) container.style.display = '';
+        if (container) container.style.display = CONFIG.showChannelFeed ? '' : 'none';
         if (wasOpen) {
             pauseAllVideos();
             const player = byId('ocAlPlayer');
@@ -1508,11 +1510,16 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         buildAlbumUI();
         fetchAlbums(false);
         albumsTimer = window.setInterval(() => { if (!document.hidden && !isAlbumOpen()) fetchAlbums(true); }, CONFIG.refreshInterval);
-        fetchTelegramMedia();
-        pollingTimer = window.setInterval(fetchTelegramMedia, CONFIG.refreshInterval);
-        statsTimer = window.setInterval(() => { if (!document.hidden) refreshAllStats(); }, CONFIG.statsPollInterval);
+        if (CONFIG.showChannelFeed) {
+            fetchTelegramMedia();
+            pollingTimer = window.setInterval(fetchTelegramMedia, CONFIG.refreshInterval);
+            statsTimer = window.setInterval(() => { if (!document.hidden) refreshAllStats(); }, CONFIG.statsPollInterval);
+        } else {
+            const feed = getContainer();
+            if (feed) feed.style.display = 'none';
+        }
 
-        if (HAS_IO) {
+        if (HAS_IO && CONFIG.showChannelFeed) {
             const obs = new IntersectionObserver(e => { if (e[0].isIntersecting) renderNextBatch(); }, { root: getScroller(), rootMargin: CONFIG.observerRootMargin });
             obs.observe(ensureSentinel());
         }
