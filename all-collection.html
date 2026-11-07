@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#09090B">
 <title>AlveeCommunity - Videos & Photos</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
   html, body { min-height: 100%; }
@@ -202,89 +201,32 @@
   .tg-join:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,120,255,.6); }
   .tg-join svg { width: 22px; height: 22px; }
 
-  /* ---------- PROMO BOX (VIP banner, 1536 x 1536) ---------- */
+  /* ---------- PROMO BOX ---------- */
   .promo {
     margin-top: 16px; padding: 12px; border-radius: 22px; background: #000;
     border: 1px solid rgba(255,255,255,.1); box-shadow: 0 10px 26px rgba(0,0,0,.5);
   }
-  .promo-img {
-    position: relative; width: 100%; aspect-ratio: 1536 / 1536; border-radius: 16px; overflow: hidden; background: #0d0d10;
-    container-type: inline-size;
+  .promo-img { position: relative; width: 100%; aspect-ratio: 1238 / 884; border-radius: 16px; overflow: hidden; background: #0d0d10; }
+  .promo-img > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .promo-text {
+    position: absolute; z-index: 2; inset: 0; padding: 12px 12px 10px; display: flex; flex-direction: column;
+    align-items: flex-end; justify-content: center; text-align: right; gap: 8px;
   }
-  .promo-img > img.promo-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-
-  /* VIP banner: right side only, left side stays empty */
-  .vip {
-    position: absolute; z-index: 2; top: 3cqw; right: 2cqw; width: 56cqw; height: 94cqw;
-    display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center;
-    background: transparent;
+  .hl {
+    display: inline-block; max-width: 70%; padding: 4px 10px; border-radius: 8px; background: rgba(0,0,0,.82); color: #f5d90a;
+    font-weight: 800; line-height: 1.25; font-size: clamp(12px, 4vw, 20px); box-shadow: 0 2px 10px rgba(0,0,0,.6);
   }
-  .vip-head { display: flex; flex-direction: column; align-items: center; line-height: 1; background: transparent; }
-  .vip-joining {
-    font-family: 'Great Vibes', cursive; font-weight: 400; font-size: 7cqw; color: #fff; line-height: 1;
-    text-shadow: 0 0 1.2cqw rgba(255,45,170,.9), 0 .3cqw .8cqw rgba(0,0,0,.6);
+  .promo-line {
+    position: absolute; z-index: 2; left: 50%; bottom: 8px; transform: translateX(-50%); max-width: calc(100% - 12px);
+    padding: 3px 9px; border-radius: 6px; background: rgba(0,0,0,.82); box-shadow: 0 2px 10px rgba(0,0,0,.6);
+    text-align: center; white-space: nowrap; color: #fff; font-size: clamp(7.5px, 2.4vw, 12px); font-weight: 500;
   }
-  .vip-tg {
-    font-weight: 800; font-style: italic; font-size: 8cqw; color: #fff; line-height: 1; letter-spacing: -.1cqw;
-    text-shadow: 0 0 1.4cqw rgba(255,45,170,.85), 0 .4cqw 1cqw rgba(0,0,0,.65);
+  .promo-btn {
+    margin-top: 12px; display: block; width: 100%; padding: 13px 16px; text-align: center; text-decoration: none;
+    background: #000; color: #f5d90a; font-weight: 800; font-size: 15px; letter-spacing: .6px; border-radius: 999px;
+    border: 1.5px solid #f5d90a; transition: transform .2s ease, background .2s ease;
   }
-  .vip-prem {
-    font-weight: 800; font-style: italic; font-size: 8.4cqw; color: #ff3db8; line-height: 1; letter-spacing: -.1cqw;
-    text-shadow: 0 0 1.6cqw rgba(255,45,170,.95), 0 0 3cqw rgba(255,45,170,.6), 0 .4cqw 1cqw rgba(0,0,0,.65);
-  }
-
-  .vip-portraits { display: flex; align-items: flex-end; justify-content: center; gap: 1.2cqw; width: 100%; }
-  .vip-portrait {
-    position: relative; overflow: hidden; border-radius: 2.4cqw; background: transparent;
-    border: .5cqw solid #ff3db8; box-shadow: 0 0 1.6cqw rgba(255,45,170,.9), 0 0 3.4cqw rgba(255,45,170,.45);
-    flex: 0 0 auto;
-  }
-  .vip-portrait.small { width: 14cqw; height: 22cqw; }
-  .vip-portrait.main { width: 21cqw; height: 29cqw; z-index: 1; border-width: .6cqw; }
-  .vip-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; display: block; }
-
-  .vip-limited {
-    display: flex; align-items: center; justify-content: center; gap: 1.2cqw; width: 100%;
-    font-weight: 800; font-style: italic; color: #fff; font-size: 3.6cqw; line-height: 1.1; background: transparent;
-    text-shadow: 0 0 1.2cqw rgba(255,45,170,.9), 0 .3cqw .8cqw rgba(0,0,0,.6);
-  }
-  .vip-limited::before, .vip-limited::after {
-    content: ""; flex: 1 1 0; height: .5cqw; border-radius: 1cqw; background: linear-gradient(90deg, transparent, #ff3db8);
-    box-shadow: 0 0 1.2cqw rgba(255,45,170,.9);
-  }
-  .vip-limited::after { background: linear-gradient(270deg, transparent, #ff3db8); }
-  .vip-limited span { flex: 0 0 auto; }
-
-  .vip-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4cqw; width: 100%; }
-  .vip-card {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .8cqw;
-    padding: 1.4cqw .6cqw; border-radius: 2cqw; background: transparent;
-    border: .45cqw solid #ff3db8; box-shadow: 0 0 1.4cqw rgba(255,45,170,.85), inset 0 0 1.2cqw rgba(255,45,170,.35);
-    color: #fff; font-weight: 700; font-size: 2.7cqw; line-height: 1.15;
-    text-shadow: 0 .2cqw .6cqw rgba(0,0,0,.7);
-  }
-  .vip-card svg { width: 4.6cqw; height: 4.6cqw; color: #ff7ccf; filter: drop-shadow(0 0 .8cqw rgba(255,45,170,.9)); }
-
-  .vip-pill {
-    display: inline-block; padding: 1.1cqw 4.6cqw; border-radius: 999px; background: transparent;
-    border: .5cqw solid #ff3db8; box-shadow: 0 0 1.6cqw rgba(255,45,170,.9), inset 0 0 1.2cqw rgba(255,45,170,.35);
-    color: #fff; font-weight: 800; font-size: 3cqw; letter-spacing: .25cqw; text-transform: uppercase; line-height: 1.2;
-    text-shadow: 0 .2cqw .6cqw rgba(0,0,0,.7);
-  }
-
-  .vip-cta {
-    display: flex; align-items: center; justify-content: center; gap: 1.6cqw; width: 100%;
-    padding: 2.2cqw 2.4cqw; border-radius: 999px; text-decoration: none; cursor: pointer;
-    background: linear-gradient(180deg, #ff6fd0 0%, #ff2fa8 48%, #c4137f 100%);
-    border: .35cqw solid rgba(255,255,255,.55);
-    box-shadow: 0 0 2.4cqw rgba(255,45,170,.95), 0 0 5cqw rgba(255,45,170,.5), inset 0 .5cqw .8cqw rgba(255,255,255,.55), inset 0 -.6cqw .9cqw rgba(120,0,80,.5);
-    color: #fff; font-weight: 800; font-size: 3.2cqw; letter-spacing: .2cqw; text-transform: uppercase; white-space: nowrap;
-    text-shadow: 0 .3cqw .6cqw rgba(90,0,60,.6);
-    transition: transform .2s ease, filter .2s ease;
-  }
-  .vip-cta:hover { transform: translateY(-.4cqw); filter: brightness(1.08); }
-  .vip-cta svg { width: 4.6cqw; height: 4.6cqw; flex: 0 0 auto; filter: drop-shadow(0 .2cqw .4cqw rgba(90,0,60,.6)); }
-
+  .promo-btn:hover { transform: translateY(-2px); background: #15130a; }
   .promo-serial {
     margin-top: 10px; text-align: center; font-size: 9px; line-height: 1.5; color: #6b7280;
     -webkit-user-select: none; user-select: none; background: none;
@@ -434,57 +376,17 @@
     Join Telegram
   </a>
 
-  <!-- ===== PROMOTION BOX (1536 x 1536, VIP banner on the right side) ===== -->
+  <!-- ===== PROMOTION BOX ===== -->
   <section class="promo" aria-label="Premium membership">
     <div class="promo-img">
-      <img class="promo-bg" src="https://res.cloudinary.com/djsbbzas/image/upload/v1793976463/Picsart_26-11-06_20-32-02-068.jpg" alt="Premium" width="1536" height="1536" loading="lazy" decoding="async">
-
-      <div class="vip">
-        <!-- Heading -->
-        <div class="vip-head">
-          <span class="vip-joining">Joining</span>
-          <span class="vip-tg">Telegram</span>
-          <span class="vip-prem">Premium</span>
-        </div>
-
-        <!-- Three portraits -->
-        <div class="vip-portraits">
-          <div class="vip-portrait small">
-            <img src="https://res.cloudinary.com/djsbbzas/image/upload/v1793972942/72723020_161_28f6.jpg" alt="Portrait left" width="215" height="338" loading="lazy" decoding="async">
-          </div>
-          <div class="vip-portrait main">
-            <img src="https://res.cloudinary.com/djsbbzas/image/upload/v1793972766/57168749_067_d9da.jpg" alt="Portrait center" width="322" height="445" loading="lazy" decoding="async">
-          </div>
-          <div class="vip-portrait small">
-            <img src="https://res.cloudinary.com/djsbbzas/image/upload/v1793972766/57168749_067_d9da.jpg" alt="Portrait right" width="215" height="338" loading="lazy" decoding="async">
-          </div>
-        </div>
-
-        <!-- Membership notice -->
-        <div class="vip-limited"><span>Membership is limited</span></div>
-
-        <!-- Feature cards -->
-        <div class="vip-cards">
-          <div class="vip-card">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5L3 7zm2.6 13h12.8v2H5.6v-2z"/></svg>
-            <span>Exclusive Access</span>
-          </div>
-          <div class="vip-card">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.5 2.5 2.3 10.1c-.8.3-.8 1.4 0 1.7l4.7 1.6 1.8 5.6c.2.7 1.1.9 1.6.4l2.6-2.5 4.6 3.4c.6.4 1.4.1 1.6-.6L22.9 3.8c.2-.8-.6-1.6-1.4-1.3zM9.2 13.7l8.6-5.4-6.7 6.6-.3 3.3-1.6-4.5z"/></svg>
-            <span>Private Updates</span>
-          </div>
-        </div>
-
-        <!-- Limited access pill -->
-        <div class="vip-pill">Limited Access</div>
-
-        <!-- CTA -->
-        <a class="vip-cta" id="promoBtn" href="https://t.me/ALVEE_BD" target="_blank" rel="noopener noreferrer">
-          <span>Buy VIP Membership</span>
-          <svg viewBox="0 0 24 24" fill="#fff"><path d="M9 11V4.5a1.5 1.5 0 0 1 3 0V10l5.2 1.1A2.5 2.5 0 0 1 19 13.5V17c0 2.8-2.2 5-5 5h-2.2c-1.6 0-3-.8-3.9-2.1l-3.5-5.2a1.4 1.4 0 0 1 2.3-1.6L9 15V11z"/></svg>
-        </a>
+      <img src="https://res.cloudinary.com/djsbbzas/image/upload/f_auto,q_auto/emily-walters-wifey-005-aspect-ratio-350-250" alt="Premium" loading="lazy" decoding="async">
+      <div class="promo-text">
+        <span class="hl">Joining Premium</span>
+        <span class="hl">Limited time, buy quickly</span>
       </div>
+      <div class="promo-line">Don't delay, join the Telegram channel now and inbox us.</div>
     </div>
+    <a class="promo-btn" id="promoBtn" href="https://t.me/ALVEE_BD" target="_blank" rel="noopener noreferrer">BYE FOR MEMBERSHIP</a>
     <div class="promo-serial">Serial: 001 &bull; 002 &bull; 003 &nbsp;|&nbsp; Premium Access &bull; Limited Slots &bull; Inbox @ALVEE_BD</div>
   </section>
 
