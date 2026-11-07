@@ -1,11 +1,11 @@
-/* oc-enhanced-client v2.2 — অ্যালবাম ভিউ আপডেট: Photos বামে, Watch ডানে; ব্যাক বাটন নেই; হেডার নিচে স্ক্রলে সরে গিয়ে শুধু একদম উপরে এলে ফেরে */
+/* oc-enhanced-client v2.3 — অ্যালবামে ক্লিক করলে Photos আগে খোলে; ট্যাবের নাম Videos;
+   হেডারের ব্যাক বাটন অ্যালবাম থেকে লোডিং ছাড়া লিস্টে ফেরায়; হেডার নিচে স্ক্রলে সরে যায় */
 (function () {
     'use strict';
     if (window.__ocEnhancedV2Loaded) return;
     window.__ocEnhancedV2Loaded = true;
 
-    /* ================= ANTI-DOWNLOAD PROTECTIONS =================
-       style.css এ কিছু বদলাতে হবে না — দরকারি CSS এখান থেকেই যোগ হয়। */
+    /* ================= ANTI-DOWNLOAD PROTECTIONS ================= */
     (function antiDownload() {
         try {
             var st = document.createElement('style');
@@ -17,17 +17,14 @@
             (document.head || document.documentElement).appendChild(st);
         } catch (e) { }
 
-        /* ইমেজ/ভিডিও/ফ্রেমে রাইট-ক্লিক বন্ধ */
         document.addEventListener('contextmenu', function (e) {
             if (e.target && e.target.closest && e.target.closest('img, video, .alv-media-frame, .alv-thumb-bg, .alv-post, .oc-al-card, .oc-al-player, .oc-lb')) {
                 e.preventDefault();
             }
         });
-        /* ড্র্যাগ করে সেভ বন্ধ */
         document.addEventListener('dragstart', function (e) {
             if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO')) e.preventDefault();
         });
-        /* Ctrl+S / Cmd+S বন্ধ */
         document.addEventListener('keydown', function (e) {
             if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) e.preventDefault();
         });
@@ -52,9 +49,8 @@
         hideHeaderOnScroll: true,
         /* true = উপরে স্ক্রল করলে হেডার আবার আসবে; false = শুধু একদম উপরে গেলে আসবে */
         headerShowOnScrollUp: false,
-        /* বিজ্ঞাপন বক্সের উপরের লেখা; ফাঁকা '' দিলে লেখা থাকবে না */
         adLabel: 'ADVERTISEMENT',
-        /* false = পুরনো চ্যানেল-পোস্ট ফিড বন্ধ; শুধু বট থেকে আপলোড হওয়া অ্যালবাম দেখাবে। আগের ফিড ফেরাতে true দিন */
+        /* false = পুরনো চ্যানেল-পোস্ট ফিড বন্ধ; শুধু অ্যালবাম দেখাবে */
         showChannelFeed: false,
         brandText: '🫂🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀🫂♥️⟵꯭'
     };
@@ -72,7 +68,6 @@
     let trendingTimer = null;
     let toastTimer = null;
 
-    /* অ্যালবাম সম্পর্কিত স্টেট */
     const albumCards = new Map();
     let albumsList = [];
     let albumsSig = '';
@@ -86,14 +81,13 @@
     let albumData = null;
     let albumVideos = [];
     let albumPhotos = [];
-    let activeTab = 'video';
+    let activeTab = 'photo';
     let currentItems = [];
     let lbIndex = 0;
 
     const byId = id => document.getElementById(id);
     const getChannel = () => byId(CONFIG.channelId);
     const getContainer = () => byId(CONFIG.containerId);
-    /* আসল স্ক্রল হয় .oc-channel-body এ */
     const getScroller = () => {
         const ch = getChannel();
         return (ch && ch.querySelector('.oc-channel-body')) || getContainer();
@@ -104,12 +98,10 @@
         try { return localStorage.getItem(key); }
         catch (e) { return null; }
     }
-
     function safeStorageSet(key, value) {
         try { localStorage.setItem(key, value); }
         catch (e) { }
     }
-
     function makeClientId() {
         var s = '';
         try {
@@ -121,7 +113,6 @@
         }
         return 'c' + Date.now().toString(36) + s;
     }
-
     var clientId = safeStorageGet('oc_client_id');
     if (!clientId || !/^[A-Za-z0-9_-]{8,64}$/.test(clientId)) {
         clientId = makeClientId().slice(0, 60);
@@ -139,7 +130,6 @@
     function showToast(message) {
         const channel = getChannel();
         if (!channel) return;
-
         let toast = channel.querySelector('.alv-toast');
         if (!toast) {
             toast = document.createElement('div');
@@ -148,19 +138,13 @@
             toast.setAttribute('aria-live', 'polite');
             channel.appendChild(toast);
         }
-
         toast.textContent = message;
         toast.classList.add('is-visible');
-
         if (toastTimer) window.clearTimeout(toastTimer);
-        toastTimer = window.setTimeout(() => {
-            toast.classList.remove('is-visible');
-        }, 2200);
+        toastTimer = window.setTimeout(() => { toast.classList.remove('is-visible'); }, 2200);
     }
 
-    /* ---------- ALVEE / Subscribe / Trending কার্ড ----------
-       কার্ডটি স্ক্রল-এরিয়ার (.oc-channel-body) ভেতরে থাকে, তাই নিচে স্ক্রল করলে
-       কনটেন্টের সাথে উপরে উঠে হেডারের নিচে হারিয়ে যায়। উপরের হেডার আগের মতোই থাকে। */
+    /* ---------- ALVEE / Subscribe / Trending কার্ড ---------- */
     function bindTopbar(topbar) {
         if (topbar.dataset.ocBound) return;
         topbar.dataset.ocBound = '1';
@@ -172,7 +156,6 @@
             if (safeStorageGet('alvSubscribeActive') === 'true' || safeStorageGet('oc_subscribed') === '1') {
                 subscribe.classList.add('is-active');
             }
-            /* ক্লিক করলে রং বদলায় (লাল ↔ সবুজ) এবং মনে রাখে */
             subscribe.addEventListener('click', () => {
                 const isActive = subscribe.classList.toggle('is-active');
                 safeStorageSet('alvSubscribeActive', isActive ? 'true' : 'false');
@@ -197,7 +180,6 @@
         const body = channel ? channel.querySelector('.oc-channel-body') : null;
         if (!body) return;
 
-        /* HTML-এ আগে থেকে টপবার থাকলে সেটাকেই স্ক্রল-এরিয়ায় আনা (ডুপ্লিকেট হবে না) */
         const existing = channel.querySelector('.alv-topbar');
         if (existing) {
             if (!body.contains(existing)) body.insertBefore(existing, body.firstChild);
@@ -211,7 +193,7 @@
         const brand = document.createElement('div');
         brand.className = 'alv-brand';
         brand.setAttribute('role', 'link');
-        brand.setAttribute('aria-label', 'ALVEE');   /* ছবি style.css এর --alv-brand-img থেকে আসে */
+        brand.setAttribute('aria-label', 'ALVEE');
         brand.style.cursor = 'pointer';
         brand.addEventListener('click', () => { window.location.href = CONFIG.brandLinkURL; });
 
@@ -303,11 +285,7 @@
         return item;
     }
 
-    /* ---------- মিডিয়ার আসল প্রস্থ ও উচ্চতা (Dynamic Aspect Ratio) ----------
-       ক্রম: (১) সার্ভারের পোস্ট ডেটা → (২) থাম্বনেইল লোড হলে তার সাইজ →
-       (৩) ভিডিও/ছবির আসল সাইজ (loadedmetadata / load)।
-       প্রতিবার কার্ডে --ar-w ও --ar-h বসে; style.css এই দুই ভ্যালু দিয়ে
-       কার্ড ও ফ্রেমের উচ্চতা/প্রস্থ ঠিক করে, তাই লোডিং ও লোড-পরবর্তী সাইজ একই থাকে। */
+    /* ---------- মিডিয়ার আসল রেশিও ---------- */
     function getPostDimensions(post) {
         const width = Number(post.width || post.video_width || post.photo_width || post.media_width || 0);
         const height = Number(post.height || post.video_height || post.photo_height || post.media_height || 0);
@@ -317,17 +295,12 @@
     function applyNativeAspectRatio(card, frame, width, height, isReal) {
         const w = Number(width); const h = Number(height);
         if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return;
-        /* থাম্বনেইল থেকে পাওয়া আনুমানিক সাইজ দিয়ে আসল সাইজ বদলানো যাবে না */
         if (!isReal && frame.dataset.ocAr) return;
         if (isReal) frame.dataset.ocAr = '1';
         card.style.setProperty('--ar-w', String(w));
         card.style.setProperty('--ar-h', String(h));
     }
 
-    /* ---------- ১) লোডিং: থাম্বনেইল (ব্লার + ঢেউ খাওয়া) + সাগরের ঢেউ ----------
-       মিডিয়া লোড হওয়ার সময় ফ্রেমে .is-loading থাকে। থাম্বনেইল থাকলে সেটা ব্লার হয়ে
-       একটু একটু ঢেউ খায় এবং তার উপরে পানির ঢেউ চলে। আসল ভিডিও/ছবি তৈরি হলেই
-       ব্লার ধীরে ধীরে মিলিয়ে যায়। */
     const frameObserver = HAS_IO ? new IntersectionObserver(entries => {
         entries.forEach(en => {
             if (!en.isIntersecting) return;
@@ -344,7 +317,6 @@
         } catch (e) { }
     }
 
-    /* সার্ভার ঘুম থেকে উঠছে বা নেটওয়ার্ক ধীর হলে ছবি/ভিডিও নিজে নিজে আবার চেষ্টা করবে */
     function setupRetry(frame, media, finish) {
         var tries = 0;
         media.addEventListener('error', function () {
@@ -360,8 +332,6 @@
         });
     }
 
-    /* থাম্বনেইল লোড হলে তবেই দেখানো হয়; না এলে কয়েকবার আবার চেষ্টা।
-       onSize: থাম্বনেইলের সাইজ জানালে কার্ড শুরু থেকেই সঠিক রেশিওতে বসে যায় */
     function loadThumb(frame, thumbBg, url, onSize) {
         var tries = 0;
         (function attempt() {
@@ -391,7 +361,6 @@
             done = true;
             frame.classList.remove('is-loading');
             frame.classList.add('is-loaded');
-            /* ব্লার থাম্বনেইল ধীরে মিলিয়ে গিয়ে সরে যাবে */
             var layers = frame.querySelectorAll('.alv-thumb-bg, .alv-blur-wave');
             window.setTimeout(function () {
                 for (var i = 0; i < layers.length; i++) {
@@ -409,7 +378,6 @@
             return;
         }
 
-        /* ভিডিও */
         if (media.readyState >= 2) { finish(); return; }
         frame.classList.add('is-loading');
         ['loadeddata', 'seeked', 'canplay', 'playing'].forEach(function (ev) {
@@ -417,16 +385,15 @@
         });
         setupRetry(frame, media, finish);
         media.addEventListener('loadedmetadata', function () {
-            /* poster না থাকলে ০.১ সেকেন্ডের ফ্রেমকে থাম্বনেইল হিসেবে দেখানো */
             if (!media.poster && media.paused && !media.currentTime) {
                 try { media.currentTime = 0.1; } catch (e) { }
             }
-            window.setTimeout(finish, 600);   /* কিছু ফোনে ফ্রেম ইভেন্ট আসে না — তখনও ভিডিও দেখাবে */
+            window.setTimeout(finish, 600);
         });
         if (frameObserver) frameObserver.observe(frame); else activateVideo(media);
     }
 
-    /* ---------- ২) স্ক্রলে ভিডিও পজ + একটাই ভিডিও চলার নিয়ম ---------- */
+    /* ---------- একটাই ভিডিও চলার নিয়ম ---------- */
     document.addEventListener('play', function (e) {
         var t = e.target;
         if (!t || t.tagName !== 'VIDEO') return;
@@ -445,7 +412,7 @@
         });
     }, { threshold: [0, 0.2, 0.5] }) : null;
 
-    /* ---------- ৩) View / Like / Save — সব ইউজারের মোট সংখ্যা (সার্ভার থেকে) ---------- */
+    /* ---------- View / Like / Save ---------- */
     function jget(url) {
         return fetch(url, { credentials: 'same-origin' }).then(r => {
             if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -511,7 +478,7 @@
                     const stats = (data && data.stats) || {};
                     Object.keys(stats).forEach(id => applyStats(id, stats[id]));
                 })
-                .catch(() => { /* সার্ভার না পেলে আগের সংখ্যাই থাকবে */ });
+                .catch(() => { });
         }
     }
 
@@ -533,7 +500,6 @@
             .catch(() => { });
     }
 
-    /* ভিউ: কার্ড অন্তত ০.৮ সেকেন্ড স্ক্রিনে থাকলে প্রতি ডিভাইসে একবার গোনা হয় */
     var viewed = {};
     try { (JSON.parse(safeStorageGet('oc_viewed') || '[]') || []).forEach(i => { viewed[i] = 1; }); } catch (e) { }
 
@@ -585,10 +551,8 @@
         const knownDimensions = getPostDimensions(post);
         const thumbURL = getThumbURL(post);
 
-        /* সার্ভার থেকে সাইজ জানা থাকলে কার্ড তৈরির মুহূর্তেই বসে যায় */
         if (knownDimensions) applyNativeAspectRatio(card, mediaFrame, knownDimensions.width, knownDimensions.height, true);
 
-        /* ব্লার থাম্বনেইল স্তর (লোডিং চলাকালীন দেখা যায়) */
         if (thumbURL) {
             const thumbBg = document.createElement('div');
             thumbBg.className = 'alv-thumb-bg';
@@ -596,18 +560,15 @@
             blurWave.className = 'alv-blur-wave';
             mediaFrame.appendChild(thumbBg);
             mediaFrame.appendChild(blurWave);
-            /* সাইজ জানা না থাকলে থাম্বনেইলের আসল সাইজ থেকে রেশিও নেওয়া */
             loadThumb(mediaFrame, thumbBg, thumbURL, (w, h) => applyNativeAspectRatio(card, mediaFrame, w, h, false));
         }
 
         if (item.mediaType === 'video') {
             const video = document.createElement('video');
             video.controls = true; video.playsInline = true;
-            /* ডাউনলোড বাটন, স্পিড মেনু, Picture-in-Picture ও রাইট-ক্লিক বন্ধ */
             video.setAttribute('controlsList', 'nodownload noplaybackrate');
             video.disablePictureInPicture = true;
             video.oncontextmenu = function (e) { e.preventDefault(); return false; };
-            /* কাছাকাছি এলে (বা ফোনে ট্যাপ করলে) লোড হয় — একসাথে সব ভিডিও লোড হয় না */
             video.preload = HAS_IO ? 'none' : 'metadata';
             if (thumbURL) video.poster = thumbURL;
             video.addEventListener('loadedmetadata', () => applyNativeAspectRatio(card, mediaFrame, video.videoWidth, video.videoHeight, true), { once: true });
@@ -632,7 +593,6 @@
         const viewsItem = createStatItem('alv-stat-views', '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>', formatCount(views), 'Views');
         statsBar.appendChild(viewsItem);
 
-        /* Like — ক্লিকে সাথে সাথে বদলায়, তারপর সার্ভারের আসল সংখ্যা বসে */
         const likeKey = 'alvLiked_' + item.id;
         const likeControl = createStatButton('alv-stat-like', '<path d="M20.8 8.7c0 5.2-8.8 10.1-8.8 10.1S3.2 13.9 3.2 8.7A4.5 4.5 0 0 1 12 6.5a4.5 4.5 0 0 1 8.8 2.2Z"/>', formatCount(serverLikes));
         likeControl.count.dataset.n = String(serverLikes);
@@ -654,7 +614,6 @@
         commentControl.button.addEventListener('click', () => showToast('Comments are not connected yet.'));
         statsBar.appendChild(commentControl.button);
 
-        /* Save — কতজন সেভ করেছে তার সংখ্যা; ০ হলে "Save" লেখা */
         const bookmarkKey = 'alvBookmarked_' + item.id;
         const wasSaved = safeStorageGet(bookmarkKey) === 'true';
         const bookmarkControl = createStatButton('alv-stat-bookmark', '<path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-4-6 4V4.5Z"/>', wasSaved ? 'Saved' : 'Save');
@@ -728,7 +687,6 @@
         });
         const firstPost = container.querySelector('.alv-post');
         container.insertBefore(fragment, firstPost || ensureSentinel());
-        /* নিচে স্ক্রল করা থাকলে নতুন কার্ড এলে পেজ যেন লাফিয়ে না যায় */
         if (oldScrollTop > 0 && !isAlbumOpen()) scroller.scrollTop = oldScrollTop + (scroller.scrollHeight - oldHeight);
     }
 
@@ -774,11 +732,7 @@
         isFetchingMedia = false;
     }
 
-    /* ================= ALBUMS =================
-       ১) উপরে অ্যালবাম গ্রিড (২ কলাম, কভার + Video/Photo ব্যাজ + নাম)
-       ২) অ্যালবামে ট্যাপ করলে এই পেজেই (#album/স্লাগ) টাইটেল, ট্যাব (Photos বামে, Watch ডানে),
-          ভিডিও প্লেয়ার, থাম্বনেইল গ্রিড, ভিউ-লাইক-শেয়ার, লাইটবক্স খোলে। (ব্যাক বাটন নেই)
-       ৩) অ্যাডভার্টাইজমেন্ট বক্স খালি থাকে। */
+    /* ================= ALBUMS ================= */
     function injectAlbumStyles() {
         try {
             var st = document.createElement('style');
@@ -965,10 +919,10 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
             '<div class="oc-al-bar">' +
                 '<div class="oc-al-meta"><div class="oc-al-title" id="ocAlTitle"></div><div class="oc-al-sub" id="ocAlSub"></div></div>' +
             '</div>' +
-            /* ট্যাব: বামে Photos, ডানে Watch */
+            /* ট্যাব: বামে Photos, ডানে Videos */
             '<div class="oc-al-tabs" id="ocAlTabs" hidden>' +
                 '<div class="oc-al-tab" id="ocAlTabP" role="button">Photos</div>' +
-                '<div class="oc-al-tab" id="ocAlTabV" role="button">Watch</div>' +
+                '<div class="oc-al-tab" id="ocAlTabV" role="button">Videos</div>' +
             '</div>' +
             '<div class="oc-al-playerwrap" id="ocAlPlayer" hidden></div>' +
             '<div class="oc-al-grid oc-al-items" id="ocAlItems"></div>' +
@@ -990,7 +944,6 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2.5 10.2 13.8M21.5 2.5l-6.7 19-4.6-8.4-8.4-4.6z"/></svg>' +
                 'Join Telegram' +
             '</a>' +
-            /* অ্যাডভার্টাইজমেন্ট: লেবেল + খালি বক্স */
             '<section class="oc-al-ad" aria-label="Advertisement">' +
                 (CONFIG.adLabel ? '<div class="oc-al-ad-label">' + CONFIG.adLabel + '</div>' : '') +
                 '<div class="oc-al-ad-box" id="ocAdSlot"></div>' +
@@ -1012,7 +965,6 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
                 '<nav aria-label="Footer"><a href="/oc-collection.html">Collection</a><a href="/contact">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>' +
             '</footer>';
 
-        /* Video / Photo / Views কার্ড (ALVEE-Subscribe-Trending কার্ডের ঠিক নিচে) */
         const stats = document.createElement('section');
         stats.id = 'ocStats';
         stats.className = 'oc-stats';
@@ -1050,7 +1002,6 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
             .then(function (d) { setText('ocStatViews', fmtN(d.total)); })
             .catch(function () { });
 
-        /* লাইটবক্স (ছবির জন্য) */
         if (!byId('ocLb')) {
             const lb = document.createElement('div');
             lb.className = 'oc-lb';
@@ -1091,7 +1042,7 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         }, { passive: true });
     }
 
-    /* ---------------- All Albums + Shuffle (অ্যালবাম ভিউর নিচে) ---------------- */
+    /* ---------------- All Albums + Shuffle ---------------- */
     let orderedAlbums = [];
 
     function renderAllAlbums() {
@@ -1226,7 +1177,7 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         isFetchingAlbums = false;
     }
 
-    /* ---------------- সিঙ্গেল অ্যালবাম (watch layout) ---------------- */
+    /* ---------------- সিঙ্গেল অ্যালবাম ---------------- */
     function playVideo(i) {
         const v = albumVideos[i];
         const wrap = byId('ocAlPlayer');
@@ -1369,10 +1320,11 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
                 if (!items.length) { stateBox(byId('ocAlItems'), 'This album is empty.'); return; }
                 if (albumVideos.length && albumPhotos.length) {
                     byId('ocAlTabs').hidden = false;
-                    setText('ocAlTabV', 'Watch (' + albumVideos.length + ')');
+                    setText('ocAlTabV', 'Videos (' + albumVideos.length + ')');
                     setText('ocAlTabP', 'Photos (' + albumPhotos.length + ')');
                 }
-                setTab(albumVideos.length ? 'video' : 'photo');
+                /* ডিফল্ট ট্যাব: Photos (ফটো না থাকলে Videos) */
+                setTab(albumPhotos.length ? 'photo' : 'video');
             })
             .catch(function () {
                 if (token !== albumReqToken) return;
@@ -1413,7 +1365,22 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         }
     }
 
-    /* ---------------- লাইটবক্স (ছবি) ---------------- */
+    /* ---------- হেডারের ব্যাক বাটন ----------
+       অ্যালবাম খোলা থাকলে: কোনো লোডিং/রিলোড ছাড়া সঙ্গে সঙ্গে অ্যালবাম লিস্টে (oc-collection.html) ফেরে।
+       অ্যালবাম খোলা না থাকলে: আগের মতোই বাটনের লিংকে (/dashboard.html) যায়। */
+    function bindHeaderBack() {
+        const back = document.querySelector('.oc-back-btn');
+        if (!back || back.dataset.ocBound) return;
+        back.dataset.ocBound = '1';
+        back.addEventListener('click', function (e) {
+            if (!isAlbumOpen()) return;
+            e.preventDefault();
+            history.replaceState(null, '', location.pathname + location.search);
+            showHome();
+        });
+    }
+
+    /* ---------------- লাইটবক্স ---------------- */
     function renderLightbox() {
         const item = currentItems[lbIndex];
         if (!item) return;
@@ -1505,7 +1472,7 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         function setHidden(h) {
             if (h === hidden) return;
             hidden = h;
-            lockUntil = Date.now() + 450;   /* অ্যানিমেশনের সময় উচ্চতা বদলে ঝিলিক না দেয় */
+            lockUntil = Date.now() + 450;
             if (h) {
                 header.style.setProperty('--oc-hdr-h', header.offsetHeight + 'px');
                 const menu = byId('ocMenuPopover');
@@ -1538,6 +1505,7 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         moveTopbar();
         injectAlbumStyles();
         buildAlbumUI();
+        bindHeaderBack();
         setupHeaderAutoHide();
         fetchAlbums(false);
         albumsTimer = window.setInterval(() => { if (!document.hidden && !isAlbumOpen()) fetchAlbums(true); }, CONFIG.refreshInterval);
