@@ -1,7 +1,8 @@
+/* oc-enhanced-client v2.0 — oc-v2 ফোল্ডারের কপি (মূল ফাইল অপরিবর্তিত) */
 (function () {
     'use strict';
-    if (window.__ocEnhancedClientLoaded) return;
-    window.__ocEnhancedClientLoaded = true;
+    if (window.__ocEnhancedV2Loaded) return;
+    window.__ocEnhancedV2Loaded = true;
 
     /* ================= ANTI-DOWNLOAD PROTECTIONS =================
        style.css এ কিছু বদলাতে হবে না — দরকারি CSS এখান থেকেই যোগ হয়। */
