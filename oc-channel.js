@@ -1,4 +1,4 @@
-/* oc-enhanced-client v2.0 — oc-v2 ফোল্ডারের কপি (মূল ফাইল অপরিবর্তিত) */
+/* oc-enhanced-client v2.2 — অ্যালবাম ভিউ আপডেট: Photos বামে, Watch ডানে; ব্যাক বাটন নেই; হেডার নিচে স্ক্রলে সরে গিয়ে শুধু একদম উপরে এলে ফেরে */
 (function () {
     'use strict';
     if (window.__ocEnhancedV2Loaded) return;
@@ -48,6 +48,12 @@
         observerRootMargin: '350px 0px',
         telegramURL: 'https://t.me/ALVEE_BD1',
         brandLinkURL: '/oc-collection.html',
+        /* স্ক্রল করলে উপরের হেডার সরে যাবে (false দিলে হেডার সবসময় থাকবে) */
+        hideHeaderOnScroll: true,
+        /* true = উপরে স্ক্রল করলে হেডার আবার আসবে; false = শুধু একদম উপরে গেলে আসবে */
+        headerShowOnScrollUp: false,
+        /* বিজ্ঞাপন বক্সের উপরের লেখা; ফাঁকা '' দিলে লেখা থাকবে না */
+        adLabel: 'ADVERTISEMENT',
         /* false = পুরনো চ্যানেল-পোস্ট ফিড বন্ধ; শুধু বট থেকে আপলোড হওয়া অ্যালবাম দেখাবে। আগের ফিড ফেরাতে true দিন */
         showChannelFeed: false,
         brandText: '🫂🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀🫂♥️⟵꯭'
@@ -768,11 +774,11 @@
         isFetchingMedia = false;
     }
 
-    /* ================= ALBUMS (all-collection.html এর হুবহু স্টাইল ও ওয়াচ-ভিউ) =================
+    /* ================= ALBUMS =================
        ১) উপরে অ্যালবাম গ্রিড (২ কলাম, কভার + Video/Photo ব্যাজ + নাম)
-       ২) অ্যালবামে ট্যাপ করলে এই পেজেই (#album/স্লাগ) all-collection এর মতো
-          Watch / Photos ট্যাব, ভিডিও প্লেয়ার, থাম্বনেইল গ্রিড, ভিউ-লাইক-শেয়ার, লাইটবক্স খোলে।
-       ৩) নিচে আগের মতোই ফিড (ভিডিও/ছবির পোস্ট) থাকে। */
+       ২) অ্যালবামে ট্যাপ করলে এই পেজেই (#album/স্লাগ) টাইটেল, ট্যাব (Photos বামে, Watch ডানে),
+          ভিডিও প্লেয়ার, থাম্বনেইল গ্রিড, ভিউ-লাইক-শেয়ার, লাইটবক্স খোলে। (ব্যাক বাটন নেই)
+       ৩) অ্যাডভার্টাইজমেন্ট বক্স খালি থাকে। */
     function injectAlbumStyles() {
         try {
             var st = document.createElement('style');
@@ -815,9 +821,6 @@ border:1px solid rgba(255,255,255,.18);font-size:12px;font-weight:600;color:#fff
 background:rgba(10,10,12,.6);border:1px solid rgba(255,255,255,.2);pointer-events:none;}
 .oc-al-play svg{width:13px;height:13px;fill:#fff;}
 .oc-al-bar{display:flex;align-items:center;gap:12px;margin-top:4px;}
-.oc-al-back{flex:0 0 auto;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;cursor:pointer;
-background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);}
-.oc-al-back svg{width:18px;height:18px;}
 .oc-al-meta{min-width:0;flex:1;}
 .oc-al-title{font-size:17px;font-weight:700;line-height:1.3;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .oc-al-sub{font-size:12px;color:#9ca3af;margin-top:2px;}
@@ -848,15 +851,11 @@ text-decoration:none;color:#fff;font-size:17px;font-weight:700;background:linear
 box-shadow:0 8px 26px rgba(0,120,255,.45);transition:transform .2s ease,box-shadow .2s ease;}
 .oc-al-tg:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,120,255,.6);}
 .oc-al-tg svg{width:22px;height:22px;}
-.oc-al-promo{margin-top:16px;padding:12px;border-radius:22px;background:#000;border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 26px rgba(0,0,0,.5);}
-.oc-al-promo-img{position:relative;width:100%;aspect-ratio:1238 / 884;border-radius:16px;overflow:hidden;background:#0d0d10;}
-.oc-al-promo-img > img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
-.oc-al-promo-text{position:absolute;z-index:2;inset:0;padding:12px 12px 10px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;text-align:right;gap:8px;}
-.oc-al-hl{display:inline-block;max-width:70%;padding:4px 10px;border-radius:8px;background:rgba(0,0,0,.82);color:#f5d90a;font-weight:800;line-height:1.25;font-size:clamp(12px,4vw,20px);box-shadow:0 2px 10px rgba(0,0,0,.6);}
-.oc-al-promo-line{position:absolute;z-index:2;left:50%;bottom:8px;transform:translateX(-50%);max-width:calc(100% - 12px);padding:3px 9px;border-radius:6px;background:rgba(0,0,0,.82);box-shadow:0 2px 10px rgba(0,0,0,.6);text-align:center;white-space:nowrap;color:#fff;font-size:clamp(7.5px,2.4vw,12px);font-weight:500;}
-.oc-al-promo-btn{margin-top:12px;display:block;width:100%;padding:13px 16px;text-align:center;text-decoration:none;background:#000;color:#f5d90a;font-weight:800;font-size:15px;letter-spacing:.6px;border-radius:999px;border:1.5px solid #f5d90a;transition:transform .2s ease,background .2s ease;}
-.oc-al-promo-btn:hover{transform:translateY(-2px);background:#15130a;}
-.oc-al-promo-serial{margin-top:10px;text-align:center;font-size:9px;line-height:1.5;color:#6b7280;-webkit-user-select:none;user-select:none;}
+.oc-al-ad{margin-top:16px;text-align:center;}
+.oc-al-ad-label{display:inline-block;padding:7px 26px;border-radius:10px;background:#151518;border:1px solid rgba(255,255,255,.1);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:3px;color:#8b8b93;}
+.oc-al-ad-box{margin-top:14px;width:100%;aspect-ratio:6 / 5;border-radius:22px;background:#0a0a0c;border:1px solid rgba(255,255,255,.1);overflow:hidden;}
+.oc-channel-header{transition:margin-top .3s ease,opacity .25s ease,transform .3s ease;}
+.oc-channel-header.oc-hdr-hidden{margin-top:calc(-1 * var(--oc-hdr-h,80px)) !important;opacity:0 !important;transform:translateY(-100%) !important;pointer-events:none !important;}
 .oc-al-related-head{margin-top:30px;padding-top:22px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
 .oc-al-related-title{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;line-height:1.2;color:#fff;}
 .oc-al-related-title::before{content:"";width:5px;height:28px;border-radius:3px;background:#ff9500;flex:0 0 auto;}
@@ -964,14 +963,12 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         view.hidden = true;
         view.innerHTML =
             '<div class="oc-al-bar">' +
-                '<div class="oc-al-back" id="ocAlBack" role="button" aria-label="Back to albums">' +
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>' +
-                '</div>' +
                 '<div class="oc-al-meta"><div class="oc-al-title" id="ocAlTitle"></div><div class="oc-al-sub" id="ocAlSub"></div></div>' +
             '</div>' +
+            /* ট্যাব: বামে Photos, ডানে Watch */
             '<div class="oc-al-tabs" id="ocAlTabs" hidden>' +
-                '<div class="oc-al-tab" id="ocAlTabV" role="button">Watch</div>' +
                 '<div class="oc-al-tab" id="ocAlTabP" role="button">Photos</div>' +
+                '<div class="oc-al-tab" id="ocAlTabV" role="button">Watch</div>' +
             '</div>' +
             '<div class="oc-al-playerwrap" id="ocAlPlayer" hidden></div>' +
             '<div class="oc-al-grid oc-al-items" id="ocAlItems"></div>' +
@@ -993,14 +990,10 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2.5 10.2 13.8M21.5 2.5l-6.7 19-4.6-8.4-8.4-4.6z"/></svg>' +
                 'Join Telegram' +
             '</a>' +
-            '<section class="oc-al-promo" aria-label="Premium membership">' +
-                '<div class="oc-al-promo-img">' +
-                    '<img src="https://res.cloudinary.com/djsbbzas/image/upload/f_auto,q_auto/emily-walters-wifey-005-aspect-ratio-350-250" alt="Premium" loading="lazy" decoding="async" draggable="false">' +
-                    '<div class="oc-al-promo-text"><span class="oc-al-hl">Joining Premium</span><span class="oc-al-hl">Limited time, buy quickly</span></div>' +
-                    '<div class="oc-al-promo-line">Don\'t delay, join the Telegram channel now and inbox us.</div>' +
-                '</div>' +
-                '<a class="oc-al-promo-btn" href="https://t.me/ALVEE_BD" target="_blank" rel="noopener noreferrer">BYE FOR MEMBERSHIP</a>' +
-                '<div class="oc-al-promo-serial">Serial: 001 &bull; 002 &bull; 003 &nbsp;|&nbsp; Premium Access &bull; Limited Slots &bull; Inbox @ALVEE_BD</div>' +
+            /* অ্যাডভার্টাইজমেন্ট: লেবেল + খালি বক্স */
+            '<section class="oc-al-ad" aria-label="Advertisement">' +
+                (CONFIG.adLabel ? '<div class="oc-al-ad-label">' + CONFIG.adLabel + '</div>' : '') +
+                '<div class="oc-al-ad-box" id="ocAdSlot"></div>' +
             '</section>' +
             '<section aria-label="All albums">' +
                 '<div class="oc-al-related-head">' +
@@ -1073,14 +1066,6 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
             (getChannel() || document.body).appendChild(lb);
         }
 
-        byId('ocAlBack').addEventListener('click', function () {
-            if (location.hash) {
-                history.back();
-                window.setTimeout(function () { if (/^#album\//.test(location.hash)) location.hash = ''; }, 150);
-            } else {
-                showHome();
-            }
-        });
         byId('ocAlTabV').addEventListener('click', function () { setTab('video'); });
         byId('ocAlTabP').addEventListener('click', function () { setTab('photo'); });
         bindShuffle();
@@ -1504,11 +1489,56 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         if (menu.classList.contains('open')) byId('ocSearchPanel')?.classList.remove('open');
     };
 
+    /* ---------------- স্ক্রল করলে হেডার সরে যাওয়া ---------------- */
+    function setupHeaderAutoHide() {
+        if (!CONFIG.hideHeaderOnScroll) return;
+        const channel = getChannel();
+        const header = channel ? channel.querySelector('.oc-channel-header') : null;
+        const scroller = getScroller();
+        if (!header || !scroller) return;
+
+        let hidden = false;
+        let lastTop = scroller.scrollTop;
+        let lockUntil = 0;
+        let ticking = false;
+
+        function setHidden(h) {
+            if (h === hidden) return;
+            hidden = h;
+            lockUntil = Date.now() + 450;   /* অ্যানিমেশনের সময় উচ্চতা বদলে ঝিলিক না দেয় */
+            if (h) {
+                header.style.setProperty('--oc-hdr-h', header.offsetHeight + 'px');
+                const menu = byId('ocMenuPopover');
+                if (menu) menu.classList.remove('open');
+            }
+            header.classList.toggle('oc-hdr-hidden', h);
+        }
+
+        scroller.addEventListener('scroll', function () {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(function () {
+                ticking = false;
+                const top = scroller.scrollTop;
+                if (top <= 10) { setHidden(false); lastTop = top; return; }
+                if (Date.now() < lockUntil) { lastTop = top; return; }
+                const diff = top - lastTop;
+                if (Math.abs(diff) < 6) return;
+                lastTop = top;
+                const sp = byId('ocSearchPanel');
+                const searchOpen = !!(sp && sp.classList.contains('open'));
+                if (diff > 0 && !searchOpen) setHidden(true);
+                else if (diff < 0 && CONFIG.headerShowOnScrollUp) setHidden(false);
+            });
+        }, { passive: true });
+    }
+
     function start() {
         originalTitle = document.title;
         moveTopbar();
         injectAlbumStyles();
         buildAlbumUI();
+        setupHeaderAutoHide();
         fetchAlbums(false);
         albumsTimer = window.setInterval(() => { if (!document.hidden && !isAlbumOpen()) fetchAlbums(true); }, CONFIG.refreshInterval);
         if (CONFIG.showChannelFeed) {
