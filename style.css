@@ -1,89 +1,218 @@
-/* ====== style.css এর একদম শেষে এই অংশটা যোগ করুন (আগের কিছু মুছতে হবে না) ====== */
+:root {
+    --oc-bg: #09090B;
+    --oc-panel: #171719;
+    --oc-accent: #f59e0b;
+    --oc-subscribe: #ef4444;
+    --oc-telegram: linear-gradient(135deg, #0088cc, #00bfff);
+    --oc-text: #f8fafc;
+    --oc-muted: #94a3b8;
+    --oc-border: rgba(255, 255, 255, 0.12);
 
-/* হেডার স্ক্রল করলে উপরে চলে যাবে: পুরো পেজ একসাথে স্ক্রল করে */
-body { overflow-x: hidden; overflow-y: auto; }
-#ocChannelWindow { height: auto; min-height: 100vh; width: 100%; }
-.oc-channel-body { overflow: visible; }
-html { scroll-behavior: smooth; }
-
-.oc-btnlink { text-decoration: none; display: inline-block; }
-
-/* স্ট্যাটস */
-.oc-stats {
-    display: grid; grid-template-columns: repeat(3, 1fr); padding: 12px 6px; border-radius: 22px;
-    background: #1b1b1f; border: 1px solid var(--oc-border); box-shadow: 0 10px 26px rgba(0,0,0,.4);
+    /* ALVEE নামের বাটন: ব্যাকগ্রাউন্ডের রং (সাদা)। হলুদ চাইলে #ffec01 দিন */
+    --alv-brand-bg: #ffffff;
+    /* ALVEE ছবি: আগের base64 ছবিটা এখানে নেই। নিচের লাইনে আপনার ছবির লিংক দিতে পারেন, যেমন url("https://.../alvee.png") */
+    --alv-brand-img: none;
 }
-.oc-stat { display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; color: var(--oc-muted); font-size: 13px; }
-.oc-stat + .oc-stat { border-left: 1px solid rgba(255,255,255,.1); }
-.oc-stat-row { display: flex; align-items: center; gap: 8px; color: var(--oc-accent); }
-.oc-stat-row svg { width: 20px; height: 20px; }
-.oc-stat-row b { font-size: 22px; font-weight: 700; color: #fff; }
-.oc-stat.is-views .oc-stat-row { color: #a78bfa; }
 
-.oc-h2 { margin: 24px 0 14px; font-size: 26px; font-weight: 800; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* গ্রিড ও কার্ড */
-.oc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.oc-card { min-width: 0; border-radius: 18px; overflow: hidden; background: #121214; border: 1px solid rgba(255,255,255,.08);
-    box-shadow: 0 8px 20px rgba(0,0,0,.35); cursor: pointer; transition: transform .25s ease, border-color .25s ease; }
-.oc-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,.18); }
-.oc-card.is-active { border-color: #8b5cf6; }
-.oc-thumb { position: relative; width: 100%; aspect-ratio: 3 / 4;
-    background: linear-gradient(110deg,#1a1a1e 30%,#26262c 50%,#1a1a1e 70%); background-size: 200% 100%; animation: oc-shimmer 1.4s infinite linear; }
-.oc-thumb.loaded { animation: none; background: #1a1a1e; }
-@keyframes oc-shimmer { to { background-position: -200% 0; } }
-.oc-thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .35s ease; }
-.oc-thumb img.ok { opacity: 1; }
-.oc-album-card .oc-thumb { aspect-ratio: 9 / 14; }
-.oc-caption { padding: 12px 12px 14px; font-size: 14px; font-weight: 600; line-height: 1.35;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.oc-badge { position: absolute; left: 10px; bottom: 10px; z-index: 2; padding: 5px 11px; border-radius: 999px;
-    background: rgba(10,10,12,.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,.18); font-size: 12px; font-weight: 600; }
-.oc-play { position: absolute; z-index: 2; right: 8px; top: 8px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
-    background: rgba(10,10,12,.6); border: 1px solid rgba(255,255,255,.2); }
-.oc-play svg { width: 13px; height: 13px; fill: #fff; }
-.oc-state { grid-column: 1 / -1; text-align: center; color: var(--oc-muted); font-size: 17px; padding: 50px 10px; }
-.oc-state.is-error { color: #f87171; }
-[hidden] { display: none !important; }
+body {
+    background: var(--oc-bg);
+    color: var(--oc-text);
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden;
+}
 
-/* অ্যালবাম ভিউ */
-.oc-album-bar { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
-.oc-album-back { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #fff; cursor: pointer;
-    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); }
-.oc-album-back svg { width: 18px; height: 18px; }
-.oc-album-meta { min-width: 0; flex: 1; }
-.oc-album-title { font-size: 18px; font-weight: 700; line-height: 1.3; }
-.oc-album-sub { font-size: 12px; color: var(--oc-muted); margin-top: 2px; }
-.oc-tabs { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.oc-tab { padding: 11px; border-radius: 14px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600; color: #d1d5db;
-    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); }
-.oc-tab.is-active { background: var(--oc-accent); color: #1a1204; border-color: var(--oc-accent); }
-.oc-player { margin-top: 16px; border-radius: 20px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,.1); }
-.oc-player video { display: block; width: 100%; max-height: 72vh; background: #000; object-fit: contain; }
-#ocItems { margin-top: 16px; }
-.oc-watch-stats { margin-top: 18px; display: flex; gap: 8px; padding: 8px; border-radius: 20px; background: #1b1b1f; border: 1px solid var(--oc-border); }
-.oc-ws { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 11px 8px; border-radius: 14px; font-family: inherit;
-    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: #e5e7eb; font-size: 13px; font-weight: 600; cursor: pointer; }
-.oc-ws svg { width: 16px; height: 16px; }
-.oc-ws.is-views svg { color: #a78bfa; cursor: default; }
-.oc-ws[aria-pressed="true"] { color: #fb7185; border-color: rgba(251,113,133,.6); }
+#ocChannelWindow {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    background: var(--oc-bg);
+    position: relative;
+}
 
-/* লাইটবক্স */
-.oc-lb { position: fixed; inset: 0; z-index: 100; display: none; background: rgba(0,0,0,.94); align-items: center; justify-content: center; }
-.oc-lb.open { display: flex; }
-.oc-lb-stage { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 56px 0; }
-.oc-lb-stage img { max-width: 100%; max-height: 100%; object-fit: contain; }
-.oc-lb-btn { position: absolute; z-index: 2; width: 44px; height: 44px; border-radius: 50%; color: #fff; cursor: pointer; font-size: 22px; line-height: 1;
-    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); }
-.oc-lb-close { top: 12px; right: 12px; }
-.oc-lb-prev { left: 10px; top: 50%; transform: translateY(-50%); }
-.oc-lb-next { right: 10px; top: 50%; transform: translateY(-50%); }
-.oc-lb-count { position: absolute; top: 24px; left: 0; right: 0; text-align: center; font-size: 13px; font-weight: 600; pointer-events: none; }
+.oc-channel-header {
+    position: relative; z-index: 10; display: flex; align-items: center; gap: 10px;
+    padding: 14px 12px; width: 100%; background: rgba(10, 5, 20, 0.6);
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(138, 43, 226, 0.2);
+}
+.oc-back-btn, .oc-header-action-btn {
+    flex: 0 0 clamp(45px, 11vw, 55px); width: clamp(45px, 11vw, 55px); height: clamp(45px, 11vw, 55px);
+    padding: 0; border: 1px solid rgba(138, 43, 226, 0.3); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    background: rgba(255, 255, 255, 0.05); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.2s;
+    text-decoration: none;
+}
+.oc-back-btn:active, .oc-header-action-btn:active { transform: scale(0.92); }
+.oc-back-btn svg, .oc-header-action-btn svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+.oc-channel-title-pill {
+    flex: 1; min-width: 0; min-height: clamp(45px, 11vw, 55px); padding: 5px 12px 5px 5px;
+    display: flex; align-items: center; gap: 10px; border-radius: 100px;
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(138, 43, 226, 0.3);
+}
+.oc-channel-avatar {
+    flex: 0 0 clamp(35px, 9vw, 45px); width: clamp(35px, 9vw, 45px); height: clamp(35px, 9vw, 45px);
+    border: 2px solid rgba(138, 43, 226, 0.8); border-radius: 50%; overflow: hidden; background: #111;
+}
+.oc-channel-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.oc-channel-title-text { flex: 1; min-width: 0; }
+.oc-channel-title-text h2 { margin: 0; color: #fff; font-size: clamp(13px, 3.5vw, 18px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.oc-channel-title-text p { margin: 2px 0 0; color: #b39ddb; font-size: clamp(10px, 2.5vw, 12px); font-weight: 500; }
 
-@media (min-width: 720px) { .oc-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
-@media (min-width: 1000px) { .oc-grid { grid-template-columns: repeat(4, 1fr); } }
+.oc-menu-popover, .oc-search-panel {
+    position: absolute; top: 80px; right: 16px; z-index: 20; display: none;
+    width: min(270px, calc(100vw - 32px)); padding: 16px; flex-direction: column; gap: 8px;
+    background: rgba(15, 10, 30, 0.95); backdrop-filter: blur(10px); color: #fff;
+    border: 1px solid rgba(138, 43, 226, 0.4); border-radius: 18px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.oc-menu-popover.open, .oc-search-panel.open { display: flex; }
+.oc-search-panel { flex-direction: row; align-items: center; }
+.oc-search-panel input { width: 100%; background: transparent; border: none; outline: none; color: #fff; font-family: inherit; font-size: 14px; }
+.oc-menu-popover button { margin-top: 8px; padding: 10px; border: none; border-radius: 12px; background: rgba(138, 43, 226, 0.2); color: #e0b0ff; cursor: pointer; }
 
-/* অ্যালবাম গ্রিডের জন্য কনটেইনার চওড়া করা (আগে ৪২০px সীমা ছিল) */
-#channelPostsContainer { max-width: 1100px; }
-.oc-channel-body > .alv-topbar { max-width: 1100px; }
+/* ===== ALVEE / Subscribe / Trending: গ্লাস কার্ড ===== */
+.alv-topbar {
+    display: flex; align-items: center; gap: 6px; padding: 10px 12px;
+    width: 100%; max-width: 420px; margin: 12px auto 4px; flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04));
+    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    z-index: 5;
+}
+.oc-channel-body > .alv-topbar { margin: 0 auto 18px; }
+.alv-brand {
+    flex: 0 1 150px; min-width: 110px; height: 40px; padding: 0 10px;
+    background-color: var(--alv-brand-bg);
+    background-image: var(--alv-brand-img);
+    background-repeat: no-repeat; background-position: center;
+    background-size: contain; background-origin: content-box;
+    border-radius: 10px;
+}
+/* ALVEE ছবি না থাকলে লেখা দেখাবে। ছবি আবার বসালে এই ব্লকটা মুছে দিন */
+.alv-brand::before {
+    content: "ALVEE"; display: grid; place-items: center; height: 100%;
+    color: #000; font-weight: 800; font-style: italic; letter-spacing: 1px; font-size: 18px;
+}
+.alv-header-btn {
+    font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 10px; border: none; cursor: pointer; transition: all 0.3s ease;
+}
+.alv-subscribe-btn { background: var(--oc-subscribe); color: #ffffff; }
+.alv-subscribe-btn.is-active { background: #10b981; }
+.alv-trending-btn { background: #27272a; color: #ffffff; border: 1px solid var(--oc-border); margin-left: auto; }
+.alv-trending-btn.is-active { background: rgba(245, 158, 11, 0.2); border-color: var(--oc-accent); color: var(--oc-accent); }
+
+.oc-channel-body { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+#channelPostsContainer { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 25px; padding-bottom: 50px; }
+
+/* ===== কার্ড: মিডিয়ার আসল রেশিও ===== */
+.alv-post {
+    --ar-w: 16;
+    --ar-h: 9;
+    background: var(--oc-panel); border: 1px solid var(--oc-border); border-radius: 20px;
+    padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    width: min(100%, calc(65vh * var(--ar-w) / var(--ar-h) + 30px));
+    min-width: min(260px, 100%);
+    max-width: 100%;
+    align-self: center;
+}
+.alv-post-head { position: relative; }
+
+.alv-media-frame {
+    position: relative; width: 100%;
+    aspect-ratio: var(--ar-w) / var(--ar-h);
+    border: 1px solid var(--oc-border);
+    border-radius: 14px; overflow: hidden;
+    display: block; line-height: 0;
+    background: linear-gradient(180deg, #14161c 0%, #0d0f14 100%);
+}
+.alv-media-frame img, .alv-media-frame video {
+    position: absolute; inset: 0; display: block;
+    width: 100%; height: 100%;
+    object-fit: cover;
+}
+
+/* ===== লোডিং ===== */
+.alv-media-frame.is-loading > img,
+.alv-media-frame.is-loading > video {
+    opacity: 0; pointer-events: none;
+}
+
+.alv-thumb-bg {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+    filter: blur(3px); transform: scale(1.05);
+    opacity: 0; transition: opacity 0.5s ease;
+}
+.alv-thumb-bg.is-ready { opacity: 1; }
+.alv-media-frame.is-loaded .alv-thumb-bg { opacity: 0; }
+
+.alv-blur-wave {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 25%, transparent 50%, #000 75%, transparent 100%);
+    mask-image: linear-gradient(180deg, transparent 0%, #000 25%, transparent 50%, #000 75%, transparent 100%);
+    -webkit-mask-size: 100% 240px; mask-size: 100% 240px;
+    -webkit-mask-repeat: repeat-y; mask-repeat: repeat-y;
+    animation: alv-blur-sweep 2.8s linear infinite;
+}
+@keyframes alv-blur-sweep {
+    from { -webkit-mask-position: 0 0;     mask-position: 0 0; }
+    to   { -webkit-mask-position: 0 240px; mask-position: 0 240px; }
+}
+.alv-media-frame.is-loaded .alv-blur-wave { opacity: 0; transition: opacity 0.4s ease; }
+
+.alv-media-frame.is-loading:not(.has-thumb)::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.06) 50%, transparent 70%);
+    background-size: 220% 100%;
+    animation: alv-shimmer 1.8s ease-in-out infinite;
+}
+@keyframes alv-shimmer { from { background-position: 120% 0; } to { background-position: -120% 0; } }
+@media (prefers-reduced-motion: reduce) {
+    .alv-blur-wave, .alv-media-frame.is-loading:not(.has-thumb)::after { animation: none; }
+}
+
+.alv-tribute-btn {
+    position: absolute; top: 10px; left: 10px; background: rgba(23, 23, 25, 0.9);
+    border: 1px solid var(--oc-border); color: var(--oc-accent); font-size: 11px;
+    font-weight: 600; padding: 5px 10px; border-radius: 8px; display: inline-flex;
+    align-items: center; gap: 5px; cursor: pointer; z-index: 10;
+}
+.alv-tribute-icon { width: 14px; height: 14px; fill: currentColor; }
+
+.alv-toast {
+    position: absolute; top: 48px; left: 10px; background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--oc-accent); color: #ffffff; font-size: 10px;
+    padding: 5px 8px; border-radius: 6px; z-index: 20; opacity: 0;
+    transition: opacity 0.3s ease; pointer-events: none;
+}
+.alv-toast.is-visible { opacity: 1; }
+
+.alv-stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
+.alv-stat-item {
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--oc-border);
+    border-radius: 10px; padding: 8px 2px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px; color: var(--oc-muted);
+    font-size: 10px; font-weight: 500; cursor: pointer; transition: background 0.2s;
+}
+.alv-stat-item:not(.alv-stat-views):hover { background: rgba(255, 255, 255, 0.08); }
+.alv-stat-item svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+.alv-stat-like.is-active svg { stroke: #ef4444; fill: #ef4444; }
+.alv-stat-bookmark.is-active svg { stroke: var(--oc-accent); fill: var(--oc-accent); }
+.alv-stat-views { color: #38bdf8; cursor: default; }
+.alv-stat-like.is-active, .alv-stat-bookmark.is-active { color: #f8fafc; }
+
+.alv-telegram-btn {
+    width: 100%; background: var(--oc-telegram); color: #ffffff; font-size: 14px;
+    font-weight: 700; padding: 12px; border-radius: 12px; border: none; display: flex;
+    align-items: center; justify-content: center; gap: 8px; text-decoration: none;
+    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4);
+}
+.alv-telegram-btn svg { width: 18px; height: 18px; fill: #ffffff; }
+
+.oc-feed-sentinel { color: var(--oc-muted); font-size: 13px; text-align: center; padding: 20px; }
+.oc-channel-status { color: var(--oc-accent); font-size: 13px; text-align: center; padding: 20px; }
