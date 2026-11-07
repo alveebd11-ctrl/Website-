@@ -36,6 +36,8 @@
         containerId: 'channelPostsContainer',
         channelId: 'ocChannelWindow',
         apiURL: '/api/channel/posts',
+        albumsURL: '/api/albums',
+        albumPageURL: '/all-collection.html#album/',
         mediaURLPrefix: '/api/channel/media/',
         thumbURLPrefix: '/api/channel/thumb/',
         statsURL: '/api/channel/stats',
@@ -60,6 +62,10 @@
     let currentSearchQuery = '';
     let trendingTimer = null;
     let toastTimer = null;
+    const albumCards = new Map();
+    const knownAlbumSlugs = new Set();
+    let isFetchingAlbums = false;
+    let albumsTimer = null;
 
     const byId = id => document.getElementById(id);
     const getChannel = () => byId(CONFIG.channelId);
@@ -696,7 +702,7 @@
             fragment.appendChild(card);
             registerCard(card, item);
         });
-        const firstPost = container.querySelector('.alv-post');
+        const firstPost = container.querySelector('.alv-post:not(.oc-album-card)');
         container.insertBefore(fragment, firstPost || ensureSentinel());
         /* নিচে স্ক্রল করা থাকলে নতুন কার্ড এলে পেজ যেন লাফিয়ে না যায় */
         if (oldScrollTop > 0) scroller.scrollTop = oldScrollTop + (scroller.scrollHeight - oldHeight);
@@ -744,6 +750,127 @@
         isFetchingMedia = false;
     }
 
+    /* ================= ALBUMS (all-collection এর সব অ্যালবাম এই পেজে) =================
+       /api/albums থেকে সব অ্যালবাম এনে ফিডের উপরে কার্ড হিসেবে দেখায়।
+       কার্ডে ট্যাপ করলে all-collection পেজে ওই অ্যালবাম খোলে। */
+    function injectAlbumStyles() {
+        try {
+            var st = document.createElement('style');
+            st.setAttribute('data-oc-albums', '1');
+            st.textContent =
+                '.alv-post[hidden]{display:none !important;}' +
+                '.oc-album-badge{position:absolute;left:10px;bottom:10px;z-index:3;padding:5px 11px;border-radius:999px;' +
+                'background:rgba(10,10,12,.65);border:1px solid rgba(255,255,255,.18);font-size:12px;font-weight:600;' +
+                'color:#fff;line-height:1.2;pointer-events:none;}' +
+                '.oc-album-title{color:#f8fafc;font-size:15px;font-weight:700;line-height:1.35;display:-webkit-box;' +
+                '-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
+                '.oc-album-open{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;' +
+                'border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;' +
+                'color:#1a1204;background:var(--oc-accent,#f59e0b);}' +
+                '.oc-album-card .alv-media-frame{cursor:pointer;}';
+            (document.head || document.documentElement).appendChild(st);
+        } catch (e) { }
+    }
+
+    function albumCountLabel(a) {
+        const parts = [];
+        if (a.videos) parts.push(a.videos + (a.videos === 1 ? ' Video' : ' Videos'));
+        if (a.photos) parts.push(a.photos + (a.photos === 1 ? ' Photo' : ' Photos'));
+        return parts.join(' • ');
+    }
+
+    function openAlbum(slug) {
+        const url = CONFIG.albumPageURL + encodeURIComponent(slug);
+        try { window.top.location.href = url; }
+        catch (e) { window.location.href = url; }
+    }
+
+    function createAlbumCard(album) {
+        const card = document.createElement('article');
+        card.className = 'alv-post oc-album-card';
+        card.dataset.album = album.slug;
+        card.dataset.metadata = String(album.title || '').toLowerCase();
+        /* কভার সাধারণত লম্বা — লোড হলে আসল রেশিও বসে যায় */
+        card.style.setProperty('--ar-w', '3');
+        card.style.setProperty('--ar-h', '4');
+
+        const frame = document.createElement('div');
+        frame.className = 'alv-media-frame';
+
+        if (album.cover) {
+            const thumbBg = document.createElement('div');
+            thumbBg.className = 'alv-thumb-bg';
+            const blurWave = document.createElement('div');
+            blurWave.className = 'alv-blur-wave';
+            frame.appendChild(thumbBg);
+            frame.appendChild(blurWave);
+            loadThumb(frame, thumbBg, album.cover, (w, h) => applyNativeAspectRatio(card, frame, w, h, false));
+
+            const img = document.createElement('img');
+            img.loading = 'lazy'; img.draggable = false; img.alt = '';
+            img.addEventListener('load', () => applyNativeAspectRatio(card, frame, img.naturalWidth, img.naturalHeight, true), { once: true });
+            img.src = album.cover;
+            frame.appendChild(img);
+        }
+
+        const badgeText = albumCountLabel(album);
+        if (badgeText) {
+            const badge = document.createElement('div');
+            badge.className = 'oc-album-badge';
+            badge.textContent = badgeText;
+            frame.appendChild(badge);
+        }
+        prepareFrame(frame);
+
+        const title = document.createElement('div');
+        title.className = 'oc-album-title';
+        title.textContent = album.title || album.slug;
+
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'oc-album-open';
+        open.textContent = 'Open Album';
+
+        const go = () => openAlbum(album.slug);
+        frame.addEventListener('click', go);
+        open.addEventListener('click', go);
+
+        card.append(frame, title, open);
+        return card;
+    }
+
+    async function fetchAlbums() {
+        if (isFetchingAlbums) return;
+        isFetchingAlbums = true;
+        try {
+            const response = await fetch(CONFIG.albumsURL, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+            const data = await response.json();
+            if (data && data.ok && Array.isArray(data.albums)) {
+                const fresh = data.albums.filter(a => a && a.slug && !knownAlbumSlugs.has(a.slug));
+                if (fresh.length) {
+                    const container = getContainer();
+                    const fragment = document.createDocumentFragment();
+                    fresh.forEach(a => {
+                        knownAlbumSlugs.add(a.slug);
+                        const card = createAlbumCard(a);
+                        albumCards.set(a.slug, card);
+                        fragment.appendChild(card);
+                    });
+                    /* নতুন অ্যালবাম সবার উপরে (API আগে থেকেই নতুন-আগে সাজানো) */
+                    container.insertBefore(fragment, container.firstChild);
+                    if (currentSearchQuery) applySearch();
+                }
+            }
+        } catch (error) { console.error('Albums fetch error:', error); }
+        isFetchingAlbums = false;
+    }
+
+    function applySearch() {
+        const q = currentSearchQuery;
+        mediaCards.forEach(c => { c.hidden = q ? !c.dataset.metadata.includes(q) : false; });
+        albumCards.forEach(c => { c.hidden = q ? !c.dataset.metadata.includes(q) : false; });
+    }
+
     window.toggleOCSearch = function () {
         const panel = byId('ocSearchPanel');
         if (!panel) return;
@@ -754,7 +881,7 @@
         } else {
             if (byId('ocSearchInput')) byId('ocSearchInput').value = '';
             currentSearchQuery = '';
-            mediaCards.forEach(c => c.hidden = false);
+            applySearch();
         }
     };
 
@@ -767,6 +894,9 @@
 
     function start() {
         moveTopbar();
+        injectAlbumStyles();
+        fetchAlbums();
+        albumsTimer = window.setInterval(fetchAlbums, CONFIG.refreshInterval);
         fetchTelegramMedia();
         pollingTimer = window.setInterval(fetchTelegramMedia, CONFIG.refreshInterval);
         statsTimer = window.setInterval(() => { if (!document.hidden) refreshAllStats(); }, CONFIG.statsPollInterval);
@@ -778,7 +908,7 @@
 
         byId('ocSearchInput')?.addEventListener('input', e => {
             currentSearchQuery = e.target.value.toLowerCase();
-            mediaCards.forEach(c => c.hidden = !c.dataset.metadata.includes(currentSearchQuery));
+            applySearch();
         });
     }
 
