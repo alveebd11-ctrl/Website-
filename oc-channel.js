@@ -18,7 +18,7 @@
 
         /* ইমেজ/ভিডিও/ফ্রেমে রাইট-ক্লিক বন্ধ */
         document.addEventListener('contextmenu', function (e) {
-            if (e.target && e.target.closest && e.target.closest('img, video, .alv-media-frame, .alv-thumb-bg, .alv-post')) {
+            if (e.target && e.target.closest && e.target.closest('img, video, .alv-media-frame, .alv-thumb-bg, .alv-post, .oc-al-card, .oc-al-player, .oc-lb')) {
                 e.preventDefault();
             }
         });
@@ -37,7 +37,7 @@
         channelId: 'ocChannelWindow',
         apiURL: '/api/channel/posts',
         albumsURL: '/api/albums',
-        albumPageURL: '/all-collection.html#album/',
+        albumDetailURL: '/api/albums/',
         mediaURLPrefix: '/api/channel/media/',
         thumbURLPrefix: '/api/channel/thumb/',
         statsURL: '/api/channel/stats',
@@ -62,10 +62,24 @@
     let currentSearchQuery = '';
     let trendingTimer = null;
     let toastTimer = null;
+
+    /* অ্যালবাম সম্পর্কিত স্টেট */
     const albumCards = new Map();
-    const knownAlbumSlugs = new Set();
+    let albumsList = [];
+    let albumsSig = '';
     let isFetchingAlbums = false;
     let albumsTimer = null;
+    let albumsLoadedOnce = false;
+    let originalTitle = document.title;
+    let savedScrollTop = 0;
+    let albumReqToken = 0;
+    let albumSlug = '';
+    let albumData = null;
+    let albumVideos = [];
+    let albumPhotos = [];
+    let activeTab = 'video';
+    let currentItems = [];
+    let lbIndex = 0;
 
     const byId = id => document.getElementById(id);
     const getChannel = () => byId(CONFIG.channelId);
@@ -667,6 +681,7 @@
         if (video && pauseObserver) pauseObserver.observe(video);
         if (viewObserver) viewObserver.observe(card);
         queueStats(item.id);
+        updateFeedSep();
     }
 
     function ensureSentinel() {
@@ -702,10 +717,10 @@
             fragment.appendChild(card);
             registerCard(card, item);
         });
-        const firstPost = container.querySelector('.alv-post:not(.oc-album-card)');
+        const firstPost = container.querySelector('.alv-post');
         container.insertBefore(fragment, firstPost || ensureSentinel());
         /* নিচে স্ক্রল করা থাকলে নতুন কার্ড এলে পেজ যেন লাফিয়ে না যায় */
-        if (oldScrollTop > 0) scroller.scrollTop = oldScrollTop + (scroller.scrollHeight - oldHeight);
+        if (oldScrollTop > 0 && !isAlbumOpen()) scroller.scrollTop = oldScrollTop + (scroller.scrollHeight - oldHeight);
     }
 
     function renderNextBatch() {
@@ -750,26 +765,104 @@
         isFetchingMedia = false;
     }
 
-    /* ================= ALBUMS (all-collection এর সব অ্যালবাম এই পেজে) =================
-       /api/albums থেকে সব অ্যালবাম এনে ফিডের উপরে কার্ড হিসেবে দেখায়।
-       কার্ডে ট্যাপ করলে all-collection পেজে ওই অ্যালবাম খোলে। */
+    /* ================= ALBUMS (all-collection.html এর হুবহু স্টাইল ও ওয়াচ-ভিউ) =================
+       ১) উপরে অ্যালবাম গ্রিড (২ কলাম, কভার + Video/Photo ব্যাজ + নাম)
+       ২) অ্যালবামে ট্যাপ করলে এই পেজেই (#album/স্লাগ) all-collection এর মতো
+          Watch / Photos ট্যাব, ভিডিও প্লেয়ার, থাম্বনেইল গ্রিড, ভিউ-লাইক-শেয়ার, লাইটবক্স খোলে।
+       ৩) নিচে আগের মতোই ফিড (ভিডিও/ছবির পোস্ট) থাকে। */
     function injectAlbumStyles() {
         try {
             var st = document.createElement('style');
             st.setAttribute('data-oc-albums', '1');
-            st.textContent =
-                '.alv-post[hidden]{display:none !important;}' +
-                '.oc-album-badge{position:absolute;left:10px;bottom:10px;z-index:3;padding:5px 11px;border-radius:999px;' +
-                'background:rgba(10,10,12,.65);border:1px solid rgba(255,255,255,.18);font-size:12px;font-weight:600;' +
-                'color:#fff;line-height:1.2;pointer-events:none;}' +
-                '.oc-album-title{color:#f8fafc;font-size:15px;font-weight:700;line-height:1.35;display:-webkit-box;' +
-                '-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}' +
-                '.oc-album-open{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;' +
-                'border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:700;' +
-                'color:#1a1204;background:var(--oc-accent,#f59e0b);}' +
-                '.oc-album-card .alv-media-frame{cursor:pointer;}';
+            st.textContent = `
+.alv-post[hidden]{display:none !important;}
+.oc-al-wrap{width:100%;max-width:420px;flex-shrink:0;}
+#ocAlbumsHome [hidden], #ocAlbumView [hidden]{display:none !important;}
+.oc-al-head{margin:4px 0 12px;font-size:22px;font-weight:800;letter-spacing:.2px;color:#fff;text-align:left;}
+.oc-al-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+.oc-al-state{grid-column:1 / -1;text-align:center;color:#9ca3af;font-size:14px;padding:30px 10px;}
+.oc-al-state.error{color:#f87171;}
+.oc-al-card{min-width:0;border-radius:20px;overflow:hidden;background:#121214;border:1px solid rgba(255,255,255,.08);
+box-shadow:0 8px 20px rgba(0,0,0,.35);transition:transform .25s ease,border-color .25s ease;cursor:pointer;}
+.oc-al-card[hidden]{display:none !important;}
+.oc-al-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.18);}
+.oc-al-thumb{position:relative;width:100%;aspect-ratio:9 / 14;
+background:linear-gradient(110deg,#1a1a1e 30%,#26262c 50%,#1a1a1e 70%);background-size:200% 100%;animation:ocAlShimmer 1.4s infinite linear;}
+.oc-al-thumb.loaded{animation:none;background:#1a1a1e;}
+@keyframes ocAlShimmer{to{background-position:-200% 0;}}
+.oc-al-thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .35s ease;pointer-events:none;}
+.oc-al-thumb img.ok{opacity:1;}
+.oc-al-item .oc-al-thumb{aspect-ratio:3 / 4;}
+.oc-al-caption{padding:12px 12px 14px;font-size:14px;font-weight:600;color:#e5e7eb;line-height:1.35;
+display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(2 * 1.35em + 26px);}
+.oc-al-badge{position:absolute;left:10px;bottom:10px;z-index:2;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;
+border-radius:999px;background:rgba(10,10,12,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+border:1px solid rgba(255,255,255,.18);font-size:12px;font-weight:600;color:#fff;line-height:1.2;pointer-events:none;}
+.oc-al-play{position:absolute;z-index:2;right:8px;top:8px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+background:rgba(10,10,12,.6);border:1px solid rgba(255,255,255,.2);pointer-events:none;}
+.oc-al-play svg{width:13px;height:13px;fill:#fff;}
+.oc-al-bar{display:flex;align-items:center;gap:12px;margin-top:4px;}
+.oc-al-back{flex:0 0 auto;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;cursor:pointer;
+background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);}
+.oc-al-back svg{width:18px;height:18px;}
+.oc-al-meta{min-width:0;flex:1;}
+.oc-al-title{font-size:17px;font-weight:700;line-height:1.3;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.oc-al-sub{font-size:12px;color:#9ca3af;margin-top:2px;}
+.oc-al-tabs{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.oc-al-tab{padding:10px;border-radius:14px;cursor:pointer;font-size:13px;font-weight:600;color:#d1d5db;text-align:center;
+background:rgba(255,255,255,.05);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+border:1px solid rgba(255,255,255,.1);transition:border-color .2s ease;}
+.oc-al-tab:hover{border-color:rgba(255,255,255,.28);}
+.oc-al-tab.active{background:#f5b82e;color:#1a1204;border-color:#f5b82e;}
+.oc-al-playerwrap{margin-top:16px;}
+.oc-al-player{border-radius:20px;overflow:hidden;background:#000;border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 26px rgba(0,0,0,.45);}
+.oc-al-player video{display:block;width:100%;max-height:72vh;background:#000;object-fit:contain;}
+.oc-al-items{margin-top:16px;}
+.oc-al-item.active{border-color:#f5b82e;}
+.oc-al-stats{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px;padding:8px;border-radius:20px;
+background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.02));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+border:1px solid rgba(255,255,255,.09);box-shadow:0 10px 26px rgba(0,0,0,.4);}
+.oc-al-ws{flex:1 1 88px;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 8px;border-radius:14px;
+background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:#e5e7eb;font-size:13px;font-weight:600;
+text-decoration:none;cursor:pointer;font-family:inherit;transition:border-color .2s ease;}
+.oc-al-ws svg{width:16px;height:16px;flex:0 0 auto;}
+button.oc-al-ws:hover{border-color:rgba(255,255,255,.3);}
+.oc-al-ws.views{cursor:default;}
+.oc-al-ws.views svg{color:#a78bfa;}
+.oc-al-ws.like[aria-pressed="true"]{color:#fb7185;border-color:rgba(251,113,133,.6);}
+.oc-al-tg{margin-top:16px;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px 18px;border-radius:999px;
+text-decoration:none;color:#fff;font-size:17px;font-weight:700;background:linear-gradient(90deg,#00a3ff,#1a5cff);
+box-shadow:0 8px 26px rgba(0,120,255,.45);transition:transform .2s ease,box-shadow .2s ease;}
+.oc-al-tg:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,120,255,.6);}
+.oc-al-tg svg{width:22px;height:22px;}
+.oc-al-sep{margin:22px 0 4px;padding-top:18px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;
+font-size:20px;font-weight:800;line-height:1.2;color:#fff;}
+.oc-al-sep::before{content:"";width:5px;height:28px;border-radius:3px;background:#ff9500;flex:0 0 auto;}
+.oc-lb{position:fixed;inset:0;z-index:200;display:none;background:rgba(0,0,0,.94);align-items:center;justify-content:center;}
+.oc-lb.open{display:flex;}
+.oc-lb-stage{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:56px 0;}
+.oc-lb-stage img{max-width:100%;max-height:100%;object-fit:contain;background:#000;-webkit-touch-callout:none;}
+.oc-lb-btn{position:absolute;z-index:2;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#fff;cursor:pointer;
+background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.oc-lb-btn svg{width:20px;height:20px;}
+.oc-lb-close{top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;}
+.oc-lb-prev{left:10px;top:50%;transform:translateY(-50%);}
+.oc-lb-next{right:10px;top:50%;transform:translateY(-50%);}
+.oc-lb-count{position:absolute;top:calc(env(safe-area-inset-top,0px) + 22px);left:0;right:0;text-align:center;font-size:13px;font-weight:600;color:#e5e7eb;pointer-events:none;}
+@media (min-width:720px){.oc-al-grid{gap:14px;}}
+@media (prefers-reduced-motion: reduce){.oc-al-thumb{animation:none !important;}.oc-al-card{transition:none !important;}}
+`;
             (document.head || document.documentElement).appendChild(st);
         } catch (e) { }
+    }
+
+    const PLAY_SVG = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+
+    function fmtN(n) {
+        n = Number(n) || 0;
+        if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+        return String(n);
     }
 
     function albumCountLabel(a) {
@@ -779,96 +872,450 @@
         return parts.join(' • ');
     }
 
-    function openAlbum(slug) {
-        const url = CONFIG.albumPageURL + encodeURIComponent(slug);
-        try { window.top.location.href = url; }
-        catch (e) { window.location.href = url; }
+    function setText(id, value) { const el = byId(id); if (el) el.textContent = value; }
+
+    function stateBox(parent, text, isError) {
+        parent.innerHTML = '';
+        const d = document.createElement('div');
+        d.className = 'oc-al-state' + (isError ? ' error' : '');
+        d.textContent = text;
+        parent.appendChild(d);
     }
 
-    function createAlbumCard(album) {
-        const card = document.createElement('article');
-        card.className = 'alv-post oc-album-card';
-        card.dataset.album = album.slug;
-        card.dataset.metadata = String(album.title || '').toLowerCase();
-        /* কভার সাধারণত লম্বা — লোড হলে আসল রেশিও বসে যায় */
-        card.style.setProperty('--ar-w', '3');
-        card.style.setProperty('--ar-h', '4');
-
-        const frame = document.createElement('div');
-        frame.className = 'alv-media-frame';
-
-        if (album.cover) {
-            const thumbBg = document.createElement('div');
-            thumbBg.className = 'alv-thumb-bg';
-            const blurWave = document.createElement('div');
-            blurWave.className = 'alv-blur-wave';
-            frame.appendChild(thumbBg);
-            frame.appendChild(blurWave);
-            loadThumb(frame, thumbBg, album.cover, (w, h) => applyNativeAspectRatio(card, frame, w, h, false));
-
-            const img = document.createElement('img');
-            img.loading = 'lazy'; img.draggable = false; img.alt = '';
-            img.addEventListener('load', () => applyNativeAspectRatio(card, frame, img.naturalWidth, img.naturalHeight, true), { once: true });
-            img.src = album.cover;
-            frame.appendChild(img);
-        }
-
-        const badgeText = albumCountLabel(album);
-        if (badgeText) {
-            const badge = document.createElement('div');
-            badge.className = 'oc-album-badge';
-            badge.textContent = badgeText;
-            frame.appendChild(badge);
-        }
-        prepareFrame(frame);
-
-        const title = document.createElement('div');
-        title.className = 'oc-album-title';
-        title.textContent = album.title || album.slug;
-
-        const open = document.createElement('button');
-        open.type = 'button';
-        open.className = 'oc-album-open';
-        open.textContent = 'Open Album';
-
-        const go = () => openAlbum(album.slug);
-        frame.addEventListener('click', go);
-        open.addEventListener('click', go);
-
-        card.append(frame, title, open);
-        return card;
+    function makeAlThumb(src, eager) {
+        const thumb = document.createElement('div');
+        thumb.className = 'oc-al-thumb';
+        const img = new Image();
+        img.loading = eager ? 'eager' : 'lazy';
+        img.decoding = 'async';
+        img.alt = '';
+        img.draggable = false;
+        img.onload = function () { img.classList.add('ok'); thumb.classList.add('loaded'); };
+        img.onerror = function () { thumb.classList.add('loaded'); };
+        if (src) img.src = src; else thumb.classList.add('loaded');
+        thumb.appendChild(img);
+        return thumb;
     }
 
-    async function fetchAlbums() {
+    function isAlbumOpen() {
+        const v = byId('ocAlbumView');
+        return !!(v && !v.hidden);
+    }
+
+    function pauseAllVideos() {
+        document.querySelectorAll('video').forEach(v => { try { if (!v.paused) v.pause(); } catch (e) { } });
+    }
+
+    function buildAlbumUI() {
+        const container = getContainer();
+        if (!container || !container.parentNode || byId('ocAlbumsHome')) return;
+        const parent = container.parentNode;
+
+        const home = document.createElement('section');
+        home.id = 'ocAlbumsHome';
+        home.className = 'oc-al-wrap';
+        home.setAttribute('aria-label', 'Albums');
+        home.innerHTML =
+            '<h2 class="oc-al-head">Videos &amp; Photos</h2>' +
+            '<div class="oc-al-grid" id="ocAlbumsGrid"><div class="oc-al-state">Loading...</div></div>' +
+            '<div class="oc-al-sep" id="ocFeedSep" hidden>Latest Posts</div>';
+
+        const view = document.createElement('section');
+        view.id = 'ocAlbumView';
+        view.className = 'oc-al-wrap';
+        view.hidden = true;
+        view.innerHTML =
+            '<div class="oc-al-bar">' +
+                '<div class="oc-al-back" id="ocAlBack" role="button" aria-label="Back to albums">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>' +
+                '</div>' +
+                '<div class="oc-al-meta"><div class="oc-al-title" id="ocAlTitle"></div><div class="oc-al-sub" id="ocAlSub"></div></div>' +
+            '</div>' +
+            '<div class="oc-al-tabs" id="ocAlTabs" hidden>' +
+                '<div class="oc-al-tab" id="ocAlTabV" role="button">Watch</div>' +
+                '<div class="oc-al-tab" id="ocAlTabP" role="button">Photos</div>' +
+            '</div>' +
+            '<div class="oc-al-playerwrap" id="ocAlPlayer" hidden></div>' +
+            '<div class="oc-al-grid oc-al-items" id="ocAlItems"></div>' +
+            '<div class="oc-al-stats" id="ocAlStats" hidden>' +
+                '<div class="oc-al-ws views" title="Views">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>' +
+                    '<span id="ocAlViews">—</span>' +
+                '</div>' +
+                '<button class="oc-al-ws like" id="ocAlLike" type="button" aria-pressed="false">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>' +
+                    '<span id="ocAlLikeN">0</span>' +
+                '</button>' +
+                '<button class="oc-al-ws" id="ocAlShare" type="button">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>' +
+                    '<span id="ocAlShareT">Share</span>' +
+                '</button>' +
+            '</div>' +
+            '<a class="oc-al-tg" href="' + CONFIG.telegramURL + '" target="_blank" rel="noopener noreferrer">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2.5 10.2 13.8M21.5 2.5l-6.7 19-4.6-8.4-8.4-4.6z"/></svg>' +
+                'Join Telegram' +
+            '</a>';
+
+        parent.insertBefore(home, container);
+        parent.insertBefore(view, container);
+
+        /* লাইটবক্স (ছবির জন্য) */
+        if (!byId('ocLb')) {
+            const lb = document.createElement('div');
+            lb.className = 'oc-lb';
+            lb.id = 'ocLb';
+            lb.setAttribute('role', 'dialog');
+            lb.setAttribute('aria-modal', 'true');
+            lb.innerHTML =
+                '<div class="oc-lb-count" id="ocLbCount"></div>' +
+                '<div class="oc-lb-btn oc-lb-close" id="ocLbClose" role="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>' +
+                '<div class="oc-lb-btn oc-lb-prev" id="ocLbPrev" role="button" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>' +
+                '<div class="oc-lb-btn oc-lb-next" id="ocLbNext" role="button" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>' +
+                '<div class="oc-lb-stage" id="ocLbStage"></div>';
+            (getChannel() || document.body).appendChild(lb);
+        }
+
+        byId('ocAlBack').addEventListener('click', function () {
+            if (location.hash) {
+                history.back();
+                window.setTimeout(function () { if (/^#album\//.test(location.hash)) location.hash = ''; }, 150);
+            } else {
+                showHome();
+            }
+        });
+        byId('ocAlTabV').addEventListener('click', function () { setTab('video'); });
+        byId('ocAlTabP').addEventListener('click', function () { setTab('photo'); });
+
+        byId('ocLbClose').addEventListener('click', closeLightbox);
+        byId('ocLbPrev').addEventListener('click', function () { stepLightbox(-1); });
+        byId('ocLbNext').addEventListener('click', function () { stepLightbox(1); });
+        document.addEventListener('keydown', function (e) {
+            const lb = byId('ocLb');
+            if (!lb || !lb.classList.contains('open')) return;
+            if (e.key === 'Escape') closeLightbox();
+            else if (e.key === 'ArrowLeft') stepLightbox(-1);
+            else if (e.key === 'ArrowRight') stepLightbox(1);
+        });
+        let touchX = null;
+        const lbEl = byId('ocLb');
+        lbEl.addEventListener('touchstart', function (e) { touchX = e.touches.length === 1 ? e.touches[0].clientX : null; }, { passive: true });
+        lbEl.addEventListener('touchend', function (e) {
+            if (touchX === null) return;
+            const dx = e.changedTouches[0].clientX - touchX;
+            touchX = null;
+            if (Math.abs(dx) > 60) stepLightbox(dx < 0 ? 1 : -1);
+        }, { passive: true });
+    }
+
+    /* ---------------- অ্যালবাম লিস্ট (গ্রিড) ---------------- */
+    function renderAlbumGrid() {
+        const grid = byId('ocAlbumsGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        albumCards.clear();
+        if (!albumsList.length) {
+            stateBox(grid, 'No albums published yet.');
+            updateFeedSep();
+            return;
+        }
+        const frag = document.createDocumentFragment();
+        albumsList.forEach(function (a, i) {
+            const card = document.createElement('article');
+            card.className = 'oc-al-card';
+            card.dataset.metadata = String(a.title || '').toLowerCase();
+            const thumb = makeAlThumb(a.cover, i < 6);
+            const label = albumCountLabel(a);
+            if (label) {
+                const badge = document.createElement('div');
+                badge.className = 'oc-al-badge';
+                badge.textContent = label;
+                thumb.appendChild(badge);
+            }
+            const cap = document.createElement('div');
+            cap.className = 'oc-al-caption';
+            cap.textContent = a.title || a.slug;
+            card.appendChild(thumb);
+            card.appendChild(cap);
+            card.addEventListener('click', function () { location.hash = 'album/' + encodeURIComponent(a.slug); });
+            albumCards.set(a.slug, card);
+            frag.appendChild(card);
+        });
+        grid.appendChild(frag);
+        applySearch();
+        updateFeedSep();
+    }
+
+    function updateFeedSep() {
+        const sep = byId('ocFeedSep');
+        if (!sep) return;
+        sep.hidden = !(albumsList.length && mediaCards.size);
+    }
+
+    async function fetchAlbums(silent) {
         if (isFetchingAlbums) return;
         isFetchingAlbums = true;
         try {
             const response = await fetch(CONFIG.albumsURL, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
             const data = await response.json();
-            if (data && data.ok && Array.isArray(data.albums)) {
-                const fresh = data.albums.filter(a => a && a.slug && !knownAlbumSlugs.has(a.slug));
-                if (fresh.length) {
-                    const container = getContainer();
-                    const fragment = document.createDocumentFragment();
-                    fresh.forEach(a => {
-                        knownAlbumSlugs.add(a.slug);
-                        const card = createAlbumCard(a);
-                        albumCards.set(a.slug, card);
-                        fragment.appendChild(card);
-                    });
-                    /* নতুন অ্যালবাম সবার উপরে (API আগে থেকেই নতুন-আগে সাজানো) */
-                    container.insertBefore(fragment, container.firstChild);
-                    if (currentSearchQuery) applySearch();
-                }
+            if (!data || !data.ok) throw new Error('bad');
+            const list = (data.albums || []).filter(a => a && a.slug);
+            const sig = JSON.stringify(list.map(a => [a.slug, a.title, a.cover, a.videos, a.photos]));
+            albumsLoadedOnce = true;
+            if (sig !== albumsSig) {
+                albumsSig = sig;
+                albumsList = list;
+                renderAlbumGrid();
             }
-        } catch (error) { console.error('Albums fetch error:', error); }
+        } catch (error) {
+            console.error('Albums fetch error:', error);
+            if (!silent && !albumsLoadedOnce) {
+                const grid = byId('ocAlbumsGrid');
+                if (grid) stateBox(grid, 'Could not load albums. Please refresh.', true);
+            }
+        }
         isFetchingAlbums = false;
+    }
+
+    /* ---------------- সিঙ্গেল অ্যালবাম (watch layout) ---------------- */
+    function playVideo(i) {
+        const v = albumVideos[i];
+        const wrap = byId('ocAlPlayer');
+        if (!v || !wrap) return;
+        wrap.hidden = false;
+        wrap.innerHTML = '';
+        const box = document.createElement('div');
+        box.className = 'oc-al-player';
+        const el = document.createElement('video');
+        el.controls = true;
+        el.playsInline = true;
+        el.preload = 'metadata';
+        el.setAttribute('controlsList', 'nodownload noplaybackrate');
+        el.disablePictureInPicture = true;
+        el.oncontextmenu = function (e) { e.preventDefault(); return false; };
+        if (v.thumb) el.poster = v.thumb;
+        el.src = v.media;
+        box.appendChild(el);
+        wrap.appendChild(box);
+        const cards = byId('ocAlItems').querySelectorAll('.oc-al-item');
+        for (let k = 0; k < cards.length; k++) cards[k].classList.toggle('active', k === i);
+    }
+
+    function renderItems(items, type) {
+        const grid = byId('ocAlItems');
+        grid.innerHTML = '';
+        if (!items.length) { stateBox(grid, 'This album is empty.'); return; }
+        const frag = document.createDocumentFragment();
+        items.forEach(function (item, idx) {
+            const card = document.createElement('article');
+            card.className = 'oc-al-card oc-al-item';
+            const thumb = makeAlThumb(item.thumb, false);
+            if (type === 'video') {
+                const p = document.createElement('div');
+                p.className = 'oc-al-play';
+                p.innerHTML = PLAY_SVG;
+                thumb.appendChild(p);
+            }
+            card.appendChild(thumb);
+            card.addEventListener('click', function () {
+                if (type === 'video') {
+                    playVideo(idx);
+                    byId('ocAlPlayer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    openLightbox(idx);
+                }
+            });
+            frag.appendChild(card);
+        });
+        grid.appendChild(frag);
+    }
+
+    function setTab(t) {
+        activeTab = t;
+        byId('ocAlTabV').classList.toggle('active', t === 'video');
+        byId('ocAlTabP').classList.toggle('active', t === 'photo');
+        const wrap = byId('ocAlPlayer');
+        if (t === 'video') {
+            currentItems = [];
+            renderItems(albumVideos, 'video');
+            playVideo(0);
+        } else {
+            pauseAllVideos();
+            currentItems = albumPhotos;
+            wrap.hidden = true;
+            wrap.innerHTML = '';
+            renderItems(albumPhotos, 'photo');
+        }
+    }
+
+    function setupAlbumStats(d) {
+        byId('ocAlStats').hidden = false;
+        setText('ocAlViews', (d.views !== undefined && d.views !== null) ? fmtN(d.views) : '—');
+
+        const baseLikes = Number(d.likes) || 0;
+        const key = 'alvee:liked:' + albumSlug;
+        let liked = safeStorageGet(key) === '1';
+        const likeBtn = byId('ocAlLike');
+        function paintLike() {
+            likeBtn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+            setText('ocAlLikeN', fmtN(baseLikes + (liked ? 1 : 0)));
+        }
+        likeBtn.onclick = function () {
+            liked = !liked;
+            safeStorageSet(key, liked ? '1' : '0');
+            paintLike();
+        };
+        paintLike();
+
+        setText('ocAlShareT', 'Share');
+        byId('ocAlShare').onclick = function () {
+            const data = { title: d.title || document.title, url: location.href };
+            if (navigator.share) { navigator.share(data).catch(function () { }); return; }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(data.url).then(function () {
+                    setText('ocAlShareT', 'Link copied');
+                    window.setTimeout(function () { setText('ocAlShareT', 'Share'); }, 1800);
+                }).catch(function () { });
+            }
+        };
+    }
+
+    function showAlbum(slug) {
+        const scroller = getScroller();
+        const container = getContainer();
+        const home = byId('ocAlbumsHome');
+        const view = byId('ocAlbumView');
+        if (!view || !home) return;
+
+        if (!isAlbumOpen() && scroller) savedScrollTop = scroller.scrollTop;
+        pauseAllVideos();
+
+        albumSlug = slug;
+        const token = ++albumReqToken;
+        home.hidden = true;
+        if (container) container.style.display = 'none';
+        view.hidden = false;
+        byId('ocAlTitle').textContent = '';
+        byId('ocAlSub').textContent = '';
+        byId('ocAlTabs').hidden = true;
+        byId('ocAlPlayer').hidden = true;
+        byId('ocAlPlayer').innerHTML = '';
+        byId('ocAlStats').hidden = true;
+        stateBox(byId('ocAlItems'), 'Loading...');
+        if (scroller) scroller.scrollTop = 0;
+
+        fetch(CONFIG.albumDetailURL + encodeURIComponent(slug), { cache: 'no-store' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (token !== albumReqToken) return;
+                if (!d || !d.ok) throw new Error('bad');
+                albumData = d;
+                const items = d.items || [];
+                albumVideos = items.filter(function (i) { return i.type === 'video'; });
+                albumPhotos = items.filter(function (i) { return i.type !== 'video'; });
+                byId('ocAlTitle').textContent = d.title || '';
+                byId('ocAlSub').textContent = albumCountLabel({ videos: albumVideos.length, photos: albumPhotos.length });
+                document.title = (d.title ? d.title + ' | ' : '') + 'AlveeCommunity';
+                setupAlbumStats(d);
+                if (!items.length) { stateBox(byId('ocAlItems'), 'This album is empty.'); return; }
+                if (albumVideos.length && albumPhotos.length) {
+                    byId('ocAlTabs').hidden = false;
+                    setText('ocAlTabV', 'Watch (' + albumVideos.length + ')');
+                    setText('ocAlTabP', 'Photos (' + albumPhotos.length + ')');
+                }
+                setTab(albumVideos.length ? 'video' : 'photo');
+            })
+            .catch(function () {
+                if (token !== albumReqToken) return;
+                stateBox(byId('ocAlItems'), 'Could not load this album.', true);
+            });
+    }
+
+    function showHome() {
+        closeLightbox();
+        albumReqToken++;
+        const home = byId('ocAlbumsHome');
+        const view = byId('ocAlbumView');
+        const container = getContainer();
+        const wasOpen = isAlbumOpen();
+        if (view) view.hidden = true;
+        if (home) home.hidden = false;
+        if (container) container.style.display = '';
+        if (wasOpen) {
+            pauseAllVideos();
+            const player = byId('ocAlPlayer');
+            if (player) player.innerHTML = '';
+            document.title = originalTitle;
+            const scroller = getScroller();
+            if (scroller) scroller.scrollTop = savedScrollTop;
+        }
+        currentItems = []; albumVideos = []; albumPhotos = [];
+        if (albumsLoadedOnce) fetchAlbums(true);
+    }
+
+    function route() {
+        const m = /^#album\/(.+)$/.exec(location.hash);
+        if (m) {
+            let slug;
+            try { slug = decodeURIComponent(m[1]); } catch (e) { slug = m[1]; }
+            showAlbum(slug);
+        } else {
+            showHome();
+        }
+    }
+
+    /* ---------------- লাইটবক্স (ছবি) ---------------- */
+    function renderLightbox() {
+        const item = currentItems[lbIndex];
+        if (!item) return;
+        const stage = byId('ocLbStage');
+        stage.innerHTML = '';
+        const el = new Image();
+        el.alt = '';
+        el.draggable = false;
+        el.src = item.media;
+        stage.appendChild(el);
+        byId('ocLbCount').textContent = (lbIndex + 1) + ' / ' + currentItems.length;
+    }
+    function openLightbox(i) {
+        lbIndex = i;
+        byId('ocLb').classList.add('open');
+        renderLightbox();
+    }
+    function closeLightbox() {
+        const lb = byId('ocLb');
+        if (!lb || !lb.classList.contains('open')) return;
+        lb.classList.remove('open');
+        byId('ocLbStage').innerHTML = '';
+    }
+    function stepLightbox(delta) {
+        if (!currentItems.length) return;
+        lbIndex = (lbIndex + delta + currentItems.length) % currentItems.length;
+        renderLightbox();
     }
 
     function applySearch() {
         const q = currentSearchQuery;
         mediaCards.forEach(c => { c.hidden = q ? !c.dataset.metadata.includes(q) : false; });
-        albumCards.forEach(c => { c.hidden = q ? !c.dataset.metadata.includes(q) : false; });
+        let visible = 0;
+        albumCards.forEach(c => {
+            const hide = q ? !c.dataset.metadata.includes(q) : false;
+            c.hidden = hide;
+            if (!hide) visible++;
+        });
+        const grid = byId('ocAlbumsGrid');
+        if (grid) {
+            let note = grid.querySelector('.oc-al-nomatch');
+            if (q && albumCards.size && !visible) {
+                if (!note) {
+                    note = document.createElement('div');
+                    note.className = 'oc-al-state oc-al-nomatch';
+                    note.textContent = 'No albums match your search.';
+                    grid.appendChild(note);
+                }
+            } else if (note) {
+                note.remove();
+            }
+        }
     }
 
     window.toggleOCSearch = function () {
@@ -893,10 +1340,12 @@
     };
 
     function start() {
+        originalTitle = document.title;
         moveTopbar();
         injectAlbumStyles();
-        fetchAlbums();
-        albumsTimer = window.setInterval(fetchAlbums, CONFIG.refreshInterval);
+        buildAlbumUI();
+        fetchAlbums(false);
+        albumsTimer = window.setInterval(() => { if (!document.hidden && !isAlbumOpen()) fetchAlbums(true); }, CONFIG.refreshInterval);
         fetchTelegramMedia();
         pollingTimer = window.setInterval(fetchTelegramMedia, CONFIG.refreshInterval);
         statsTimer = window.setInterval(() => { if (!document.hidden) refreshAllStats(); }, CONFIG.statsPollInterval);
@@ -910,6 +1359,12 @@
             currentSearchQuery = e.target.value.toLowerCase();
             applySearch();
         });
+
+        window.addEventListener('hashchange', route);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && !isAlbumOpen()) fetchAlbums(true);
+        });
+        route();
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
