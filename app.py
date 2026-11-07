@@ -712,7 +712,7 @@ def fetch_target_albums(target_count=ALBUM_SCAN_LIMIT):
     full = base_url if path == "/" else f"{base_url}{path if path.startswith('/') else '/' + path}"
     category_urls.append(full)
     for page in range(2, SCRAPER_PAGES + 1):
-      sep = "&" if "?" in full else "?"
+      sep = "&" if "?" in full else full + "?"
       category_urls.append(f"{full}{sep}page={page}")
 
   with db_connect() as conn:
@@ -2084,6 +2084,17 @@ def oc_channel_script():
 @app.route("/style.css", methods=["GET"])
 def style_css_file():
   return send_file(BASE_DIR / "style.css", mimetype="text/css") if (BASE_DIR / "style.css").is_file() else ("style.css not found", 404)
+
+
+# ---- v2 টেস্ট পেজ (পুরনো oc-collection.html অপরিবর্তিত) ----
+@app.route("/oc-v2.html", methods=["GET"])
+def oc_v2_page():
+  return send_file(BASE_DIR / "oc-v2.html") if (BASE_DIR / "oc-v2.html").is_file() else ("oc-v2.html not found", 404)
+
+
+@app.route("/oc-channel-v2.js", methods=["GET"])
+def oc_channel_v2_script():
+  return send_file(BASE_DIR / "oc-channel-v2.js", mimetype="text/javascript") if (BASE_DIR / "oc-channel-v2.js").is_file() else ("oc-channel-v2.js not found", 404)
 
 
 @app.route("/health", methods=["GET"])
