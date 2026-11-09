@@ -44,10 +44,10 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 /* =========================================================
    ALVEE STORY SYSTEM  (story line under header)
    ========================================================= */
-.alvee-story-section{width:100%;max-width:440px;margin:0 0 18px;position:relative;z-index:2;background:transparent}
-.alvee-story-row{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:2px 20px 6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x pan-y}
+.alvee-story-section{width:100%;max-width:440px;margin:0 0 18px;position:relative;z-index:2;background:transparent!important;box-shadow:none!important;border:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.alvee-story-row{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;padding:5px 20px 10px!important;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x pan-y;background:transparent!important;box-shadow:none!important}
 .alvee-story-row::-webkit-scrollbar{display:none}
-.alvee-story-card{flex:0 0 auto;position:relative;width:104px;height:160px;border:0;padding:0;border-radius:20px;overflow:hidden;background:#1b2240;cursor:pointer;scroll-snap-align:start;box-shadow:0 8px 20px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent;transition:transform .18s ease;transform:translateZ(0)}
+.alvee-story-card{flex:0 0 auto;position:relative;width:104px;height:160px;border:0;padding:0;border-radius:20px;overflow:hidden;background:transparent!important;cursor:pointer;scroll-snap-align:start;box-shadow:0 8px 20px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent;transition:transform .18s ease;transform:translateZ(0)}
 .alvee-story-card:active{transform:scale(.95)}
 .alvee-story-card:focus-visible{outline:2px solid #6aa8ff;outline-offset:2px}
 .alvee-story-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28),transparent 35%,transparent 55%,rgba(0,0,0,.72));pointer-events:none}
