@@ -265,6 +265,28 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .alvee-center-heart.show,.alvee-like-button.liked svg,.alvee-next-hint svg{animation:none}
 .alvee-slide,.alvee-reels-viewer{transition:none}
 }
+
+/* ===== STORY UPDATE ===== */
+:root{--story-w:112px;--story-h:clamp(210px,36vh,300px)}
+.alvee-story-card{width:var(--story-w)!important;height:var(--story-h)!important}
+
+/* ডট প্রগ্রেস লাইন বন্ধ */
+.alvee-reels-bars{display:none!important}
+
+/* ওপেন/ক্লোজ জুম অ্যানিমেশনের জন্য */
+.alvee-reels-viewer{opacity:1!important;transform:none!important;background:rgba(0,0,0,0);transition:background .38s ease!important}
+.alvee-reels-viewer.visible{background:#000}
+.alvee-reels-stage{will-change:transform,clip-path}
+
+/* ক্যাপশনের নিচে সিক বার */
+.alvee-reels-actions{bottom:calc(env(safe-area-inset-bottom,0px) + 176px)}
+.alvee-reels-bottom{bottom:calc(env(safe-area-inset-bottom,0px) + 50px)}
+.alvee-seek{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);height:32px;z-index:45;display:flex;align-items:center;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.alvee-seek-track{position:relative;width:100%;height:6px;border-radius:6px;background:rgba(255,255,255,.28);transition:height .15s ease}
+.alvee-seek-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:6px;background:rgba(255,255,255,.7)}
+.alvee-seek-thumb{position:absolute;top:50%;left:0;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#e6e6e6;box-shadow:0 1px 6px rgba(0,0,0,.5);transition:transform .15s ease}
+.alvee-seek.dragging .alvee-seek-track{height:8px}
+.alvee-seek.dragging .alvee-seek-thumb{transform:scale(1.35)}
 </style>
 </head>
 <body>
@@ -403,6 +425,11 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
                 <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
             </button>
 
+        </div>
+
+        <!-- SEEK BAR -->
+        <div class="alvee-seek" id="alveeSeek" role="slider" aria-label="Seek video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+            <div class="alvee-seek-track"><div class="alvee-seek-fill" id="alveeSeekFill"></div><div class="alvee-seek-thumb" id="alveeSeekThumb"></div></div>
         </div>
 
         <!-- BOTTOM PROFILE -->
@@ -641,13 +668,7 @@ function logoutUser() {
 }
 
 /* =========================================================
-   ALVEE REELS DATA  (শুধু এই অংশ বদলে video add/remove করুন)
-   ---------------------------------------------------------
-   video     : vertical (9:16) video URL (mp4)
-   thumbnail : cover image URL (ফাঁকা "" রাখলে video-এর frame ব্যবহার হবে)
-   caption   : video caption
-   views     : "67K" অথবা সংখ্যা (67000)
-   likes     : "423" অথবা সংখ্যা (423)
+   ALVEE REELS DATA
    ========================================================= */
 const reels = [
     {
@@ -925,35 +946,62 @@ const reels = [
         }, 1200);
     }
 
-    /* ---------- open / close ---------- */
+    /* ---------- open / close (zoom animation) ---------- */
+    const DUR = 420, EASE = 'cubic-bezier(.22,.8,.25,1)';
+    let anim = null;
+    const FULL = { transform: 'translate(0,0) scale(1)', clipPath: 'inset(0px 0px round 0px)' };
+    function cardFor(i) { const row = $('alveeStoryRow'); return row ? row.children[i] : null; }
+    function zoomFrame(card) {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !card) return null;
+        const sr = stage.getBoundingClientRect(), cr = card.getBoundingClientRect();
+        if (!sr.width || cr.bottom < 0 || cr.top > innerHeight || cr.right < 0 || cr.left > innerWidth) return null;
+        const s = Math.max(cr.width / sr.width, cr.height / sr.height);
+        const ix = Math.max(0, (sr.width - cr.width / s) / 2), iy = Math.max(0, (sr.height - cr.height / s) / 2);
+        const dx = (cr.left + cr.width / 2) - (sr.left + sr.width / 2);
+        const dy = (cr.top + cr.height / 2) - (sr.top + sr.height / 2);
+        return { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + s + ')', clipPath: 'inset(' + iy + 'px ' + ix + 'px round ' + (20 / s) + 'px)' };
+    }
     function openViewer(i) {
         if (!reels.length) return;
         clearTimeout(closeTimer);
+        if (anim) { anim.cancel(); anim = null; }
         idx = Math.max(0, Math.min(i, reels.length - 1));
-        drag = 0;
-        isOpen = true;
+        drag = 0; isOpen = true;
         buildBars();
         viewer.classList.add('show');
         lockScroll();
-        requestAnimationFrame(() => requestAnimationFrame(() => viewer.classList.add('visible')));
+        const from = zoomFrame(cardFor(idx));
+        if (from) {
+            anim = stage.animate([from, FULL], { duration: DUR, easing: EASE });
+            anim.onfinish = () => { anim = null; };
+        }
+        requestAnimationFrame(() => viewer.classList.add('visible'));
         sync();
         $('alveeCloseBtn').focus({ preventScroll: true });
     }
     function closeViewer(instant) {
         if (!viewer.classList.contains('show')) return;
+        if (anim) { anim.cancel(); anim = null; }
         isOpen = false;
         clearTimeout(endTimer); clearTimeout(tapTimer); hideHint();
         slides.forEach(el => { try { el._v.pause(); } catch (e) {} });
         closeSearch();
-        viewer.classList.remove('visible');
         const done = () => {
+            if (anim) { anim.cancel(); anim = null; }
             [...slides.keys()].forEach(detach);
             track.innerHTML = '';
             spin.classList.remove('on');
-            viewer.classList.remove('show');
+            viewer.classList.remove('show', 'visible');
             unlockScroll();
         };
-        if (instant) done(); else closeTimer = setTimeout(done, 260);
+        if (instant) { done(); return; }
+        const card = cardFor(idx);
+        if (card && card.scrollIntoView) card.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+        const to = zoomFrame(card);
+        viewer.classList.remove('visible');
+        if (!to) { closeTimer = setTimeout(done, 300); return; }
+        anim = stage.animate([FULL, to], { duration: DUR, easing: EASE, fill: 'forwards' });
+        anim.onfinish = done;
     }
     window.closeAlveeReels = closeViewer;
     window.alveeReelsIsOpen = () => isOpen;
@@ -998,7 +1046,7 @@ const reels = [
     /* ---------- gestures (touch + mouse via pointer events) ---------- */
     let ps = null;
     stage.addEventListener('pointerdown', e => {
-        if (e.target.closest('button,[role=button],.alvee-caption')) return;
+        if (e.target.closest('button,[role=button],.alvee-caption,.alvee-seek')) return;
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         ps = { id: e.pointerId, x: e.clientX, y: e.clientY, t: Date.now(), moved: false };
         try { stage.setPointerCapture(e.pointerId); } catch (err) {}
@@ -1064,15 +1112,19 @@ const reels = [
     caption.addEventListener('click', () => caption.classList.toggle('expanded'));
     hint.addEventListener('click', () => go(idx + 1));
 
-    /* profile click → existing dashboard Profile (popup card / section) */
+    /* ---------- profile click → profile card over video ---------- */
+    let profPaused = false;
     function openAlveeProfile() {
-        closeViewer();
-        setTimeout(() => {
-            const target = document.getElementById('profile') || document.querySelector('[data-profile-section]');
-            if (target && target.scrollIntoView) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            else if (typeof openProfileCard === 'function') openProfileCard();
-        }, 290);
+        const el = slides.get(idx);
+        if (el && !el._v.paused) { el._v.pause(); profPaused = true; }
+        if (typeof openProfileCard === 'function') openProfileCard();
     }
+    window.alveeProfileClosed = function () {
+        if (!profPaused) return;
+        profPaused = false;
+        const el = slides.get(idx);
+        if (isOpen && el && !pauseIc.classList.contains('show') && !el._v.ended) el._v.play().catch(() => {});
+    };
     ['alveeBottomAvatar', 'alveeBottomName'].forEach(id => {
         const el = $(id);
         el.addEventListener('click', openAlveeProfile);
@@ -1129,6 +1181,62 @@ const reels = [
         if (document.hidden) el._v.pause();
         else if (!pauseIc.classList.contains('show') && !el._v.ended) el._v.play().catch(() => {});
     });
+
+    /* ---------- SEEK BAR ---------- */
+    const seek = $('alveeSeek'), seekTrack = seek.querySelector('.alvee-seek-track'),
+          seekFill = $('alveeSeekFill'), seekThumb = $('alveeSeekThumb');
+    let seeking = false, seekWas = false;
+    function setSeekUI(p) {
+        p = Math.max(0, Math.min(1, p));
+        const w = (p * 100) + '%';
+        seekFill.style.width = w; seekThumb.style.left = w;
+    }
+    function seekFrom(e) {
+        const r = seekTrack.getBoundingClientRect();
+        return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    }
+    function seekTo(p) {
+        const el = slides.get(idx);
+        if (!el || !el._v.duration) return;
+        setSeekUI(p);
+        try { el._v.currentTime = Math.min(p * el._v.duration, el._v.duration - 0.05); } catch (err) {}
+    }
+    seek.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        const el = slides.get(idx);
+        if (!el) return;
+        seeking = true;
+        seekWas = !pauseIc.classList.contains('show');
+        clearTimeout(endTimer); hideHint();
+        el._v.pause();
+        seek.classList.add('dragging');
+        try { seek.setPointerCapture(e.pointerId); } catch (err) {}
+        seekTo(seekFrom(e));
+    });
+    seek.addEventListener('pointermove', e => { if (seeking) seekTo(seekFrom(e)); });
+    function seekEnd() {
+        if (!seeking) return;
+        seeking = false;
+        seek.classList.remove('dragging');
+        const el = slides.get(idx);
+        if (el && seekWas) el._v.play().catch(() => {});
+    }
+    seek.addEventListener('pointerup', seekEnd);
+    seek.addEventListener('pointercancel', seekEnd);
+    seek.addEventListener('keydown', e => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault(); e.stopPropagation();
+        const el = slides.get(idx);
+        if (el && el._v.duration) seekTo((el._v.currentTime + (e.key === 'ArrowRight' ? 5 : -5)) / el._v.duration);
+    });
+    /* 60fps smooth update */
+    (function loop() {
+        if (isOpen && !seeking) {
+            const el = slides.get(idx), v = el && el._v;
+            setSeekUI(v && v.duration ? v.currentTime / v.duration : 0);
+        }
+        requestAnimationFrame(loop);
+    })();
 
     /* ---------- INIT (also merges videos from existing /api/stories) ---------- */
     window.initAlveeReels = async function () {
@@ -1244,6 +1352,7 @@ function closeProfileCard() {
         history.replaceState(null, '', location.pathname + location.search);
     }
     if (window.alveeUnlockScroll) window.alveeUnlockScroll(); else document.body.style.overflow = '';
+    if (window.alveeProfileClosed) window.alveeProfileClosed();
     if (pcLastFocus && pcLastFocus.focus) pcLastFocus.focus({ preventScroll: true });
 }
 
