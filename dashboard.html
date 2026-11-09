@@ -5,2621 +5,531 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a1128">
 <title>User Dashboard - OC Collection Universe</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
-
 <style>
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Poppins', sans-serif;
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
-}
-
-html, body {
-    width: 100%;
-    min-height: 100%;
-}
-
-body {
-    background: #0a1128;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    overflow-x: hidden;
-}
-
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{width:100%;min-height:100%}
+body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;align-items:center;position:relative;overflow-x:hidden}
 /* BACKGROUND */
-.bg-container {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -1;
-    overflow: hidden;
-    pointer-events: none;
-    background: #0a1128;
-    transform: translateZ(0);
-}
-
-.bg-image {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    opacity: 0;
-    filter: blur(3px);
-    transition: opacity .7s ease;
-    will-change: opacity;
-}
-
-.bg-image.visible {
-    opacity: 1;
-}
-
-.bg-shade {
-    position: absolute;
-    inset: 0;
-    background: transparent;
-}
-
-#bgLoader {
-    display: none !important;
-}
-
+.bg-container{position:fixed;inset:0;width:100%;height:100%;z-index:-1;overflow:hidden;pointer-events:none;background:#0a1128;transform:translateZ(0)}
+.bg-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0;filter:blur(3px);transition:opacity .7s ease;will-change:opacity}
+.bg-image.visible{opacity:1}
+.bg-shade{position:absolute;inset:0;background:transparent}
+#bgLoader{display:none!important}
 /* DASHBOARD */
-#dashboardWrapper {
-    opacity: 1;
-    width: 100%;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0 15px 40px;
-    position: relative;
-    z-index: 2;
-}
-
+#dashboardWrapper{opacity:1;width:100%;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 15px 40px;position:relative;z-index:2}
 /* GLASS HEADER */
-.glass-header {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    width: calc(100% + 30px);
-    margin: 0 -15px 16px;
-    padding: calc(env(safe-area-inset-top, 0px) + 8px) 15px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: linear-gradient(
-        180deg,
-        rgba(255,255,255,.14),
-        rgba(255,255,255,.05)
-    );
-    backdrop-filter: blur(3px) saturate(160%);
-    -webkit-backdrop-filter: blur(3px) saturate(160%);
-    border-bottom: none;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
-}
-
-.glass-header:has(.stories-row:empty) {
-    padding-bottom: 8px;
-}
-
-.header-nav {
-    width: 100%;
-    max-width: 440px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    min-height: 40px;
-}
-
-.header-btn {
-    position: relative;
-    background: linear-gradient(145deg,#ff9bb0,#ff708f);
-    border: 0;
-    border-radius: 50px;
-    color: #fff;
-    cursor: pointer;
-    box-shadow: 0 4px 10px #0004;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all .3s ease;
-    text-decoration: none;
-}
-
-.refresh-btn {
-    width: 66px;
-    height: 28px;
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: .8px;
-    flex-shrink: 0;
-}
-
-.refresh-btn.loading {
-    width: 28px;
-    border-radius: 50%;
-    color: transparent;
-    pointer-events: none;
-}
-
-.refresh-btn.loading::after {
-    content: "";
-    position: absolute;
-    width: 14px;
-    height: 14px;
-    border: 2px solid #ffffff66;
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spinLoader .6s linear infinite;
-}
-
-@keyframes spinLoader {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
+.glass-header{position:sticky;top:0;z-index:50;width:calc(100% + 30px);margin:0 -15px 12px;padding:calc(env(safe-area-inset-top,0px) + 8px) 15px 8px;display:flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05));backdrop-filter:blur(3px) saturate(160%);-webkit-backdrop-filter:blur(3px) saturate(160%);border-bottom:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.header-nav{width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:40px}
+.header-btn{position:relative;background:linear-gradient(145deg,#ff9bb0,#ff708f);border:0;border-radius:50px;color:#fff;cursor:pointer;box-shadow:0 4px 10px #0004;display:flex;align-items:center;justify-content:center;transition:all .3s ease;text-decoration:none}
+.refresh-btn{width:66px;height:28px;font-size:9px;font-weight:700;letter-spacing:.8px;flex-shrink:0}
+.refresh-btn.loading{width:28px;border-radius:50%;color:transparent;pointer-events:none}
+.refresh-btn.loading::after{content:"";position:absolute;width:14px;height:14px;border:2px solid #ffffff66;border-top-color:#fff;border-radius:50%;animation:spinLoader .6s linear infinite}
+@keyframes spinLoader{to{transform:rotate(360deg)}}
 /* profile chip */
-.header-profile {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    max-width: 68%;
-    padding: 3px 12px 3px 3px;
-    background: rgba(255,255,255,.1);
-    border: 1px solid rgba(255,255,255,.2);
-    border-radius: 50px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: transform .16s ease;
-}
-
-.header-profile:active {
-    transform: scale(.95);
-}
-
-.header-profile .pname {
-    color: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-}
-
+.header-profile{display:flex;align-items:center;gap:8px;min-width:0;max-width:68%;padding:3px 12px 3px 3px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .16s ease}
+.header-profile:active{transform:scale(.95)}
+.header-profile .pname{color:#fff;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 /* ring */
-.ring {
-    flex: 0 0 auto;
-    border-radius: 50%;
-    padding: 2.5px;
-    background: conic-gradient(
-        from 210deg,
-        #ffc400,
-        #ff7a00,
-        #ff0069,
-        #d300c5,
-        #7638fa,
-        #ffc400
-    );
-    display: inline-flex;
-}
-
-.ring > img,
-.ring > .ph {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 2px solid #fff;
-    object-fit: cover;
-    background: #1b2240;
-    pointer-events: none;
-    display: block;
-}
-
-.ring.sm {
-    width: 34px;
-    height: 34px;
-}
-
-.ring.seen {
-    background: rgba(255,255,255,.35);
-}
-
-.view-section {
-    width: 100%;
-    max-width: 440px;
-    display: none;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.view-section.active-view {
-    display: flex;
-}
-
+.ring{flex:0 0 auto;border-radius:50%;padding:2.5px;background:conic-gradient(from 210deg,#ffc400,#ff7a00,#ff0069,#d300c5,#7638fa,#ffc400);display:inline-flex}
+.ring>img,.ring>.ph{width:100%;height:100%;border-radius:50%;border:2px solid #fff;object-fit:cover;background:#1b2240;pointer-events:none;display:block}
+.ring.sm{width:34px;height:34px}
+.view-section{width:100%;max-width:440px;display:none;flex-direction:column;gap:15px}
+.view-section.active-view{display:flex}
 /* HOME VIEW */
-#homeView {
-    flex: 1;
-    justify-content: center;
-    gap: 24px;
-}
-
-#homeView > .oc-collection-card {
-    z-index: 1;
-}
-
-#homeView > .oc-collection-card:first-child {
-    z-index: 2;
-}
+#homeView{flex:1;justify-content:center;gap:24px}
+#homeView>.oc-collection-card{z-index:1}
+#homeView>.oc-collection-card:first-child{z-index:2}
 
 /* =========================================================
-   ALVEE STORY LINE
+   ALVEE STORY SYSTEM  (story line under header)
    ========================================================= */
-
-.stories-row {
-    width: 100%;
-    max-width: 440px;
-    display: flex;
-    gap: 13px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 9px 4px 11px;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    touch-action: pan-x;
-    scrollbar-width: none;
-}
-
-.stories-row::-webkit-scrollbar {
-    display: none;
-}
-
-.stories-row:empty {
-    display: none;
-}
-
-.story-item {
-    flex: 0 0 auto;
-    width: 72px;
-    height: 91px;
-    scroll-snap-align: start;
-    cursor: pointer;
-    position: relative;
-    -webkit-tap-highlight-color: transparent;
-    transition: transform .16s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.story-item:active {
-    transform: scale(.92);
-}
-
-.story-item .ring {
-    width: 72px;
-    height: 72px;
-    padding: 3px;
-    position: relative;
-}
-
-.story-item .ring > img {
-    border-width: 2.5px;
-    opacity: 1;
-    transition: opacity .3s ease;
-}
-
-.story-item .ring > .ph {
-    display: none;
-}
-
-.story-item .story-name {
-    width: 72px;
-    margin-top: 5px;
-    color: #fff;
-    text-align: center;
-    font-size: 9.5px;
-    line-height: 1.15;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-shadow: 0 1px 5px #000;
-}
-
-.story-item .play-badge {
-    position: absolute;
-    right: 1px;
-    top: 51px;
-    width: 21px;
-    height: 21px;
-    border-radius: 50%;
-    background: rgba(0,0,0,.78);
-    border: 1.5px solid #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3;
-}
-
-.story-item .play-badge::after {
-    content: "";
-    border-left: 6px solid #fff;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-    margin-left: 2px;
-}
+.alvee-story-section{width:100%;max-width:440px;margin:0 0 18px;position:relative;z-index:2}
+.alvee-story-row{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x pan-y}
+.alvee-story-row::-webkit-scrollbar{display:none}
+.alvee-story-card{flex:0 0 auto;position:relative;width:104px;height:160px;border:0;padding:0;border-radius:20px;overflow:hidden;background:#1b2240;cursor:pointer;scroll-snap-align:start;box-shadow:0 8px 20px rgba(0,0,0,.35);-webkit-tap-highlight-color:transparent;transition:transform .18s ease}
+.alvee-story-card:active{transform:scale(.95)}
+.alvee-story-card:focus-visible{outline:2px solid #6aa8ff;outline-offset:2px}
+.alvee-story-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.28),transparent 35%,transparent 55%,rgba(0,0,0,.72));pointer-events:none}
+.alvee-story-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;opacity:0;transition:opacity .4s ease}
+.alvee-story-thumb.ready{opacity:1}
+.alvee-story-avatar{position:absolute;top:8px;left:8px;z-index:2;width:36px;height:36px;border-radius:50%;padding:2px;background:linear-gradient(135deg,#00b7ff,#4267ff,#9b3dff)}
+.alvee-story-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid #000;display:block}
+.alvee-story-name{position:absolute;left:6px;right:6px;bottom:10px;z-index:2;color:#fff;font-size:11px;font-weight:600;text-align:center;line-height:1.2;text-shadow:0 1px 6px #000}
 
 /* =========================================================
-   ALVEE STORY / REELS VIEWER
+   ALVEE REELS VIEWER
    ========================================================= */
-
-.story-viewer {
-    position: fixed;
-    inset: 0;
-    z-index: 3000;
-    background: #000;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity .2s ease;
-}
-
-.story-viewer.open {
-    display: flex;
-    opacity: 1;
-}
-
-.story-stage {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    max-width: 480px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #000;
-    overflow: hidden;
-    touch-action: none;
-}
-
-.story-stage img,
-.story-stage video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: #000;
-}
-
-/* top progress */
-.story-bars {
-    position: absolute;
-    top: calc(env(safe-area-inset-top, 0px) + 8px);
-    left: 8px;
-    right: 52px;
-    display: flex;
-    gap: 3px;
-    z-index: 30;
-}
-
-.story-bars span {
-    flex: 1;
-    height: 3px;
-    border-radius: 3px;
-    background: rgba(255,255,255,.3);
-    overflow: hidden;
-}
-
-.story-bars span i {
-    display: block;
-    height: 100%;
-    width: 0;
-    background: #fff;
-}
-
-.story-bars span.done i {
-    width: 100%;
-}
-
-/* close */
-.story-close {
-    position: absolute;
-    top: calc(env(safe-area-inset-top, 0px) + 13px);
-    right: 10px;
-    z-index: 50;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,.25);
-    background: rgba(0,0,0,.5);
-    color: #fff;
-    font-size: 20px;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: transform .2s ease, background .2s ease;
-}
-
-.story-close:active {
-    transform: scale(.85);
-}
-
-.story-close:hover {
-    background: rgba(255,70,100,.75);
-}
-
-/* tap areas */
-.story-tap {
-    position: absolute;
-    top: 65px;
-    bottom: 150px;
-    width: 28%;
-    z-index: 8;
-}
-
-.story-tap.left {
-    left: 0;
-}
-
-.story-tap.right {
-    right: 0;
-    width: 28%;
-}
-
-/* spinner */
-.story-spinner {
-    position: absolute;
-    width: 35px;
-    height: 35px;
-    z-index: 25;
-    border: 3px solid #ffffff44;
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spinLoader .7s linear infinite;
-    display: none;
-}
-
-.story-spinner.on {
-    display: block;
-}
-
-/* =========================================================
-   REELS RIGHT ACTION PANEL
-   ========================================================= */
-
-.alvee-reels-actions {
-    position: absolute;
-    right: 10px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 155px);
-    z-index: 40;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 17px;
-}
-
-.alvee-action {
-    width: 48px;
-    min-height: 48px;
-    border: 0;
-    background: transparent;
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    cursor: pointer;
-    text-shadow: 0 2px 7px #000;
-    -webkit-tap-highlight-color: transparent;
-    transition: transform .18s ease;
-}
-
-.alvee-action:active {
-    transform: scale(.82);
-}
-
-.alvee-action svg {
-    width: 30px;
-    height: 30px;
-    overflow: visible;
-}
-
-.alvee-action span {
-    font-size: 9px;
-    line-height: 1;
-    font-weight: 600;
-    color: #fff;
-}
-
-.alvee-like-button svg {
-    transition: transform .18s ease, fill .2s ease, stroke .2s ease;
-}
-
-.alvee-like-button.liked svg {
-    fill: #ff1e3c;
-    stroke: #ff1e3c;
-    filter: drop-shadow(0 0 9px rgba(255,30,60,.65));
-    animation: alveeLikePop .35s ease;
-}
-
-@keyframes alveeLikePop {
-    0% {
-        transform: scale(.65);
-    }
-    60% {
-        transform: scale(1.25);
-    }
-    100% {
-        transform: scale(1);
-    }
-}
-
-.alvee-view-count {
-    font-variant-numeric: tabular-nums;
-}
-
-/* =========================================================
-   CENTER HEART
-   ========================================================= */
-
-.alvee-center-heart {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 105px;
-    height: 105px;
-    z-index: 70;
-    transform: translate(-50%, -50%) scale(.35);
-    opacity: 0;
-    pointer-events: none;
-}
-
-.alvee-center-heart.show {
-    animation: alveeCenterHeart .9s cubic-bezier(.2,.8,.25,1) forwards;
-}
-
-.alvee-center-heart svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-    filter:
-        drop-shadow(0 0 8px rgba(255,0,30,.85))
-        drop-shadow(0 0 22px rgba(255,0,30,.55));
-}
-
-@keyframes alveeCenterHeart {
-    0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(.35);
-    }
-
-    20% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1.15);
-    }
-
-    42% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(.96);
-    }
-
-    70% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-    }
-
-    100% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(1.3);
-    }
-}
-
-/* =========================================================
-   BOTTOM REELS PROFILE
-   ========================================================= */
-
-.alvee-reels-bottom {
-    position: absolute;
-    left: 12px;
-    right: 70px;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
-    z-index: 40;
-    color: #fff;
-}
-
-.alvee-reels-profile {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    min-width: 0;
-}
-
-.alvee-reels-avatar {
-    width: 43px;
-    height: 43px;
-    flex: 0 0 43px;
-    border-radius: 50%;
-    padding: 2px;
-    background: linear-gradient(
-        135deg,
-        #00b7ff,
-        #4267ff,
-        #9b3dff,
-        #00d4ff
-    );
-    cursor: pointer;
-}
-
-.alvee-reels-avatar img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 2px solid #000;
-    object-fit: cover;
-    display: block;
-}
-
-.alvee-reels-user {
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.alvee-reels-name {
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    white-space: nowrap;
-    cursor: pointer;
-    text-shadow: 0 2px 7px #000;
-}
-
-.alvee-verified {
-    width: 16px;
-    height: 16px;
-    flex: 0 0 16px;
-    display: inline-flex;
-}
-
-.alvee-follow {
-    height: 29px;
-    padding: 0 12px;
-    margin-left: 3px;
-    border-radius: 20px;
-    border: 1px solid rgba(255,255,255,.7);
-    background: rgba(255,255,255,.12);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: .2s ease;
-}
-
-.alvee-follow.following {
-    background: #fff;
-    color: #111;
-}
-
-.alvee-follow:active {
-    transform: scale(.92);
-}
-
-.alvee-caption {
-    margin-top: 8px;
-    max-width: 100%;
-    color: #fff;
-    font-size: 11px;
-    line-height: 1.45;
-    font-weight: 500;
-    text-shadow: 0 2px 7px #000;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* =========================================================
-   SEARCH OVERLAY
-   ========================================================= */
-
-.alvee-search-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 5000;
-    display: none;
-    align-items: flex-start;
-    justify-content: center;
-    padding: calc(env(safe-area-inset-top, 0px) + 70px) 16px 20px;
-    background: rgba(0,0,0,.72);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-}
-
-.alvee-search-overlay.open {
-    display: flex;
-    animation: alveeSearchFade .2s ease;
-}
-
-@keyframes alveeSearchFade {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-.alvee-search-box {
-    width: 100%;
-    max-width: 430px;
-    border-radius: 25px;
-    padding: 18px;
-    background: rgba(20,25,45,.94);
-    border: 1px solid rgba(255,255,255,.16);
-    box-shadow: 0 20px 60px #000b;
-    transform: translateY(-15px);
-    animation: alveeSearchBox .25s ease forwards;
-}
-
-@keyframes alveeSearchBox {
-    to {
-        transform: translateY(0);
-    }
-}
-
-.alvee-search-head {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    margin-bottom: 15px;
-}
-
-.alvee-search-title {
-    flex: 1;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-}
-
-.alvee-search-close {
-    width: 34px;
-    height: 34px;
-    border: 0;
-    border-radius: 50%;
-    background: rgba(255,255,255,.1);
-    color: #fff;
-    cursor: pointer;
-    font-size: 17px;
-}
-
-.alvee-search-input-wrap {
-    height: 48px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 0 14px;
-    border-radius: 15px;
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.14);
-}
-
-.alvee-search-input-wrap svg {
-    width: 20px;
-    height: 20px;
-    color: #aaa;
-    flex: 0 0 auto;
-}
-
-.alvee-search-input {
-    flex: 1;
-    min-width: 0;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: #fff;
-    font-size: 13px;
-    font-family: Poppins, sans-serif;
-    -webkit-user-select: text;
-    user-select: text;
-}
-
-.alvee-search-input::placeholder {
-    color: #8991a5;
-}
-
-.alvee-search-results {
-    margin-top: 14px;
-    max-height: 45vh;
-    overflow-y: auto;
-}
-
-.alvee-search-result {
-    padding: 11px 5px;
-    border-bottom: 1px solid rgba(255,255,255,.08);
-    color: #fff;
-    font-size: 11px;
-    line-height: 1.5;
-}
-
-.alvee-search-result:last-child {
-    border-bottom: 0;
-}
-
-.alvee-search-empty {
-    color: #8d96aa;
-    text-align: center;
-    font-size: 11px;
-    padding: 15px 5px;
-}
+.alvee-reels-viewer{position:fixed;inset:0;height:100vh;height:100dvh;z-index:3000;background:#000;display:none;align-items:center;justify-content:center;opacity:0;transform:scale(.97);transition:opacity .25s ease,transform .25s ease;overscroll-behavior:contain;touch-action:none}
+.alvee-reels-viewer.show{display:flex}
+.alvee-reels-viewer.visible{opacity:1;transform:none}
+.alvee-reels-stage{position:relative;overflow:hidden;background:#000;width:min(100vw,calc(100vh*.5625));width:min(100vw,calc(100dvh*.5625));height:100vh;height:100dvh;touch-action:none}
+.alvee-reels-stage::before,.alvee-reels-stage::after{content:"";position:absolute;left:0;right:0;z-index:5;pointer-events:none}
+.alvee-reels-stage::before{top:0;height:130px;background:linear-gradient(180deg,rgba(0,0,0,.5),transparent)}
+.alvee-reels-stage::after{bottom:0;height:300px;background:linear-gradient(0deg,rgba(0,0,0,.75),transparent)}
+.alvee-track{position:absolute;inset:0;z-index:1}
+.alvee-slide{position:absolute;inset:0;will-change:transform;transition:transform .35s cubic-bezier(.22,.8,.25,1);background:#000}
+.alvee-slide.drag{transition:none}
+.alvee-slide video{width:100%;height:100%;object-fit:cover;display:block;background:#000;pointer-events:none}
+.alvee-reels-bars{position:absolute;z-index:30;top:calc(env(safe-area-inset-top,0px) + 24px);left:10px;right:60px;display:flex;gap:3px}
+.alvee-reels-bars span{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.3);overflow:hidden}
+.alvee-reels-bars i{display:block;height:100%;width:0;background:#fff;transition:width .2s linear}
+.alvee-reels-close{position:absolute;top:calc(env(safe-area-inset-top,0px) + 6px);right:10px;z-index:50;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.4);color:#fff;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .2s ease,background .2s ease;-webkit-tap-highlight-color:transparent}
+.alvee-reels-close svg{width:20px;height:20px}
+.alvee-reels-close:hover{background:rgba(255,70,100,.75)}
+.alvee-reels-close:active{transform:scale(.85)}
+.alvee-reels-close:focus-visible,.alvee-action:focus-visible,.alvee-follow:focus-visible,.alvee-search-close:focus-visible{outline:2px solid #6aa8ff;outline-offset:2px}
+.alvee-spinner{position:absolute;left:50%;top:50%;margin:-18px 0 0 -18px;width:36px;height:36px;z-index:25;border:3px solid #ffffff44;border-top-color:#fff;border-radius:50%;animation:spinLoader .7s linear infinite;display:none;pointer-events:none}
+.alvee-spinner.on{display:block}
+.alvee-pause-icon{position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px 0 0 -38px;z-index:20;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center;opacity:0;transform:scale(.8);transition:opacity .2s ease,transform .2s ease;pointer-events:none}
+.alvee-pause-icon.show{opacity:1;transform:scale(1)}
+.alvee-pause-icon svg{width:34px;height:34px;fill:#fff}
+.alvee-next-hint{position:absolute;top:calc(env(safe-area-inset-top,0px) + 44px);left:50%;z-index:30;display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:rgba(255,255,255,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;font-size:11px;font-weight:600;opacity:0;transform:translate(-50%,-10px);transition:opacity .3s ease,transform .3s ease;pointer-events:none}
+.alvee-next-hint.show{opacity:1;transform:translate(-50%,0)}
+.alvee-next-hint svg{width:14px;height:14px;animation:alveeBob 1s ease-in-out infinite}
+@keyframes alveeBob{50%{transform:translateY(3px)}}
+/* RIGHT ACTION PANEL */
+.alvee-reels-actions{position:absolute;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);z-index:40;display:flex;flex-direction:column;align-items:center;gap:16px}
+.alvee-action{width:48px;min-height:48px;border:0;background:transparent;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;text-shadow:0 2px 7px rgba(0,0,0,.8);-webkit-tap-highlight-color:transparent;transition:transform .18s ease}
+.alvee-action:active{transform:scale(.82)}
+.alvee-action svg{width:30px;height:30px;overflow:visible;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}
+.alvee-action span{font-size:11px;line-height:1;font-weight:600;color:#fff}
+.alvee-static{cursor:default}
+.alvee-static:active{transform:none}
+.alvee-like-button svg{transition:fill .2s ease,stroke .2s ease}
+.alvee-like-button.liked svg{fill:#ff1e3c;stroke:#ff1e3c;filter:drop-shadow(0 0 9px rgba(255,30,60,.65));animation:alveeLikePop .35s ease}
+@keyframes alveeLikePop{0%{transform:scale(.65)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.alvee-sound-button .on-icon{display:none}
+.alvee-sound-button.unmuted .on-icon{display:block}
+.alvee-sound-button.unmuted .off-icon{display:none}
+/* CENTER HEART */
+.alvee-center-heart{position:absolute;left:50%;top:50%;width:110px;height:110px;z-index:70;transform:translate(-50%,-50%) scale(.35);opacity:0;pointer-events:none}
+.alvee-center-heart.show{animation:alveeCenterHeart .95s cubic-bezier(.2,.8,.25,1) forwards}
+.alvee-center-heart svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 8px rgba(255,0,30,.85)) drop-shadow(0 0 22px rgba(255,0,30,.55))}
+@keyframes alveeCenterHeart{0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}40%{opacity:1;transform:translate(-50%,-50%) scale(.96)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.3)}}
+/* BOTTOM PROFILE */
+.alvee-reels-bottom{position:absolute;left:12px;right:68px;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);z-index:40;color:#fff}
+.alvee-reels-profile{display:flex;align-items:center;gap:9px;min-width:0}
+.alvee-reels-avatar{width:44px;height:44px;flex:0 0 44px;border-radius:50%;padding:2px;background:linear-gradient(135deg,#00b7ff,#4267ff,#9b3dff,#00d4ff);cursor:pointer}
+.alvee-reels-avatar img{width:100%;height:100%;border-radius:50%;border:2px solid #000;object-fit:cover;display:block;pointer-events:none}
+.alvee-reels-user{min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.alvee-reels-name{color:#fff;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer;text-shadow:0 2px 7px rgba(0,0,0,.8)}
+.alvee-verified{width:18px;height:18px;flex:0 0 18px;display:inline-flex}
+.alvee-follow{height:30px;padding:0 14px;margin-left:2px;border-radius:20px;border:1.5px solid rgba(255,255,255,.85);background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .2s ease,background .2s ease,color .2s ease;-webkit-tap-highlight-color:transparent}
+.alvee-follow:hover{background:rgba(255,255,255,.22)}
+.alvee-follow.following{background:#fff;color:#111}
+.alvee-follow:active{transform:scale(.92)}
+.alvee-caption{margin-top:9px;max-width:100%;color:#fff;font-size:12.5px;line-height:1.45;font-weight:400;text-shadow:0 2px 7px rgba(0,0,0,.8);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;word-break:break-word}
+.alvee-caption.expanded{-webkit-line-clamp:unset;max-height:30vh;overflow-y:auto;display:block}
+.alvee-caption:empty{display:none}
+/* SEARCH OVERLAY */
+.alvee-search-overlay{position:fixed;inset:0;z-index:5000;display:none;align-items:flex-start;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 70px) 16px 20px;background:rgba(0,0,0,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.alvee-search-overlay.open{display:flex;animation:alveeSearchFade .2s ease}
+@keyframes alveeSearchFade{from{opacity:0}to{opacity:1}}
+@keyframes alveeSearchBox{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:none}}
+.alvee-search-box{width:100%;max-width:430px;border-radius:25px;padding:18px;background:rgba(20,25,45,.94);border:1px solid rgba(255,255,255,.16);box-shadow:0 20px 60px #000b;animation:alveeSearchBox .28s ease both}
+.alvee-search-head{display:flex;align-items:center;gap:9px;margin-bottom:15px}
+.alvee-search-title{flex:1;color:#fff;font-size:16px;font-weight:700}
+.alvee-search-close{width:34px;height:34px;border:0;border-radius:50%;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:17px}
+.alvee-search-input-wrap{height:48px;display:flex;align-items:center;gap:9px;padding:0 14px;border-radius:15px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+.alvee-search-input-wrap svg{width:20px;height:20px;color:#aaa;flex:0 0 auto}
+.alvee-search-input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:#fff;font-size:14px;font-family:Poppins,sans-serif;-webkit-user-select:text;user-select:text;-webkit-appearance:none}
+.alvee-search-input::placeholder{color:#8991a5}
+.alvee-search-results{margin-top:14px;max-height:45vh;overflow-y:auto}
+.alvee-search-result{display:flex;align-items:center;gap:10px;padding:10px 6px;border-radius:12px;cursor:pointer;color:#fff;font-size:12px;line-height:1.4;transition:background .15s ease}
+.alvee-search-result:hover,.alvee-search-result:active{background:rgba(255,255,255,.08)}
+.alvee-search-result img{width:36px;height:36px;border-radius:50%;object-fit:cover;flex:0 0 36px}
+.alvee-search-result b{display:block;font-size:12px}
+.alvee-search-result small{display:block;color:#aab2c5;font-size:11px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.alvee-search-empty{color:#8d96aa;text-align:center;font-size:12px;padding:15px 5px}
 
 /* PROFILE CARDS */
-.profile-card {
-    background: rgba(20,25,45,.75);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid #ffffff1a;
-    border-radius: 50px;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    box-shadow: 0 10px 30px #0008;
-    cursor: pointer;
-    transition: transform .18s ease, border-color .3s ease;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-}
-
-.profile-card.blink-glow {
-    background: linear-gradient(
-        135deg,
-        #ff708f4d,
-        rgba(20,25,45,.85)
-    );
-    border: 1.5px solid #ff708f;
-    animation: cardBlink 2s infinite ease-in-out;
-}
-
-@keyframes cardBlink {
-    0%,100% {
-        box-shadow: 0 0 10px #ff708f66;
-        border-color: #ff708f80;
-    }
-    50% {
-        box-shadow: 0 0 25px #ff708fe6;
-        border-color: #ff708f;
-    }
-}
-
-.profile-card:hover {
-    border-color: #ffffff4d;
-}
-
-.oc-collection-card {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    transition: transform .16s ease, border-color .3s ease;
-}
-
-.oc-collection-card:active,
-.profile-card.blink-glow:active {
-    transform: scale(.94);
-}
-
-.oc-collection-card.attention {
-    position: relative;
-    overflow: visible;
-    animation:
-        cardBlink 2s infinite ease-in-out,
-        ocBounce 2.8s infinite ease-in-out;
-}
-
-.oc-collection-card.attention::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 50px;
-    overflow: hidden;
-    background: linear-gradient(
-        115deg,
-        transparent 35%,
-        rgba(255,255,255,.28) 50%,
-        transparent 65%
-    );
-    background-size: 250% 100%;
-    background-position: 150% 0;
-    animation: shineSweep 2.8s infinite;
-    pointer-events: none;
-}
-
-.oc-collection-card.attention::after {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: 52px;
-    border: 2px solid #ff708f;
-    opacity: 0;
-    pointer-events: none;
-    animation: ripple 2.2s infinite ease-out;
-}
-
-@keyframes ocBounce {
-    0%,100% {
-        transform: translateY(0) scale(1);
-    }
-    8% {
-        transform: translateY(-4px) scale(1.015);
-    }
-    16% {
-        transform: translateY(0) scale(1);
-    }
-    24% {
-        transform: translateY(-2px) scale(1.008);
-    }
-    32% {
-        transform: translateY(0) scale(1);
-    }
-}
-
-@keyframes shineSweep {
-    0% {
-        background-position: 150% 0;
-    }
-    60%,100% {
-        background-position: -50% 0;
-    }
-}
-
-@keyframes ripple {
-    0% {
-        transform: scale(1);
-        opacity: .8;
-    }
-    100% {
-        transform: scale(1.09,1.4);
-        opacity: 0;
-    }
-}
-
-.tap-hint {
-    position: absolute;
-    right: 16px;
-    bottom: -11px;
-    z-index: 3;
-    background: linear-gradient(135deg,#ff9bb0,#ff708f);
-    color: #fff;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .5px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    box-shadow: 0 4px 12px #0006;
-    animation: hintPoke 1.2s infinite ease-in-out;
-    pointer-events: none;
-}
-
-@keyframes hintPoke {
-    0%,100% {
-        transform: translateY(0);
-    }
-    50% {
-        transform: translateY(-3px);
-    }
-}
-
-.user-info-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    min-width: 0;
-    flex: 1;
-}
-
-.avatar-container {
-    position: relative;
-    flex: 0 0 50px;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    overflow: hidden;
-    border: 2px solid #ffffff33;
-}
-
-.avatar {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    pointer-events: none;
-}
-
-.image-shield {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    background: transparent;
-    pointer-events: none;
-}
-
-.user-details {
-    min-width: 0;
-}
-
-.user-details h3 {
-    font-size: 14px;
-    color: #fff;
-    font-weight: 700;
-    line-height: 1.5;
-}
-
-.user-details p {
-    font-size: 11px;
-    color: #94a3b8;
-    font-weight: 500;
-    margin-top: 2px;
-}
-
-.live-badge-container {
-    display: inline-flex;
-    align-items: center;
-    background: #000;
-    border: 1px solid #ffffff1a;
-    padding: 6px 14px;
-    border-radius: 20px;
-    flex-shrink: 0;
-}
-
-.live-dot {
-    width: 9px;
-    height: 9px;
-    background: #ff1a1a;
-    border-radius: 50%;
-    box-shadow: 0 0 8px #ff1a1a;
-    animation: livePulse 1.8s infinite;
-    margin-right: 8px;
-}
-
-@keyframes livePulse {
-    0%,100% {
-        transform: scale(1);
-    }
-    70% {
-        transform: scale(1.18);
-    }
-}
-
-.live-text {
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 1.2px;
-}
-
+.profile-card{background:rgba(20,25,45,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid #ffffff1a;border-radius:50px;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px;box-shadow:0 10px 30px #0008;cursor:pointer;transition:transform .18s ease,border-color .3s ease;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.profile-card.blink-glow{background:linear-gradient(135deg,#ff708f4d,rgba(20,25,45,.85));border:1.5px solid #ff708f;animation:cardBlink 2s infinite ease-in-out}
+@keyframes cardBlink{0%,100%{box-shadow:0 0 10px #ff708f66;border-color:#ff708f80}50%{box-shadow:0 0 25px #ff708fe6;border-color:#ff708f}}
+.profile-card:hover{border-color:#ffffff4d}
+.oc-collection-card{-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform .16s ease,border-color .3s ease}
+.oc-collection-card:active,.profile-card.blink-glow:active{transform:scale(.94)}
+.oc-collection-card.attention{position:relative;overflow:visible;animation:cardBlink 2s infinite ease-in-out,ocBounce 2.8s infinite ease-in-out}
+.oc-collection-card.attention::before{content:"";position:absolute;inset:0;border-radius:50px;overflow:hidden;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.28) 50%,transparent 65%);background-size:250% 100%;background-position:150% 0;animation:shineSweep 2.8s infinite;pointer-events:none}
+.oc-collection-card.attention::after{content:"";position:absolute;inset:-2px;border-radius:52px;border:2px solid #ff708f;opacity:0;pointer-events:none;animation:ripple 2.2s infinite ease-out}
+@keyframes ocBounce{0%,100%{transform:translateY(0) scale(1)}8%{transform:translateY(-4px) scale(1.015)}16%{transform:translateY(0) scale(1)}24%{transform:translateY(-2px) scale(1.008)}32%{transform:translateY(0) scale(1)}}
+@keyframes shineSweep{0%{background-position:150% 0}60%,100%{background-position:-50% 0}}
+@keyframes ripple{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.09,1.4);opacity:0}}
+.tap-hint{position:absolute;right:16px;bottom:-11px;z-index:3;background:linear-gradient(135deg,#ff9bb0,#ff708f);color:#fff;font-size:10px;font-weight:700;letter-spacing:.5px;padding:3px 10px;border-radius:20px;box-shadow:0 4px 12px #0006;animation:hintPoke 1.2s infinite ease-in-out;pointer-events:none}
+@keyframes hintPoke{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.user-info-wrapper{display:flex;align-items:center;gap:15px;min-width:0;flex:1}
+.avatar-container{position:relative;flex:0 0 50px;width:50px;height:50px;border-radius:50%;overflow:hidden;border:2px solid #ffffff33}
+.avatar{width:100%;height:100%;object-fit:cover;pointer-events:none}
+.image-shield{position:absolute;inset:0;z-index:5;background:transparent;pointer-events:none}
+.user-details{min-width:0}
+.user-details h3{font-size:14px;color:#fff;font-weight:700;line-height:1.5}
+.user-details p{font-size:11px;color:#94a3b8;font-weight:500;margin-top:2px}
+.live-badge-container{display:inline-flex;align-items:center;background:#000;border:1px solid #ffffff1a;padding:6px 14px;border-radius:20px;flex-shrink:0}
+.live-dot{width:9px;height:9px;background:#ff1a1a;border-radius:50%;box-shadow:0 0 8px #ff1a1a;animation:livePulse 1.8s infinite;margin-right:8px}
+@keyframes livePulse{0%,100%{transform:scale(1)}70%{transform:scale(1.18)}}
+.live-text{color:#fff;font-size:12px;font-weight:700;letter-spacing:1.2px}
 /* modal */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: #000d;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-}
-
-.modal-box {
-    background: #141c3a;
-    border: 1.5px solid #ff708f66;
-    width: 90%;
-    max-width: 340px;
-    padding: 25px;
-    border-radius: 24px;
-    text-align: center;
-    color: #fff;
-    box-shadow: 0 15px 40px #000b;
-}
-
-.modal-box h3 {
-    margin-bottom: 15px;
-    color: #ff708f;
-    font-size: 20px;
-}
-
-.close-btn {
-    background: linear-gradient(135deg,#ff9bb0,#ff708f);
-    color: #fff;
-    border: 0;
-    padding: 10px 25px;
-    border-radius: 12px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 15px;
-}
+.modal-overlay{position:fixed;inset:0;background:#000d;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:999}
+.modal-box{background:#141c3a;border:1.5px solid #ff708f66;width:90%;max-width:340px;padding:25px;border-radius:24px;text-align:center;color:#fff;box-shadow:0 15px 40px #000b}
+.modal-box h3{margin-bottom:15px;color:#ff708f;font-size:20px}
+.close-btn{background:linear-gradient(135deg,#ff9bb0,#ff708f);color:#fff;border:0;padding:10px 25px;border-radius:12px;font-weight:700;cursor:pointer;margin-top:15px}
 
 /* ================= ALVEE POPUP PROFILE CARD ================= */
-
-.pc-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 3500;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding:
-        calc(env(safe-area-inset-top, 0px) + 12px)
-        12px
-        calc(env(safe-area-inset-bottom, 0px) + 12px);
-    background: rgba(30,6,36,.62);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-.pc-overlay.open {
-    display: flex;
-    animation: pcFade .25s ease;
-}
-
-@keyframes pcFade {
-    from {
-        opacity: 0;
-    }
-}
-
-@keyframes pcPop {
-    from {
-        opacity: 0;
-        transform: translateY(18px) scale(.94);
-    }
-}
-
-.pc-card {
-    --plum: #3b0a45;
-    --pink: #ff4d8d;
-    --magenta: #e5127d;
-    position: relative;
-    width: 100%;
-    max-width: 400px;
-    max-height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: none;
-    border-radius: 32px;
-    color: var(--plum);
-    background: linear-gradient(
-        180deg,
-        #fff 0%,
-        #fff0f6 55%,
-        #fde4f0 100%
-    );
-    border: 1px solid rgba(255,255,255,.8);
-    box-shadow:
-        0 24px 60px rgba(90,0,60,.45),
-        0 0 0 1px rgba(255,120,170,.25);
-}
-
-.pc-card::-webkit-scrollbar {
-    display: none;
-}
-
-.pc-overlay.open .pc-card {
-    animation: pcPop .35s cubic-bezier(.2,.9,.3,1.1);
-}
-
-.pc-cover {
-    position: relative;
-    height: 230px;
-    overflow: hidden;
-    background: #f7c6da;
-}
-
-.pc-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
-    pointer-events: none;
-}
-
-.pc-cover::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 70%;
-    background: linear-gradient(
-        180deg,
-        rgba(255,240,246,0),
-        rgba(255,240,246,.75) 60%,
-        #fff0f6
-    );
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    -webkit-mask-image: linear-gradient(
-        180deg,
-        transparent,
-        #000 70%
-    );
-    mask-image: linear-gradient(
-        180deg,
-        transparent,
-        #000 70%
-    );
-}
-
-.pc-close {
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    z-index: 5;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,.4);
-    background: rgba(40,10,50,.4);
-    color: #fff;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition: transform .25s ease, background .2s ease;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.pc-close:hover {
-    background: rgba(229,18,125,.75);
-    transform: rotate(90deg);
-}
-
-.pc-close:active {
-    transform: rotate(90deg) scale(.88);
-}
-
-.pc-close svg {
-    width: 18px;
-    height: 18px;
-}
-
-.pc-head {
-    position: relative;
-    z-index: 2;
-    margin-top: -78px;
-    text-align: center;
-    padding: 0 18px;
-}
-
-.pc-avatar {
-    width: 128px;
-    height: 128px;
-    margin: 0 auto;
-    border-radius: 50%;
-    border: 4px solid #fff;
-    background: #fff;
-    box-shadow:
-        0 8px 24px rgba(229,18,125,.35),
-        0 0 0 3px rgba(255,150,190,.55);
-    overflow: hidden;
-}
-
-.pc-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    image-rendering: auto;
-    pointer-events: none;
-}
-
-.pc-wordmark {
-    display: block;
-    width: 210px;
-    max-width: 70%;
-    height: auto;
-    margin: 6px auto 0;
-    overflow: visible;
-}
-
-.pc-actions {
-    display: flex;
-    gap: 10px;
-    padding: 14px 16px 0;
-    align-items: center;
-}
-
-.pc-sub {
-    flex: 1;
-    min-width: 0;
-    height: 54px;
-    border: 0;
-    border-radius: 999px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    font-size: 17px;
-    font-weight: 700;
-    color: #fff;
-    background: linear-gradient(
-        90deg,
-        #ff4d8d,
-        #e5127d 60%,
-        #c40a8f
-    );
-    box-shadow:
-        0 10px 22px rgba(229,18,125,.4),
-        0 0 18px rgba(255,77,141,.35);
-    transition:
-        transform .2s ease,
-        box-shadow .2s ease,
-        filter .2s ease;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.pc-sub:hover {
-    filter: brightness(1.06);
-    box-shadow:
-        0 12px 28px rgba(229,18,125,.55),
-        0 0 26px rgba(255,77,141,.5);
-}
-
-.pc-sub:active {
-    transform: scale(.95);
-}
-
-.pc-sub svg {
-    width: 22px;
-    height: 22px;
-    flex: 0 0 auto;
-}
-
-.pc-sub.subscribed {
-    background: linear-gradient(90deg,#6d2a78,#3b0a45);
-    box-shadow: 0 8px 18px rgba(59,10,69,.4);
-}
-
-.pc-icon-btn {
-    position: relative;
-    flex: 0 0 54px;
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,120,170,.35);
-    background: #fff;
-    color: var(--pink);
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    box-shadow: 0 6px 16px rgba(229,18,125,.16);
-    transition:
-        transform .2s ease,
-        box-shadow .25s ease,
-        background .25s ease,
-        color .25s ease;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.pc-icon-btn:hover {
-    box-shadow:
-        0 0 0 4px rgba(255,77,141,.15),
-        0 8px 20px rgba(229,18,125,.3);
-}
-
-.pc-icon-btn:active {
-    transform: scale(.9);
-}
-
-.pc-icon-btn svg {
-    width: 24px;
-    height: 24px;
-    transform-origin: 50% 12%;
-    overflow: visible;
-}
-
-.pc-bell.on {
-    background: linear-gradient(145deg,#ff6aa2,#e5127d);
-    color: #fff;
-    border-color: transparent;
-}
-
-.pc-bell.ring-anim svg {
-    animation: bellRing .7s ease-in-out 3;
-}
-
-.pc-bell.glow {
-    animation: bellGlow 1.6s ease-in-out 1;
-}
-
-@keyframes bellRing {
-    0%,100% {
-        transform: rotate(0);
-    }
-    15% {
-        transform: rotate(22deg);
-    }
-    35% {
-        transform: rotate(-20deg);
-    }
-    55% {
-        transform: rotate(14deg);
-    }
-    75% {
-        transform: rotate(-10deg);
-    }
-}
-
-@keyframes bellGlow {
-    0%,100% {
-        box-shadow: 0 0 0 0 rgba(255,77,141,0);
-    }
-    30%,70% {
-        box-shadow:
-            0 0 0 7px rgba(255,77,141,.28),
-            0 0 26px rgba(255,77,141,.8);
-    }
-}
-
-.pc-heart:active svg {
-    transform: scale(.8);
-}
-
-.pc-heart svg {
-    transition: transform .15s ease;
-}
-
-.pc-cats {
-    display: flex;
-    gap: 8px;
-    padding: 14px 16px 0;
-}
-
-.pc-cat {
-    flex: 1 1 0;
-    min-width: 0;
-    height: 42px;
-    padding: 0 6px;
-    border-radius: 999px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    font-size: 11.5px;
-    font-weight: 600;
-    white-space: nowrap;
-    text-decoration: none;
-    transition:
-        transform .2s ease,
-        box-shadow .25s ease;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.pc-cat span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.pc-cat svg {
-    width: 15px;
-    height: 15px;
-    flex: 0 0 auto;
-}
-
-.pc-cat:hover {
-    transform: translateY(-2px);
-}
-
-.pc-cat:active {
-    transform: scale(.94);
-}
-
-.pc-cat.excl {
-    background: #1d1424;
-    color: #fff;
-    border: 0;
-    box-shadow: 0 6px 14px rgba(20,10,30,.35);
-}
-
-.pc-cat.excl svg {
-    color: #ffc400;
-}
-
-.pc-cat.excl:hover {
-    box-shadow: 0 8px 18px rgba(255,196,0,.35);
-}
-
-.pc-cat.shift {
-    background: linear-gradient(145deg,#2a2133,#14101a);
-    color: #f4e6b8;
-    border: 1px solid rgba(226,196,120,.7);
-}
-
-.pc-cat.shift svg {
-    color: #e6c675;
-}
-
-.pc-cat.shift:hover {
-    box-shadow: 0 0 18px rgba(226,196,120,.55);
-}
-
-.pc-eyes {
-    position: relative;
-    margin: 16px 16px 0;
-    height: 168px;
-    border-radius: 22px;
-    overflow: hidden;
-    border: 1.5px solid rgba(255,120,170,.55);
-    box-shadow: 0 10px 26px rgba(229,18,125,.28);
-    display: grid;
-    place-items: center;
-    text-align: center;
-    color: #fff;
-}
-
-.pc-eyes .bgb {
-    position: absolute;
-    inset: -24px;
-    background-size: cover;
-    background-position: center;
-    filter: blur(18px) saturate(1.1);
-    transform: scale(1.1);
-}
-
-.pc-eyes::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    background: rgba(48,14,56,.5);
-}
-
-.pc-eyes .inner {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-}
-
-.pc-eyes .eye {
-    width: 58px;
-    height: 58px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    background: rgba(255,255,255,.22);
-    border: 1px solid rgba(255,255,255,.4);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-}
-
-.pc-eyes .eye svg {
-    width: 28px;
-    height: 28px;
-}
-
-.pc-eyes .txt {
-    font-size: 17px;
-    font-weight: 600;
-    text-shadow: 0 2px 8px rgba(0,0,0,.4);
-}
-
-.pc-eyes .lock {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 2;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    background: rgba(255,255,255,.22);
-    border: 1px solid rgba(255,255,255,.4);
-}
-
-.pc-eyes .lock svg {
-    width: 17px;
-    height: 17px;
-}
-
-.pc-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    margin: 16px 16px 18px;
-    padding: 12px 4px;
-    border-radius: 20px;
-    background: rgba(255,255,255,.8);
-    border: 1px solid rgba(255,150,190,.3);
-    box-shadow: 0 6px 16px rgba(229,18,125,.1);
-}
-
-.pc-stat {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    padding: 0 4px;
-    min-width: 0;
-}
-
-.pc-stat + .pc-stat {
-    border-left: 1px solid rgba(59,10,69,.14);
-}
-
-.pc-stat svg {
-    width: 22px;
-    height: 22px;
-    color: #6d4a78;
-    flex: 0 0 auto;
-}
-
-.pc-stat b {
-    display: block;
-    font-size: 16px;
-    line-height: 1.15;
-    font-weight: 700;
-}
-
-.pc-stat small {
-    display: block;
-    font-size: 10.5px;
-    color: #8b6a95;
-    font-weight: 500;
-}
-
+.pc-overlay{position:fixed;inset:0;z-index:3500;display:none;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:rgba(30,6,36,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.pc-overlay.open{display:flex;animation:pcFade .25s ease}
+@keyframes pcFade{from{opacity:0}}
+@keyframes pcPop{from{opacity:0;transform:translateY(18px) scale(.94)}}
+.pc-card{--plum:#3b0a45;--pink:#ff4d8d;--magenta:#e5127d;position:relative;width:100%;max-width:400px;max-height:100%;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;border-radius:32px;color:var(--plum);background:linear-gradient(180deg,#fff 0%,#fff0f6 55%,#fde4f0 100%);border:1px solid rgba(255,255,255,.8);box-shadow:0 24px 60px rgba(90,0,60,.45),0 0 0 1px rgba(255,120,170,.25)}
+.pc-card::-webkit-scrollbar{display:none}
+.pc-overlay.open .pc-card{animation:pcPop .35s cubic-bezier(.2,.9,.3,1.1)}
+.pc-cover{position:relative;height:230px;overflow:hidden;background:#f7c6da}
+.pc-cover img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;pointer-events:none}
+.pc-cover::after{content:"";position:absolute;inset:auto 0 0 0;height:70%;background:linear-gradient(180deg,rgba(255,240,246,0),rgba(255,240,246,.75) 60%,#fff0f6);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);-webkit-mask-image:linear-gradient(180deg,transparent,#000 70%);mask-image:linear-gradient(180deg,transparent,#000 70%)}
+.pc-close{position:absolute;top:14px;right:14px;z-index:5;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(40,10,50,.4);color:#fff;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .25s ease,background .2s ease;-webkit-tap-highlight-color:transparent}
+.pc-close:hover{background:rgba(229,18,125,.75);transform:rotate(90deg)}
+.pc-close:active{transform:rotate(90deg) scale(.88)}
+.pc-close svg{width:18px;height:18px}
+.pc-head{position:relative;z-index:2;margin-top:-78px;text-align:center;padding:0 18px}
+.pc-avatar{width:128px;height:128px;margin:0 auto;border-radius:50%;border:4px solid #fff;background:#fff;box-shadow:0 8px 24px rgba(229,18,125,.35),0 0 0 3px rgba(255,150,190,.55);overflow:hidden}
+.pc-avatar img{width:100%;height:100%;object-fit:cover;display:block;image-rendering:auto;pointer-events:none}
+.pc-wordmark{display:block;width:210px;max-width:70%;height:auto;margin:6px auto 0;overflow:visible}
+.pc-actions{display:flex;gap:10px;padding:14px 16px 0;align-items:center}
+.pc-sub{flex:1;min-width:0;height:54px;border:0;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;color:#fff;background:linear-gradient(90deg,#ff4d8d,#e5127d 60%,#c40a8f);box-shadow:0 10px 22px rgba(229,18,125,.4),0 0 18px rgba(255,77,141,.35);transition:transform .2s ease,box-shadow .2s ease,filter .2s ease;-webkit-tap-highlight-color:transparent}
+.pc-sub:hover{filter:brightness(1.06);box-shadow:0 12px 28px rgba(229,18,125,.55),0 0 26px rgba(255,77,141,.5)}
+.pc-sub:active{transform:scale(.95)}
+.pc-sub svg{width:22px;height:22px;flex:0 0 auto}
+.pc-sub.subscribed{background:linear-gradient(90deg,#6d2a78,#3b0a45);box-shadow:0 8px 18px rgba(59,10,69,.4)}
+.pc-icon-btn{position:relative;flex:0 0 54px;width:54px;height:54px;border-radius:50%;border:1px solid rgba(255,120,170,.35);background:#fff;color:var(--pink);cursor:pointer;display:grid;place-items:center;box-shadow:0 6px 16px rgba(229,18,125,.16);transition:transform .2s ease,box-shadow .25s ease,background .25s ease,color .25s ease;-webkit-tap-highlight-color:transparent}
+.pc-icon-btn:hover{box-shadow:0 0 0 4px rgba(255,77,141,.15),0 8px 20px rgba(229,18,125,.3)}
+.pc-icon-btn:active{transform:scale(.9)}
+.pc-icon-btn svg{width:24px;height:24px;transform-origin:50% 12%;overflow:visible}
+.pc-bell.on{background:linear-gradient(145deg,#ff6aa2,#e5127d);color:#fff;border-color:transparent}
+.pc-bell.ring-anim svg{animation:bellRing .7s ease-in-out 3}
+.pc-bell.glow{animation:bellGlow 1.6s ease-in-out 1}
+@keyframes bellRing{0%,100%{transform:rotate(0)}15%{transform:rotate(22deg)}35%{transform:rotate(-20deg)}55%{transform:rotate(14deg)}75%{transform:rotate(-10deg)}}
+@keyframes bellGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,77,141,0)}30%,70%{box-shadow:0 0 0 7px rgba(255,77,141,.28),0 0 26px rgba(255,77,141,.8)}}
+.pc-heart:active svg{transform:scale(.8)}
+.pc-heart svg{transition:transform .15s ease}
+.pc-cats{display:flex;gap:8px;padding:14px 16px 0}
+.pc-cat{flex:1 1 0;min-width:0;height:42px;padding:0 6px;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-size:11.5px;font-weight:600;white-space:nowrap;text-decoration:none;transition:transform .2s ease,box-shadow .25s ease;-webkit-tap-highlight-color:transparent}
+.pc-cat span{overflow:hidden;text-overflow:ellipsis}
+.pc-cat svg{width:15px;height:15px;flex:0 0 auto}
+.pc-cat:hover{transform:translateY(-2px)}
+.pc-cat:active{transform:scale(.94)}
+.pc-cat.excl{background:#1d1424;color:#fff;border:0;box-shadow:0 6px 14px rgba(20,10,30,.35)}
+.pc-cat.excl svg{color:#ffc400}
+.pc-cat.excl:hover{box-shadow:0 8px 18px rgba(255,196,0,.35)}
+.pc-cat.shift{background:linear-gradient(145deg,#2a2133,#14101a);color:#f4e6b8;border:1px solid rgba(226,196,120,.7)}
+.pc-cat.shift svg{color:#e6c675}
+.pc-cat.shift:hover{box-shadow:0 0 18px rgba(226,196,120,.55)}
+.pc-eyes{position:relative;margin:16px 16px 0;height:168px;border-radius:22px;overflow:hidden;border:1.5px solid rgba(255,120,170,.55);box-shadow:0 10px 26px rgba(229,18,125,.28);display:grid;place-items:center;text-align:center;color:#fff}
+.pc-eyes .bgb{position:absolute;inset:-24px;background-size:cover;background-position:center;filter:blur(18px) saturate(1.1);transform:scale(1.1)}
+.pc-eyes::before{content:"";position:absolute;inset:0;z-index:1;background:rgba(48,14,56,.5)}
+.pc-eyes .inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px}
+.pc-eyes .eye{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.pc-eyes .eye svg{width:28px;height:28px}
+.pc-eyes .txt{font-size:17px;font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.pc-eyes .lock{position:absolute;top:12px;right:12px;z-index:2;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4)}
+.pc-eyes .lock svg{width:17px;height:17px}
+.pc-stats{display:grid;grid-template-columns:repeat(3,1fr);margin:16px 16px 18px;padding:12px 4px;border-radius:20px;background:rgba(255,255,255,.8);border:1px solid rgba(255,150,190,.3);box-shadow:0 6px 16px rgba(229,18,125,.1)}
+.pc-stat{display:flex;align-items:center;justify-content:center;gap:7px;padding:0 4px;min-width:0}
+.pc-stat+.pc-stat{border-left:1px solid rgba(59,10,69,.14)}
+.pc-stat svg{width:22px;height:22px;color:#6d4a78;flex:0 0 auto}
+.pc-stat b{display:block;font-size:16px;line-height:1.15;font-weight:700}
+.pc-stat small{display:block;font-size:10.5px;color:#8b6a95;font-weight:500}
 /* love particles */
-.love-layer {
-    position: fixed;
-    inset: 0;
-    z-index: 3600;
-    pointer-events: none;
-    overflow: hidden;
+.love-layer{position:fixed;inset:0;z-index:3600;pointer-events:none;overflow:hidden}
+.love-p{position:absolute;left:0;top:0;will-change:transform,opacity}
+.love-p svg{width:100%;height:100%;display:block;overflow:visible}
+.pc-card button:focus-visible,.pc-card a:focus-visible{outline:3px solid #00bfff;outline-offset:2px}
+
+@media (max-width:360px){
+.alvee-story-card{width:94px;height:148px}
+.pc-cat{font-size:10px;gap:3px}
+.pc-cat svg{width:13px;height:13px}
+.pc-stat svg{display:none}
+.alvee-reels-actions{right:4px;gap:12px}
+.alvee-action{width:43px}
+.alvee-action svg{width:27px;height:27px}
+.alvee-follow{padding:0 10px}
 }
-
-.love-p {
-    position: absolute;
-    left: 0;
-    top: 0;
-    will-change: transform, opacity;
+@media (min-width:700px){
+.alvee-reels-stage{height:min(100vh,900px);height:min(100dvh,900px);width:calc(min(100vh,900px)*.5625);width:calc(min(100dvh,900px)*.5625);border-radius:20px}
+.alvee-story-card{width:112px;height:172px}
 }
-
-.love-p svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-    overflow: visible;
-}
-
-.pc-card button:focus-visible,
-.pc-card a:focus-visible {
-    outline: 3px solid #00bfff;
-    outline-offset: 2px;
-}
-
-@media (max-width: 360px) {
-
-    .story-item,
-    .story-item .ring {
-        width: 66px;
-    }
-
-    .story-item {
-        height: 86px;
-    }
-
-    .story-item .story-name {
-        width: 66px;
-        font-size: 9px;
-    }
-
-    .story-item .play-badge {
-        right: 0;
-        top: 47px;
-    }
-
-    .pc-cat {
-        font-size: 10px;
-        gap: 3px;
-    }
-
-    .pc-cat svg {
-        width: 13px;
-        height: 13px;
-    }
-
-    .pc-stat svg {
-        display: none;
-    }
-
-    .alvee-reels-actions {
-        right: 5px;
-        gap: 13px;
-    }
-
-    .alvee-action {
-        width: 43px;
-    }
-
-    .alvee-action svg {
-        width: 27px;
-        height: 27px;
-    }
-}
-
-@media (min-width: 700px) {
-
-    .story-stage {
-        max-width: 500px;
-    }
-
-    .alvee-reels-bottom {
-        left: 18px;
-        right: 80px;
-    }
-
-    .alvee-reels-actions {
-        right: 20px;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-
-    .pc-overlay.open,
-    .pc-overlay.open .pc-card {
-        animation: none;
-    }
-
-    .pc-bell.ring-anim svg,
-    .pc-bell.glow {
-        animation: none;
-    }
-
-    .pc-close:hover {
-        transform: none;
-    }
-
-    .alvee-center-heart.show,
-    .alvee-like-button.liked svg {
-        animation: none;
-    }
+@media (prefers-reduced-motion:reduce){
+.pc-overlay.open,.pc-overlay.open .pc-card{animation:none}
+.pc-bell.ring-anim svg,.pc-bell.glow{animation:none}
+.pc-close:hover{transform:none}
+.alvee-center-heart.show,.alvee-like-button.liked svg,.alvee-next-hint svg{animation:none}
+.alvee-slide,.alvee-reels-viewer{transition:none}
 }
 </style>
-
 </head>
-
 <body>
 
 <div id="bgLoader" style="display:none !important;"></div>
-
-<div class="bg-container" id="bgContainer">
-    <div class="bg-shade"></div>
-</div>
+<div class="bg-container" id="bgContainer"><div class="bg-shade"></div></div>
 
 <!-- shared SVG defs -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <defs>
-
-        <radialGradient id="gRed" cx="35%" cy="28%" r="80%">
-            <stop offset="0" stop-color="#ff7a8a"/>
-            <stop offset=".45" stop-color="#e3172f"/>
-            <stop offset="1" stop-color="#8e0618"/>
-        </radialGradient>
-
-        <linearGradient id="gPink" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#ffb3cf"/>
-            <stop offset="1" stop-color="#ff5f9e"/>
-        </linearGradient>
-
-        <linearGradient id="gLip" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#ff5a86"/>
-            <stop offset="1" stop-color="#c8104f"/>
-        </linearGradient>
-
-        <symbol id="hp" viewBox="0 0 32 32">
-            <path d="M16 28.5C6 20.5 2 14.5 2 9.6C2 5.6 5 3 8.6 3c3 0 5.4 1.7 7.4 4.5C18 4.7 20.4 3 23.4 3 27 3 30 5.6 30 9.6c0 4.9-4 10.9-14 18.9z"/>
-        </symbol>
-
-        <symbol id="st" viewBox="0 0 10 10">
-            <path d="M5 0c.5 3 2 4.5 5 5-3 .5-4.5 2-5 5-.5-3-2-4.5-5-5 3-.5 4.5-2 5-5z"/>
-        </symbol>
-
-    </defs>
+<defs>
+<radialGradient id="gRed" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#ff7a8a"/><stop offset=".45" stop-color="#e3172f"/><stop offset="1" stop-color="#8e0618"/></radialGradient>
+<linearGradient id="gPink" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb3cf"/><stop offset="1" stop-color="#ff5f9e"/></linearGradient>
+<linearGradient id="gLip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5a86"/><stop offset="1" stop-color="#c8104f"/></linearGradient>
+<symbol id="hp" viewBox="0 0 32 32"><path d="M16 28.5C6 20.5 2 14.5 2 9.6C2 5.6 5 3 8.6 3c3 0 5.4 1.7 7.4 4.5C18 4.7 20.4 3 23.4 3 27 3 30 5.6 30 9.6c0 4.9-4 10.9-14 18.9z"/></symbol>
+<symbol id="st" viewBox="0 0 10 10"><path d="M5 0c.5 3 2 4.5 5 5-3 .5-4.5 2-5 5-.5-3-2-4.5-5-5 3-.5 4.5-2 5-5z"/></symbol>
+</defs>
 </svg>
 
 <div id="dashboardWrapper">
 
     <!-- GLASS HEADER -->
     <header class="glass-header">
-
         <div class="header-nav">
-
-            <div
-                class="header-profile"
-                onclick="openProfileCard()"
-                role="button"
-                tabindex="0"
-                aria-label="Open profile"
-                aria-haspopup="dialog"
-            >
-                <div class="ring sm">
-                    <img
-                        src="https://carder.top/imagens/1793417411592-885991335.jpg"
-                        alt=""
-                    >
-                </div>
-
+            <div class="header-profile" onclick="openProfileCard()" role="button" tabindex="0" aria-label="Open profile" aria-haspopup="dialog">
+                <div class="ring sm"><img src="https://carder.top/imagens/1793417411592-885991335.jpg" alt=""></div>
                 <span class="pname" id="headerName"></span>
             </div>
-
-            <button
-                id="refreshBtn"
-                type="button"
-                onclick="triggerRefresh(this)"
-                class="header-btn refresh-btn"
-            >
-                REFRESH
-            </button>
-
+            <button id="refreshBtn" type="button" onclick="triggerRefresh(this)" class="header-btn refresh-btn">REFRESH</button>
         </div>
-
-        <!-- ALVEE STORIES -->
-        <div class="stories-row" id="storiesRow"></div>
-
     </header>
 
+    <!-- ALVEE STORY SECTION START -->
+    <section class="alvee-story-section" id="alveeStorySection" aria-label="Alvee Community stories" hidden>
+        <div class="alvee-story-row" id="alveeStoryRow"></div>
+    </section>
+    <!-- ALVEE STORY SECTION END -->
 
     <!-- HOME VIEW -->
     <div id="homeView" class="view-section active-view">
 
-        <div
-            class="profile-card blink-glow oc-collection-card attention"
-            onclick="window.location.href='/oc-collection.html'"
-        >
-
+        <div class="profile-card blink-glow oc-collection-card attention" onclick="window.location.href='/oc-collection.html'">
             <div class="user-info-wrapper">
-
                 <div class="avatar-container">
-                    <img
-                        src="https://carder.top/imagens/1792065174675-662575987.jpg"
-                        alt="OC Collection Universe"
-                        class="avatar"
-                    >
+                    <img src="https://carder.top/imagens/1792065174675-662575987.jpg" alt="OC Collection Universe" class="avatar">
                     <div class="image-shield"></div>
                 </div>
-
                 <div class="user-details">
                     <h3>𝗢𝗖 𝗖𝗼𝗹𝗹𝗲𝗰𝘁𝗶𝗼𝗻 𝗨𝗻𝗶𝘃𝗲𝗿𝘀𝗲 🍒</h3>
                     <p>Open Channel</p>
                 </div>
-
             </div>
-
-            <div class="live-badge-container">
-                <span class="live-dot"></span>
-                <span class="live-text">LIVE</span>
-            </div>
-
+            <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
             <span class="tap-hint">👆 TAP HERE</span>
-
         </div>
 
-
-        <div
-            class="profile-card blink-glow oc-collection-card attention"
-            onclick="openProfile('BD Sensual','Lock Media')"
-        >
-
+        <div class="profile-card blink-glow oc-collection-card attention" onclick="openProfile('BD Sensual','Lock Media')">
             <div class="user-info-wrapper">
-
                 <div class="avatar-container">
-                    <img
-                        src="https://carder.top/imagens/1792065182673-804452797.jpg"
-                        alt="BD Sensual"
-                        class="avatar"
-                    >
+                    <img src="https://carder.top/imagens/1792065182673-804452797.jpg" alt="BD Sensual" class="avatar">
                     <div class="image-shield"></div>
                 </div>
-
                 <div class="user-details">
                     <h3>BD Sensual</h3>
                     <p>Lock Media</p>
                 </div>
-
             </div>
-
-            <div class="live-badge-container">
-                <span class="live-dot"></span>
-                <span class="live-text">LIVE</span>
-            </div>
-
+            <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
             <span class="tap-hint">👆 TAP HERE</span>
-
         </div>
 
     </div>
-
-
-    <!-- =====================================================
-         ALVEE STORY / REELS VIEWER
-         ===================================================== -->
-
-    <div class="story-viewer" id="storyViewer">
-
-        <div class="story-stage" id="storyStage">
-
-            <!-- STORY PROGRESS -->
-            <div class="story-bars" id="storyBars"></div>
-
-            <!-- CLOSE -->
-            <button
-                type="button"
-                class="story-close"
-                onclick="closeStory()"
-                aria-label="Close story"
-            >
-                ✕
-            </button>
-
-            <!-- TAP NAVIGATION -->
-            <div
-                class="story-tap left"
-                onclick="prevStory()"
-                aria-hidden="true"
-            ></div>
-
-            <div
-                class="story-tap right"
-                onclick="nextStory()"
-                aria-hidden="true"
-            ></div>
-
-            <!-- LOADING -->
-            <div
-                class="story-spinner"
-                id="storySpinner"
-            ></div>
-
-
-            <!-- CENTER HEART -->
-            <div
-                class="alvee-center-heart"
-                id="alveeCenterHeart"
-                aria-hidden="true"
-            >
-                <svg viewBox="0 0 100 100">
-                    <defs>
-                        <linearGradient
-                            id="centerHeartGradient"
-                            x1="20"
-                            y1="10"
-                            x2="80"
-                            y2="90"
-                        >
-                            <stop offset="0" stop-color="#ff566b"/>
-                            <stop offset=".45" stop-color="#ff173d"/>
-                            <stop offset="1" stop-color="#c90022"/>
-                        </linearGradient>
-                    </defs>
-
-                    <path
-                        d="M50 87
-                           C43 80 14 61 14 35
-                           C14 21 24 13 36 13
-                           C43 13 48 17 50 23
-                           C52 17 57 13 64 13
-                           C76 13 86 21 86 35
-                           C86 61 57 80 50 87Z"
-                        fill="url(#centerHeartGradient)"
-                    />
-                </svg>
-            </div>
-
-
-            <!-- RIGHT ACTION PANEL -->
-            <div class="alvee-reels-actions">
-
-                <!-- LIKE -->
-                <button
-                    type="button"
-                    class="alvee-action alvee-like-button"
-                    id="alveeLikeButton"
-                    onclick="toggleReelLike()"
-                    aria-label="Like"
-                >
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.9"
-                        stroke-linejoin="round"
-                    >
-                        <path d="M12 20.5C5 15 3 11.5 3 8.7C3 6.2 4.9 4.5 7.1 4.5c2 0 3.7 1.1 4.9 3 1.2-1.9 2.9-3 4.9-3C19.1 4.5 21 6.2 21 8.7c0 2.8-2 6.3-9 11.8z"/>
-                    </svg>
-
-                    <span id="alveeLikeCount">423</span>
-                </button>
-
-
-                <!-- VIEWS -->
-                <button
-                    type="button"
-                    class="alvee-action"
-                    aria-label="Views"
-                    onclick="showReelViews()"
-                >
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7S2 12 2 12z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-
-                    <span
-                        class="alvee-view-count"
-                        id="alveeViewCount"
-                    >
-                        67K
-                    </span>
-                </button>
-
-
-                <!-- MORE -->
-                <button
-                    type="button"
-                    class="alvee-action"
-                    onclick="openAlveeSearch()"
-                    aria-label="More options"
-                >
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                    >
-                        <circle cx="5" cy="12" r="1.8"/>
-                        <circle cx="12" cy="12" r="1.8"/>
-                        <circle cx="19" cy="12" r="1.8"/>
-                    </svg>
-
-                    <span>More</span>
-                </button>
-
-            </div>
-
-
-            <!-- BOTTOM PROFILE -->
-            <div class="alvee-reels-bottom">
-
-                <div class="alvee-reels-profile">
-
-                    <div
-                        class="alvee-reels-avatar"
-                        onclick="openAlveeProfile()"
-                        role="button"
-                        aria-label="Open Alvee Community profile"
-                    >
-                        <img
-                            src="https://files.catbox.moe/jz5vy5.jpg"
-                            alt="Alvee Community"
-                            draggable="false"
-                        >
-                    </div>
-
-
-                    <div class="alvee-reels-user">
-
-                        <span
-                            class="alvee-reels-name"
-                            onclick="openAlveeProfile()"
-                        >
-                            Alvee Community
-                        </span>
-
-
-                        <!-- BLUE VERIFIED BADGE -->
-                        <span
-                            class="alvee-verified"
-                            aria-label="Verified"
-                        >
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                            >
-                                <path
-                                    d="M12 2.5l2.15 1.3 2.5-.15 1.25 2.18 2.18 1.25-.15 2.5 1.3 2.15-1.3 2.15.15 2.5-2.18 1.25-1.25 2.18-2.5-.15L12 21.5l-2.15-1.3-2.5.15-1.25-2.18-2.18-1.25.15-2.5L2.77 12l1.3-2.15-.15-2.5L6.1 6.1l1.25-2.18 2.5.15L12 2.5z"
-                                    fill="#1688ff"
-                                />
-
-                                <path
-                                    d="M8.3 12.2l2.35 2.25 5.15-5.2"
-                                    stroke="#fff"
-                                    stroke-width="1.9"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                />
-                            </svg>
-                        </span>
-
-
-                        <!-- FOLLOW -->
-                        <button
-                            type="button"
-                            class="alvee-follow"
-                            id="alveeFollowButton"
-                            onclick="toggleFollow(event)"
-                        >
-                            Follow
-                        </button>
-
-                    </div>
-
-                </div>
-
-
-                <!-- CAPTION -->
-                <div
-                    class="alvee-caption"
-                    id="alveeCaption"
-                >
-                    Welcome to Alvee Community — exclusive reels, daily updates and premium content.
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
 
     <!-- PROFILE MODAL -->
-    <div
-        class="modal-overlay"
-        id="profileModal"
-    >
+    <div class="modal-overlay" id="profileModal">
         <div class="modal-box">
-
-            <h3 id="modalName">
-                User Profile
-            </h3>
-
-            <div id="modalInfo">
-                Details...
-            </div>
-
-            <button
-                type="button"
-                class="close-btn"
-                onclick="closeModal()"
-            >
-                Close
-            </button>
-
+            <h3 id="modalName">User Profile</h3>
+            <div id="modalInfo">Details...</div>
+            <button type="button" class="close-btn" onclick="closeModal()">Close</button>
         </div>
     </div>
 
 </div>
-
 
 <!-- =====================================================
-     SEARCH OVERLAY
+     ALVEE REELS VIEWER
      ===================================================== -->
+<div class="alvee-reels-viewer" id="alveeReelsViewer" role="dialog" aria-modal="true" aria-label="Alvee Community reels">
+    <div class="alvee-reels-stage" id="alveeReelsStage">
 
-<div
-    class="alvee-search-overlay"
-    id="alveeSearchOverlay"
->
+        <div class="alvee-track" id="alveeTrack"></div>
 
-    <div class="alvee-search-box">
+        <div class="alvee-reels-bars" id="alveeBars"></div>
 
-        <div class="alvee-search-head">
-
-            <div class="alvee-search-title">
-                Search Reels
-            </div>
-
-            <button
-                type="button"
-                class="alvee-search-close"
-                onclick="closeAlveeSearch()"
-                aria-label="Close search"
-            >
-                ✕
-            </button>
-
-        </div>
-
-
-        <div class="alvee-search-input-wrap">
-
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-            >
-                <circle cx="11" cy="11" r="7"/>
-                <path d="M20 20l-4-4"/>
-            </svg>
-
-            <input
-                type="search"
-                id="alveeSearchInput"
-                class="alvee-search-input"
-                placeholder="Search reels or captions..."
-                autocomplete="off"
-            >
-
-        </div>
-
-
-        <div
-            class="alvee-search-results"
-            id="alveeSearchResults"
-        ></div>
-
-    </div>
-
-</div>
-
-
-<!-- ================= ALVEE POPUP PROFILE CARD ================= -->
-
-<div
-    class="pc-overlay"
-    id="pcOverlay"
-    aria-hidden="true"
->
-
-    <section
-        class="pc-card"
-        id="pcCard"
-        role="dialog"
-        aria-modal="true"
-        aria-label="ALVEE profile"
-        tabindex="-1"
-    >
-
-        <div class="pc-cover">
-
-            <img
-                src="https://carder.top/imagens/1793546742526-646878459.jpg"
-                alt=""
-                draggable="false"
-            >
-
-        </div>
-
-
-        <button
-            type="button"
-            class="pc-close"
-            id="pcClose"
-            aria-label="Close profile"
-        >
-
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.6"
-                stroke-linecap="round"
-            >
-                <path d="M5 5l14 14M19 5L5 19"/>
-            </svg>
-
+        <button type="button" class="alvee-reels-close" id="alveeCloseBtn" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
         </button>
 
+        <div class="alvee-next-hint" id="alveeNextHint" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            Next
+        </div>
 
-        <div class="pc-head">
+        <div class="alvee-spinner" id="alveeSpinner"></div>
 
-            <div class="pc-avatar">
+        <div class="alvee-pause-icon" id="alveePauseIcon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </div>
 
-                <img
-                    src="https://carder.top/imagens/1793417411592-885991335.jpg"
-                    alt="ALVEE profile picture"
-                    draggable="false"
-                >
-
-            </div>
-
-
-            <svg
-                class="pc-wordmark"
-                viewBox="0 0 220 64"
-                role="img"
-                aria-label="ALVEE"
-            >
-
-                <g
-                    transform="translate(110 49) skewX(-14)"
-                >
-
-                    <text
-                        x="0"
-                        y="0"
-                        text-anchor="middle"
-                        font-family="Poppins, sans-serif"
-                        font-weight="800"
-                        font-style="italic"
-                        font-size="52"
-                        letter-spacing="1"
-                        stroke="#3b0a45"
-                        stroke-width="7"
-                        stroke-linejoin="round"
-                        paint-order="stroke fill"
-                    >
-
-                        <tspan fill="#22d3ee">A</tspan>
-                        <tspan fill="#ffffff">LVEE</tspan>
-
-                    </text>
-
-                </g>
-
+        <!-- CENTER HEART -->
+        <div class="alvee-center-heart" id="alveeCenterHeart" aria-hidden="true">
+            <svg viewBox="0 0 100 100">
+                <defs><linearGradient id="centerHeartGradient" x1="20" y1="10" x2="80" y2="90"><stop offset="0" stop-color="#ff566b"/><stop offset=".45" stop-color="#ff173d"/><stop offset="1" stop-color="#c90022"/></linearGradient></defs>
+                <path d="M50 87C43 80 14 61 14 35C14 21 24 13 36 13C43 13 48 17 50 23C52 17 57 13 64 13C76 13 86 21 86 35C86 61 57 80 50 87Z" fill="url(#centerHeartGradient)"/>
             </svg>
-
         </div>
 
+        <!-- RIGHT ACTION PANEL -->
+        <div class="alvee-reels-actions">
 
-        <div class="pc-actions">
-
-            <button
-                type="button"
-                class="pc-sub"
-                id="pcSub"
-                aria-pressed="false"
-            >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                >
-                    <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/>
-                </svg>
-
-                <span id="pcSubText">
-                    Subscribe
-                </span>
-
+            <button type="button" class="alvee-action alvee-like-button" id="alveeLikeButton" aria-label="Like">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20.5C5 15 3 11.5 3 8.7C3 6.2 4.9 4.5 7.1 4.5c2 0 3.7 1.1 4.9 3 1.2-1.9 2.9-3 4.9-3C19.1 4.5 21 6.2 21 8.7c0 2.8-2 6.3-9 11.8z"/></svg>
+                <span id="alveeLikeCount">0</span>
             </button>
 
-
-            <button
-                type="button"
-                class="pc-icon-btn pc-bell"
-                id="pcBell"
-                aria-pressed="false"
-                aria-label="Notifications off"
-            >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.9"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                >
-                    <path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15L6 16z"/>
-                    <path d="M10 21a2 2 0 004 0"/>
-                </svg>
-
-            </button>
-
-
-            <button
-                type="button"
-                class="pc-icon-btn pc-heart"
-                id="pcHeart"
-                aria-label="Send love"
-            >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.9"
-                    stroke-linejoin="round"
-                >
-                    <path d="M12 20.5C5 15 3 11.5 3 8.7 3 6.2 4.9 4.5 7.1 4.5c2 0 3.7 1.1 4.9 3 1.2-1.9 2.9-3 4.9-3C19.1 4.5 21 6.2 21 8.7c0 2.8-2 6.3-9 11.8z"/>
-                </svg>
-
-            </button>
-
-        </div>
-
-
-        <div class="pc-cats">
-
-            <a
-                class="pc-cat excl"
-                href="https://www.alveecommunity.com/oc-collection.html"
-            >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                >
-                    <path d="M13 2L4.5 13.5H11L10 22l9-12h-6.5L13 2z"/>
-                </svg>
-
-                <span>
-                    Exclusive Content
-                </span>
-
-            </a>
-
-
-            <a
-                class="pc-cat shift"
-                href="https://t.me/ALVEE_BD"
-                target="_blank"
-                rel="noopener noreferrer"
-            >
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                >
-                    <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/>
-                </svg>
-
-                <span>
-                    Member Shift
-                </span>
-
-            </a>
-
-        </div>
-
-
-        <div
-            class="pc-eyes"
-            role="img"
-            aria-label="Your eyes only. Private media preview."
-        >
-
-            <div
-                class="bgb"
-                style="background-image:url('https://carder.top/imagens/1793546742526-646878459.jpg')"
-            ></div>
-
-            <div class="lock">
-
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#fff"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                >
-                    <rect
-                        x="5"
-                        y="11"
-                        width="14"
-                        height="10"
-                        rx="2.5"
-                        fill="#fff"
-                    />
-                    <path d="M8 11V8a4 4 0 018 0v3"/>
-                </svg>
-
+            <div class="alvee-action alvee-static" role="img" aria-label="Views">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span id="alveeViewCount">0</span>
             </div>
 
+            <button type="button" class="alvee-action alvee-sound-button" id="alveeSoundButton" aria-label="Unmute">
+                <svg class="off-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+                <svg class="on-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z"/><path d="M15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11"/></svg>
+            </button>
 
-            <div class="inner">
-
-                <div class="eye">
-
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#fff"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path d="M2 12s3.6-7 10-7c2 0 3.7.6 5.1 1.5M22 12s-3.6 7-10 7c-2 0-3.7-.6-5.1-1.5"/>
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M3 3l18 18"/>
-                    </svg>
-
-                </div>
-
-                <div class="txt">
-                    Your eyes only
-                </div>
-
-            </div>
+            <button type="button" class="alvee-action" id="alveeMoreButton" aria-label="More options" aria-haspopup="dialog">
+                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>
+            </button>
 
         </div>
 
+        <!-- BOTTOM PROFILE -->
+        <div class="alvee-reels-bottom">
+            <div class="alvee-reels-profile">
+                <div class="alvee-reels-avatar" id="alveeBottomAvatar" role="button" tabindex="0" aria-label="Open Alvee Community profile">
+                    <img src="https://files.catbox.moe/jz5vy5.jpg" alt="Alvee Community" draggable="false">
+                </div>
+                <div class="alvee-reels-user">
+                    <span class="alvee-reels-name" id="alveeBottomName" role="button" tabindex="0">Alvee Community</span>
+                    <span class="alvee-verified" aria-label="Verified">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2.5l2.15 1.3 2.5-.15 1.25 2.18 2.18 1.25-.15 2.5 1.3 2.15-1.3 2.15.15 2.5-2.18 1.25-1.25 2.18-2.5-.15L12 21.5l-2.15-1.3-2.5.15-1.25-2.18-2.18-1.25.15-2.5L2.77 12l1.3-2.15-.15-2.5L6.1 6.1l1.25-2.18 2.5.15L12 2.5z" fill="#1688ff"/><path d="M8.3 12.2l2.35 2.25 5.15-5.2" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                    <button type="button" class="alvee-follow" id="alveeFollowButton" aria-label="Follow Alvee Community" aria-pressed="false">Follow</button>
+                </div>
+            </div>
+            <div class="alvee-caption" id="alveeCaption"></div>
+        </div>
 
-        <div
-            class="pc-stats"
-            id="pcStats"
-        ></div>
-
-    </section>
-
+    </div>
 </div>
 
+<!-- SEARCH OVERLAY -->
+<div class="alvee-search-overlay" id="alveeSearchOverlay" role="dialog" aria-modal="true" aria-label="Search reels">
+    <div class="alvee-search-box">
+        <div class="alvee-search-head">
+            <div class="alvee-search-title">Search Reels</div>
+            <button type="button" class="alvee-search-close" id="alveeSearchClose" aria-label="Close search">✕</button>
+        </div>
+        <div class="alvee-search-input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+            <input type="search" id="alveeSearchInput" class="alvee-search-input" placeholder="Search reels or captions..." autocomplete="off" aria-label="Search reels">
+        </div>
+        <div class="alvee-search-results" id="alveeSearchResults"></div>
+    </div>
+</div>
 
-<div
-    class="love-layer"
-    id="loveLayer"
-    aria-hidden="true"
-></div>
+<!-- ================= ALVEE POPUP PROFILE CARD ================= -->
+<div class="pc-overlay" id="pcOverlay" aria-hidden="true">
+<section class="pc-card" id="pcCard" role="dialog" aria-modal="true" aria-label="ALVEE profile" tabindex="-1">
 
+    <div class="pc-cover"><img src="https://carder.top/imagens/1793546742526-646878459.jpg" alt="" draggable="false"></div>
+
+    <button type="button" class="pc-close" id="pcClose" aria-label="Close profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+
+    <div class="pc-head">
+        <div class="pc-avatar"><img src="https://carder.top/imagens/1793417411592-885991335.jpg" alt="ALVEE profile picture" draggable="false"></div>
+        <svg class="pc-wordmark" viewBox="0 0 220 64" role="img" aria-label="ALVEE">
+            <g transform="translate(110 49) skewX(-14)">
+                <text x="0" y="0" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="800" font-style="italic" font-size="52" letter-spacing="1" stroke="#3b0a45" stroke-width="7" stroke-linejoin="round" paint-order="stroke fill"><tspan fill="#22d3ee">A</tspan><tspan fill="#ffffff">LVEE</tspan></text>
+            </g>
+        </svg>
+    </div>
+
+    <div class="pc-actions">
+        <button type="button" class="pc-sub" id="pcSub" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>
+            <span id="pcSubText">Subscribe</span>
+        </button>
+        <button type="button" class="pc-icon-btn pc-bell" id="pcBell" aria-pressed="false" aria-label="Notifications off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15L6 16z"/><path d="M10 21a2 2 0 004 0"/></svg>
+        </button>
+        <button type="button" class="pc-icon-btn pc-heart" id="pcHeart" aria-label="Send love">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20.5C5 15 3 11.5 3 8.7 3 6.2 4.9 4.5 7.1 4.5c2 0 3.7 1.1 4.9 3 1.2-1.9 2.9-3 4.9-3C19.1 4.5 21 6.2 21 8.7c0 2.8-2 6.3-9 11.8z"/></svg>
+        </button>
+    </div>
+
+    <div class="pc-cats">
+        <a class="pc-cat excl" href="https://www.alveecommunity.com/oc-collection.html">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l9-12h-6.5L13 2z"/></svg>
+            <span>Exclusive Content</span>
+        </a>
+        <a class="pc-cat shift" href="https://t.me/ALVEE_BD" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>
+            <span>Member Shift</span>
+        </a>
+    </div>
+
+    <div class="pc-eyes" role="img" aria-label="Your eyes only. Private media preview.">
+        <div class="bgb" style="background-image:url('https://carder.top/imagens/1793546742526-646878459.jpg')"></div>
+        <div class="lock">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5" fill="#fff"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+        </div>
+        <div class="inner">
+            <div class="eye">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7c2 0 3.7.6 5.1 1.5M22 12s-3.6 7-10 7c-2 0-3.7-.6-5.1-1.5"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/></svg>
+            </div>
+            <div class="txt">Your eyes only</div>
+        </div>
+    </div>
+
+    <div class="pc-stats" id="pcStats"></div>
+
+</section>
+</div>
+
+<div class="love-layer" id="loveLayer" aria-hidden="true"></div>
 
 <script>
-
 /* =========================================================
    ALVEE CONFIGURATION
    ========================================================= */
+const ALVEE_PROFILE_IMAGE = "https://files.catbox.moe/jz5vy5.jpg";
+const ALVEE_PROFILE_NAME  = "Alvee Community";
+const ALVEE_DEFAULT_CAPTION = "Welcome to Alvee Community — exclusive reels, daily updates and premium content.";
 
-const ALVEE_PROFILE_IMAGE =
-    "https://files.catbox.moe/jz5vy5.jpg";
+/* ✅ Auto next video যখন video শেষ হবে (false করলে শুধু "Next" indicator দেখাবে) */
+const ALVEE_AUTO_NEXT = true;
 
-const ALVEE_PROFILE_NAME =
-    "Alvee Community";
-
-const ALVEE_PROFILE_URL =
-    "https://www.alveecommunity.com/dashboard.Html";
-
+/* ✅ আগের /api/stories থেকে video গুলো reels-এর আগে যুক্ত হবে (না চাইলে false) */
+const ALVEE_USE_API = true;
 
 /* =========================================================
    HEADER NAME
    ========================================================= */
-
 const HEADER_NAME =
-    "\u{1D1BA}\u{1D165}\u20DD" +
-    "\u{1F5A4}" +
-    "\u0F0F\u0640\uABED\u0640\uABED" +
-    "\u{1F1E6}" +
+    "\u{1D1BA}\u{1D165}\u20DD" + "\u{1F5A4}" +
+    "\u0F0F\u0640\uABED\u0640\uABED" + "\u{1F1E6}" +
     "\u{1D647}\u{1D651}\u{1D640}\u{1D640}" +
-    "\u{1D1BA}\u{1D165}" +
-    "\u2665\uFE0F" +
-    "\u27F5\uABED";
-
+    "\u{1D1BA}\u{1D165}" + "\u2665\uFE0F" + "\u27F5\uABED";
 document.getElementById('headerName').textContent = HEADER_NAME;
 
-
 /* =========================================================
-   BACKGROUND IMAGE & DASHBOARD JS
+   BACKGROUND IMAGE
    ========================================================= */
-
 const backgroundImages = [
     "https://carder.top/imagens/1792211356900-71480222.jpg",
     "https://carder.top/imagens/1792211360124-891549584.jpg",
@@ -2628,2506 +538,766 @@ const backgroundImages = [
 ];
 
 function shuffled(items) {
-
     const array = [...items];
-
     for (let i = array.length - 1; i > 0; i--) {
-
-        const j =
-            Math.floor(Math.random() * (i + 1));
-
-        [array[i], array[j]] =
-            [array[j], array[i]];
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
-
     return array;
 }
 
-
 function initRandomBackground() {
-
-    const container =
-        document.getElementById('bgContainer');
-
+    const container = document.getElementById('bgContainer');
     if (!container) return;
-
-    const queueKey =
-        'dashboardBackgroundImageQueueV1';
-
-    const previousKey =
-        'dashboardLastBackgroundImageV1';
-
+    const queueKey = 'dashboardBackgroundImageQueueV1';
+    const previousKey = 'dashboardLastBackgroundImageV1';
     let queue = [];
-
-    try {
-        queue =
-            JSON.parse(
-                localStorage.getItem(queueKey) || '[]'
-            );
-    } catch (error) {
-        queue = [];
-    }
-
-    queue =
-        queue.filter(
-            url => backgroundImages.includes(url)
-        );
-
-    if (!queue.length) {
-        queue = shuffled(backgroundImages);
-    }
-
+    try { queue = JSON.parse(localStorage.getItem(queueKey) || '[]'); } catch (error) { queue = []; }
+    queue = queue.filter(url => backgroundImages.includes(url));
+    if (!queue.length) queue = shuffled(backgroundImages);
     let previous = null;
-
-    try {
-        previous =
-            localStorage.getItem(previousKey);
-    } catch (error) {}
-
-    if (
-        queue.length > 1 &&
-        queue[queue.length - 1] === previous
-    ) {
-
-        [
-            queue[0],
-            queue[queue.length - 1]
-        ] = [
-            queue[queue.length - 1],
-            queue[0]
-        ];
+    try { previous = localStorage.getItem(previousKey); } catch (error) {}
+    if (queue.length > 1 && queue[queue.length - 1] === previous) {
+        [queue[0], queue[queue.length - 1]] = [queue[queue.length - 1], queue[0]];
     }
-
     const selected = queue.pop();
-
-    try {
-        localStorage.setItem(
-            queueKey,
-            JSON.stringify(queue)
-        );
-    } catch (error) {}
-
+    try { localStorage.setItem(queueKey, JSON.stringify(queue)); } catch (error) {}
     const img = new Image();
-
     img.className = 'bg-image';
     img.alt = '';
     img.draggable = false;
-
     img.onload = function () {
-
-        container.insertBefore(
-            img,
-            container.querySelector('.bg-shade')
-        );
-
-        requestAnimationFrame(function () {
-            img.classList.add('visible');
-        });
-
-        try {
-            localStorage.setItem(
-                previousKey,
-                selected
-            );
-        } catch (error) {}
-
+        container.insertBefore(img, container.querySelector('.bg-shade'));
+        requestAnimationFrame(function () { img.classList.add('visible'); });
+        try { localStorage.setItem(previousKey, selected); } catch (error) {}
     };
-
     img.onerror = function () {
-
         if (queue.length) {
-
             const next = queue.pop();
-
-            try {
-                localStorage.setItem(
-                    queueKey,
-                    JSON.stringify(queue)
-                );
-            } catch (error) {}
-
+            try { localStorage.setItem(queueKey, JSON.stringify(queue)); } catch (error) {}
             img.src = next;
         }
     };
-
     img.src = selected;
 }
-
 
 /* =========================================================
    DASHBOARD INITIALIZATION
    ========================================================= */
-
 function initializeDashboard() {
-
     let loggedIn = false;
-
-    try {
-        loggedIn =
-            localStorage.getItem('isLoggedIn') === 'true';
-    } catch (error) {}
-
+    try { loggedIn = localStorage.getItem('isLoggedIn') === 'true'; } catch (error) {}
     if (!loggedIn) {
-
         window.location.replace('verify.html');
-
         return;
     }
-
     initRandomBackground();
-
-    loadStories();
-
+    initAlveeReels();
     initProfileCard();
-
-    if (location.hash === '#profile') {
-        openProfileCard();
-    }
+    if (location.hash === '#profile') openProfileCard();
 }
-
 
 if (document.readyState === 'loading') {
-
-    document.addEventListener(
-        'DOMContentLoaded',
-        initializeDashboard
-    );
-
+    document.addEventListener('DOMContentLoaded', initializeDashboard);
 } else {
-
     initializeDashboard();
 }
-
 
 /* =========================================================
    REFRESH
    ========================================================= */
-
 function triggerRefresh(button) {
-
     if (button) {
-
         button.classList.add('loading');
         button.disabled = true;
     }
-
-    setTimeout(
-        () => window.location.reload(),
-        300
-    );
+    setTimeout(() => window.location.reload(), 300);
 }
-
 
 /* =========================================================
    EXISTING PROFILE MODAL
    ========================================================= */
-
 function openProfile(name, subtitle) {
-
-    const modalName =
-        document.getElementById('modalName');
-
-    const info =
-        document.getElementById('modalInfo');
-
-    const modal =
-        document.getElementById('profileModal');
-
+    const modalName = document.getElementById('modalName');
+    const info = document.getElementById('modalInfo');
+    const modal = document.getElementById('profileModal');
     if (!modalName || !info || !modal) return;
-
     modalName.textContent = name;
-
-    info.innerHTML =
-        `Status: LIVE<br>
-         Category: ${subtitle}<br>
-         Broadcasting Active`;
-
+    info.innerHTML = `Status: LIVE<br>Category: ${subtitle}<br>Broadcasting Active`;
     modal.style.display = 'flex';
 }
 
-
 function closeModal() {
-
-    const modal =
-        document.getElementById('profileModal');
-
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    const modal = document.getElementById('profileModal');
+    if (modal) modal.style.display = 'none';
 }
-
 
 function logoutUser() {
-
     try {
-
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('userPhone');
-
     } catch (error) {}
-
-    window.location.href =
-        'verify.html';
+    window.location.href = 'verify.html';
 }
 
+/* =========================================================
+   ALVEE REELS DATA  (শুধু এই অংশ বদলে video add/remove করুন)
+   ---------------------------------------------------------
+   video     : vertical (9:16) video URL (mp4)
+   thumbnail : cover image URL (ফাঁকা "" রাখলে video-এর frame ব্যবহার হবে)
+   caption   : video caption
+   views     : "67K" অথবা সংখ্যা (67000)
+   likes     : "423" অথবা সংখ্যা (423)
+   ========================================================= */
+const reels = [
+    {
+        id: 1,
+        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+        thumbnail: "",
+        caption: "Welcome to Alvee Community — exclusive reels, daily updates and premium content.",
+        views: "67K",
+        likes: "423"
+    },
+    {
+        id: 2,
+        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+        thumbnail: "",
+        caption: "Another caption here. আপনি যেকোনো সময় এই লেখা বদলাতে পারবেন।",
+        views: "32K",
+        likes: "812"
+    },
+    {
+        id: 3,
+        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+        thumbnail: "",
+        caption: "Third reel — replace this video URL with your own vertical video.",
+        views: "12.4K",
+        likes: "96"
+    }
+];
 
 /* =========================================================
-   STORIES API
+   ALVEE REELS SYSTEM
    ========================================================= */
+(function () {
+    'use strict';
 
-const STORY_API =
-    '/api/stories';
+    const $ = id => document.getElementById(id);
+    const viewer = $('alveeReelsViewer'), stage = $('alveeReelsStage'), track = $('alveeTrack'),
+          bars = $('alveeBars'), spin = $('alveeSpinner'), hint = $('alveeNextHint'),
+          pauseIc = $('alveePauseIcon'), heart = $('alveeCenterHeart'),
+          likeBtn = $('alveeLikeButton'), likeCnt = $('alveeLikeCount'), viewCnt = $('alveeViewCount'),
+          soundBtn = $('alveeSoundButton'), followBtn = $('alveeFollowButton'), caption = $('alveeCaption'),
+          sOverlay = $('alveeSearchOverlay'), sInput = $('alveeSearchInput'), sResults = $('alveeSearchResults');
 
-const STORY_CACHE_KEY =
-    'storiesCacheV1';
+    const LIKE_KEY = 'alveeReelLikesV1', FOLLOW_KEY = 'alveeFollowV1';
+    const store = {
+        get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } },
+        set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+    };
 
-const STORY_SEEN_KEY =
-    'storiesSeenV1';
+    let idx = 0, drag = 0, isOpen = false, muted = true, wheelLock = false;
+    let hintTimer = 0, endTimer = 0, heartTimer = 0, closeTimer = 0, tapTimer = 0, lastTap = 0;
+    const slides = new Map();
+    const likes = new Set(store.get(LIKE_KEY, []));
+    let following = !!store.get(FOLLOW_KEY, false);
 
-const PHOTO_MS =
-    5000;
-
-let stories = [];
-
-let storyIdx = 0;
-
-let storyTimer = null;
-
-let currentReelLiked = false;
-
-let currentViewCount = 0;
-
-let touchStartX = 0;
-
-let touchStartY = 0;
-
-let touchEndX = 0;
-
-let touchEndY = 0;
-
-
-/* =========================================================
-   STORY SEEN
-   ========================================================= */
-
-function getSeen() {
-
-    try {
-
-        return JSON.parse(
-            localStorage.getItem(
-                STORY_SEEN_KEY
-            ) || '[]'
-        );
-
-    } catch (e) {
-
-        return [];
+    /* ---------- helpers ---------- */
+    function parseCount(v) {
+        if (typeof v === 'number') return v;
+        const t = String(v || '').trim().toUpperCase();
+        const n = parseFloat(t.replace(/,/g, ''));
+        if (isNaN(n)) return 0;
+        if (t.endsWith('M')) return Math.round(n * 1e6);
+        if (t.endsWith('K')) return Math.round(n * 1e3);
+        return Math.round(n);
     }
-}
-
-
-function markSeen(id) {
-
-    const s = getSeen();
-
-    if (!s.includes(id)) {
-
-        s.push(id);
-
-        try {
-
-            localStorage.setItem(
-                STORY_SEEN_KEY,
-                JSON.stringify(
-                    s.slice(-300)
-                )
-            );
-
-        } catch (e) {}
+    function formatCount(n) {
+        if (n >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '') + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1).replace('.0', '') + 'K';
+        return String(n);
     }
-}
-
-
-/* =========================================================
-   RENDER STORY LINE
-   ========================================================= */
-
-function renderStories() {
-
-    const row =
-        document.getElementById(
-            'storiesRow'
-        );
-
-    if (!row) return;
-
-    row.innerHTML = '';
-
-    if (!stories.length) {
-        return;
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c]));
     }
-
-    const seen = getSeen();
-
-
-    stories.forEach((s, i) => {
-
-        const item =
-            document.createElement('div');
-
-        item.className =
-            'story-item';
-
-        item.onclick =
-            () => openStory(i);
-
-
-        const ring =
-            document.createElement('div');
-
-        ring.className =
-            'ring' +
-            (
-                seen.includes(s.id)
-                    ? ' seen'
-                    : ''
-            );
-
-
-        /*
-         * সব Story/Reels-এর profile image
-         * একই Alvee Community image
-         */
-
-        const img =
-            new Image();
-
-        img.src =
-            ALVEE_PROFILE_IMAGE;
-
-        img.alt =
-            ALVEE_PROFILE_NAME;
-
-        img.draggable =
-            false;
-
-        img.decoding =
-            'async';
-
-
-        ring.appendChild(img);
-
-
-        /*
-         * Video হলে Play badge
-         */
-
-        if (s.type === 'video') {
-
-            const b =
-                document.createElement('span');
-
-            b.className =
-                'play-badge';
-
-            item.appendChild(b);
-        }
-
-
-        const name =
-            document.createElement('div');
-
-        name.className =
-            'story-name';
-
-        name.textContent =
-            ALVEE_PROFILE_NAME;
-
-
-        item.appendChild(ring);
-
-        item.appendChild(name);
-
-        row.appendChild(item);
-
-    });
-}
-
-
-/* =========================================================
-   NORMALIZE STORIES
-   ========================================================= */
-
-function normalize(list) {
-
-    return (
-        Array.isArray(list)
-            ? list
-            : []
-    )
-    .filter(
-        s => s && s.src
-    )
-    .sort(
-        (a,b) =>
-            (b.ts || 0) -
-            (a.ts || 0)
-    );
-}
-
-
-/* =========================================================
-   LOAD STORIES
-   ========================================================= */
-
-async function loadStories() {
-
-    try {
-
-        const c =
-            JSON.parse(
-                localStorage.getItem(
-                    STORY_CACHE_KEY
-                ) || '[]'
-            );
-
-        stories =
-            normalize(c);
-
-        if (stories.length) {
-            renderStories();
-        }
-
-    } catch (e) {}
-
-
-    try {
-
-        const res =
-            await fetch(
-                STORY_API,
-                {
-                    cache: 'no-store'
-                }
-            );
-
-        if (!res.ok) {
-            return;
-        }
-
-        const data =
-            await res.json();
-
-        stories =
-            normalize(
-                data.stories || data
-            );
-
-
-        try {
-
-            localStorage.setItem(
-                STORY_CACHE_KEY,
-                JSON.stringify(
-                    stories.slice(0,40)
-                )
-            );
-
-        } catch (e) {}
-
-
-        renderStories();
-
-    } catch (e) {}
-}
-
-
-/* =========================================================
-   CLEAR VIDEO STAGE
-   ========================================================= */
-
-function clearStage() {
-
-    clearTimeout(
-        storyTimer
-    );
-
-    const stage =
-        document.getElementById(
-            'storyStage'
-        );
-
-    stage
-        .querySelectorAll(
-            'img, video'
-        )
-        .forEach(
-            el => {
-
-                if (el.pause) {
-                    el.pause();
-                }
-
-                el.remove();
-            }
-        );
-}
-
-
-/* =========================================================
-   UPDATE REEL UI
-   ========================================================= */
-
-function updateReelUI(s) {
-
-    const likeButton =
-        document.getElementById(
-            'alveeLikeButton'
-        );
-
-    const likeCount =
-        document.getElementById(
-            'alveeLikeCount'
-        );
-
-    const viewCount =
-        document.getElementById(
-            'alveeViewCount'
-        );
-
-    const caption =
-        document.getElementById(
-            'alveeCaption'
-        );
-
-
-    currentReelLiked = false;
-
-
-    if (likeButton) {
-        likeButton.classList.remove(
-            'liked'
-        );
+    function lockScroll() { document.body.style.overflow = 'hidden'; }
+    function unlockScroll() {
+        const pc = $('pcOverlay');
+        if (viewer.classList.contains('show') || sOverlay.classList.contains('open') || (pc && pc.classList.contains('open'))) return;
+        document.body.style.overflow = '';
     }
+    window.alveeUnlockScroll = unlockScroll;
 
+    /* ---------- STORY LINE ---------- */
+    function renderStories() {
+        const sec = $('alveeStorySection'), row = $('alveeStoryRow');
+        row.innerHTML = '';
+        if (!reels.length) { sec.hidden = true; return; }
+        sec.hidden = false;
 
-    let likes =
-        Number(
-            s.likes ||
-            s.likeCount ||
-            423
-        );
-
-    if (!Number.isFinite(likes)) {
-        likes = 423;
-    }
-
-
-    currentViewCount =
-        Number(
-            s.views ||
-            s.viewCount ||
-            67000
-        );
-
-    if (!Number.isFinite(currentViewCount)) {
-        currentViewCount = 67000;
-    }
-
-
-    if (likeCount) {
-        likeCount.textContent =
-            formatCount(likes);
-    }
-
-
-    if (viewCount) {
-        viewCount.textContent =
-            formatCount(
-                currentViewCount
-            );
-    }
-
-
-    if (caption) {
-
-        caption.textContent =
-            s.caption ||
-            s.description ||
-            'Welcome to Alvee Community — exclusive reels, daily updates and premium content.';
-    }
-}
-
-
-/* =========================================================
-   NUMBER FORMAT
-   ========================================================= */
-
-function formatCount(value) {
-
-    const num =
-        Number(value) || 0;
-
-    if (num >= 1000000) {
-
-        return (
-            (num / 1000000)
-                .toFixed(1)
-                .replace('.0','')
-            + 'M'
-        );
-    }
-
-    if (num >= 1000) {
-
-        return (
-            (num / 1000)
-                .toFixed(1)
-                .replace('.0','')
-            + 'K'
-        );
-    }
-
-    return String(num);
-}
-
-
-/* =========================================================
-   SHOW STORY / REEL
-   ========================================================= */
-
-function showStory() {
-
-    clearStage();
-
-    const s =
-        stories[storyIdx];
-
-    if (!s) {
-
-        closeStory();
-
-        return;
-    }
-
-
-    markSeen(s.id);
-
-
-    const stage =
-        document.getElementById(
-            'storyStage'
-        );
-
-    const spinner =
-        document.getElementById(
-            'storySpinner'
-        );
-
-    const bars =
-        document.getElementById(
-            'storyBars'
-        );
-
-
-    bars.innerHTML = '';
-
-
-    stories.forEach(
-        (_, i) => {
-
-            const sp =
-                document.createElement(
-                    'span'
-                );
-
-            const fill =
-                document.createElement(
-                    'i'
-                );
-
-            sp.appendChild(fill);
-
-
-            if (i < storyIdx) {
-                sp.className =
-                    'done';
-            }
-
-
-            bars.appendChild(sp);
-        }
-    );
-
-
-    const currentBar =
-        bars.children[storyIdx];
-
-
-    const fill =
-        currentBar
-            ? currentBar.firstChild
+        const io = 'IntersectionObserver' in window
+            ? new IntersectionObserver(es => es.forEach(en => {
+                if (!en.isIntersecting) return;
+                const v = en.target;
+                v.preload = 'metadata';
+                v.src = v.dataset.src;
+                io.unobserve(v);
+            }), { root: row, rootMargin: '0px 200px' })
             : null;
 
+        reels.forEach((r, i) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'alvee-story-card';
+            b.setAttribute('aria-label', 'Open ' + ALVEE_PROFILE_NAME + ' story ' + (i + 1));
 
-    if (spinner) {
-        spinner.classList.add('on');
+            let t;
+            if (r.thumbnail) {
+                t = new Image();
+                t.loading = 'lazy'; t.decoding = 'async'; t.alt = ''; t.draggable = false;
+                t.className = 'alvee-story-thumb';
+                t.onload = () => t.classList.add('ready');
+                t.src = r.thumbnail;
+            } else {
+                t = document.createElement('video');
+                t.className = 'alvee-story-thumb';
+                t.muted = true; t.playsInline = true; t.preload = 'none';
+                t.setAttribute('playsinline', '');
+                t.dataset.src = r.video + '#t=0.5';
+                t.addEventListener('loadeddata', () => t.classList.add('ready'));
+                if (io) io.observe(t); else { t.preload = 'metadata'; t.src = t.dataset.src; }
+            }
+            b.appendChild(t);
+
+            const av = document.createElement('span');
+            av.className = 'alvee-story-avatar';
+            av.innerHTML = '<img alt="" draggable="false" loading="lazy" src="' + ALVEE_PROFILE_IMAGE + '">';
+            b.appendChild(av);
+
+            const nm = document.createElement('span');
+            nm.className = 'alvee-story-name';
+            nm.textContent = ALVEE_PROFILE_NAME;
+            b.appendChild(nm);
+
+            b.addEventListener('click', () => openViewer(i));
+            row.appendChild(b);
+        });
     }
 
+    /* ---------- SLIDES (only prev / current / next exist) ---------- */
+    function createSlide(i) {
+        const r = reels[i];
+        const el = document.createElement('div');
+        el.className = 'alvee-slide';
+        const v = document.createElement('video');
+        v.playsInline = true; v.muted = muted; v.loop = false; v.preload = 'none';
+        v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+        if (r.thumbnail) v.poster = r.thumbnail;
+        v.addEventListener('waiting', () => { if (i === idx) spin.classList.add('on'); });
+        v.addEventListener('playing', () => { if (i === idx) spin.classList.remove('on'); });
+        v.addEventListener('canplay', () => { if (i === idx) spin.classList.remove('on'); });
+        v.addEventListener('error', () => { if (i === idx) spin.classList.remove('on'); });
+        v.addEventListener('timeupdate', () => { if (i === idx && v.duration) setFill(i, v.currentTime / v.duration * 100); });
+        v.addEventListener('ended', () => { if (i === idx) onEnded(); });
+        el.appendChild(v);
+        el._v = v;
+        slides.set(i, el);
+        track.appendChild(el);
+        return el;
+    }
+    function attach(i, pre) {
+        const v = slides.get(i)._v;
+        v.preload = pre;
+        if (!v.getAttribute('src')) v.src = reels[i].video;
+    }
+    function detach(i) {
+        const el = slides.get(i);
+        if (!el) return;
+        const v = el._v;
+        try { v.pause(); } catch (e) {}
+        v.removeAttribute('src');
+        v.load();
+        el.remove();
+        slides.delete(i);
+    }
+    function layout(anim) {
+        slides.forEach((el, i) => {
+            el.classList.toggle('drag', !anim);
+            el.style.transform = 'translate3d(0,calc(' + ((i - idx) * 100) + '% + ' + drag + 'px),0)';
+        });
+    }
 
-    updateReelUI(s);
+    /* ---------- progress bars ---------- */
+    function buildBars() {
+        bars.innerHTML = '';
+        reels.forEach(() => {
+            const s = document.createElement('span');
+            s.appendChild(document.createElement('i'));
+            bars.appendChild(s);
+        });
+    }
+    function setFill(i, p) {
+        const b = bars.children[i];
+        if (b) b.firstChild.style.width = Math.min(100, p) + '%';
+    }
+    function resetBars() {
+        const fills = [...bars.querySelectorAll('i')];
+        fills.forEach((f, i) => { f.style.transition = 'none'; f.style.width = i < idx ? '100%' : '0'; });
+        void bars.offsetWidth;
+        fills.forEach(f => { f.style.transition = ''; });
+    }
 
+    /* ---------- UI sync ---------- */
+    function updateUI() {
+        const r = reels[idx];
+        if (!r) return;
+        const liked = likes.has(r.id);
+        likeBtn.classList.toggle('liked', liked);
+        likeCnt.textContent = formatCount(parseCount(r.likes) + (liked ? 1 : 0));
+        viewCnt.textContent = formatCount(parseCount(r.views));
+        caption.classList.remove('expanded');
+        caption.textContent = r.caption === undefined ? ALVEE_DEFAULT_CAPTION : r.caption;
+        updateFollow();
+        updateSound();
+    }
+    function updateFollow() {
+        followBtn.classList.toggle('following', following);
+        followBtn.textContent = following ? 'Following' : 'Follow';
+        followBtn.setAttribute('aria-pressed', following);
+    }
+    function updateSound() {
+        soundBtn.classList.toggle('unmuted', !muted);
+        soundBtn.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
+    }
 
-    const startBar =
-        ms => {
+    function sync() {
+        [...slides.keys()].forEach(k => { if (Math.abs(k - idx) > 1) detach(k); });
+        for (let i = idx - 1; i <= idx + 1; i++) {
+            if (i >= 0 && i < reels.length && !slides.has(i)) createSlide(i);
+        }
+        attach(idx, 'auto');
+        if (idx + 1 < reels.length) attach(idx + 1, 'metadata');
+        if (idx - 1 >= 0) attach(idx - 1, 'metadata');
+        layout(true);
+        resetBars();
+        updateUI();
+        playCurrent();
+    }
 
-            if (!fill) return;
+    function playCurrent() {
+        clearTimeout(endTimer);
+        hideHint();
+        pauseIc.classList.remove('show');
+        slides.forEach((el, i) => { if (i !== idx) { try { el._v.pause(); } catch (e) {} } });
+        const el = slides.get(idx);
+        if (!el) return;
+        const v = el._v;
+        v.muted = muted;
+        try { v.currentTime = 0; } catch (e) {}
+        if (v.readyState < 3) spin.classList.add('on'); else spin.classList.remove('on');
+        const p = v.play();
+        if (p && p.catch) p.catch(() => {
+            if (!v.muted) { muted = true; v.muted = true; updateSound(); v.play().catch(() => {}); }
+        });
+    }
 
-            fill.style.transition =
-                'none';
+    function go(n) {
+        if (n < 0 || n >= reels.length) { drag = 0; layout(true); return false; }
+        idx = n; drag = 0;
+        sync();
+        return true;
+    }
 
-            fill.style.width =
-                '0';
+    /* ---------- video completion ---------- */
+    function showHint() {
+        hint.classList.add('show');
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(hideHint, 3000);
+    }
+    function hideHint() { clearTimeout(hintTimer); hint.classList.remove('show'); }
+    function onEnded() {
+        setFill(idx, 100);
+        if (idx < reels.length - 1) showHint();
+        if (!ALVEE_AUTO_NEXT) return;
+        endTimer = setTimeout(() => {
+            if (!isOpen) return;
+            if (idx < reels.length - 1) go(idx + 1); else playCurrent();
+        }, 1200);
+    }
 
-            void fill.offsetWidth;
-
-            fill.style.transition =
-                `width ${ms}ms linear`;
-
-            fill.style.width =
-                '100%';
+    /* ---------- open / close ---------- */
+    function openViewer(i) {
+        if (!reels.length) return;
+        clearTimeout(closeTimer);
+        idx = Math.max(0, Math.min(i, reels.length - 1));
+        drag = 0;
+        isOpen = true;
+        buildBars();
+        viewer.classList.add('show');
+        lockScroll();
+        requestAnimationFrame(() => requestAnimationFrame(() => viewer.classList.add('visible')));
+        sync();
+        $('alveeCloseBtn').focus({ preventScroll: true });
+    }
+    function closeViewer(instant) {
+        if (!viewer.classList.contains('show')) return;
+        isOpen = false;
+        clearTimeout(endTimer); clearTimeout(tapTimer); hideHint();
+        slides.forEach(el => { try { el._v.pause(); } catch (e) {} });
+        closeSearch();
+        viewer.classList.remove('visible');
+        const done = () => {
+            [...slides.keys()].forEach(detach);
+            track.innerHTML = '';
+            spin.classList.remove('on');
+            viewer.classList.remove('show');
+            unlockScroll();
         };
-
-
-    if (s.type === 'video') {
-
-        const v =
-            document.createElement(
-                'video'
-            );
-
-        v.className =
-            'alvee-story-video';
-
-        v.playsInline =
-            true;
-
-        v.autoplay =
-            true;
-
-        v.controls =
-            false;
-
-        v.muted =
-            true;
-
-        v.preload =
-            'auto';
-
-        v.poster =
-            s.thumb || '';
-
-        v.src =
-            s.src;
-
-
-        v.onloadedmetadata =
-            () => {
-
-                if (spinner) {
-                    spinner.classList.remove(
-                        'on'
-                    );
-                }
-
-                const duration =
-                    Number(v.duration) ||
-                    8;
-
-                startBar(
-                    duration * 1000
-                );
-            };
-
-
-        v.onplaying =
-            () => {
-
-                if (spinner) {
-                    spinner.classList.remove(
-                        'on'
-                    );
-                }
-
-                const duration =
-                    Number(v.duration) ||
-                    8;
-
-                startBar(
-                    duration * 1000
-                );
-            };
-
-
-        v.onended =
-            () => {
-
-                nextStory();
-            };
-
-
-        v.onerror =
-            () => {
-
-                if (spinner) {
-                    spinner.classList.remove(
-                        'on'
-                    );
-                }
-
-                storyTimer =
-                    setTimeout(
-                        nextStory,
-                        1500
-                    );
-            };
-
-
-        stage.insertBefore(
-            v,
-            stage.firstChild
-        );
-
-
-        v.play()
-            .catch(
-                () => {}
-            );
-
-
-    } else {
-
-        const im =
-            new Image();
-
-        im.draggable =
-            false;
-
-
-        im.onload =
-            () => {
-
-                if (spinner) {
-                    spinner.classList.remove(
-                        'on'
-                    );
-                }
-
-                startBar(
-                    PHOTO_MS
-                );
-
-                storyTimer =
-                    setTimeout(
-                        nextStory,
-                        PHOTO_MS
-                    );
-            };
-
-
-        im.onerror =
-            () => {
-
-                if (spinner) {
-                    spinner.classList.remove(
-                        'on'
-                    );
-                }
-
-                storyTimer =
-                    setTimeout(
-                        nextStory,
-                        1500
-                    );
-            };
-
-
-        im.src =
-            s.src;
-
-
-        stage.insertBefore(
-            im,
-            stage.firstChild
-        );
+        if (instant) done(); else closeTimer = setTimeout(done, 260);
     }
-}
+    window.closeAlveeReels = closeViewer;
+    window.alveeReelsIsOpen = () => isOpen;
 
-
-/* =========================================================
-   OPEN STORY
-   ========================================================= */
-
-function openStory(i) {
-
-    if (!stories.length) {
-        return;
+    /* ---------- like / heart ---------- */
+    function showHeart() {
+        heart.classList.remove('show');
+        void heart.offsetWidth;
+        heart.classList.add('show');
+        clearTimeout(heartTimer);
+        heartTimer = setTimeout(() => heart.classList.remove('show'), 1000);
+    }
+    function setLike(on) {
+        const r = reels[idx];
+        if (!r) return;
+        if (on) likes.add(r.id); else likes.delete(r.id);
+        store.set(LIKE_KEY, [...likes].slice(-500));
+        updateUI();
+        if (on) showHeart();
     }
 
-    storyIdx =
-        Math.max(
-            0,
-            Math.min(
-                i,
-                stories.length - 1
-            )
-        );
-
-
-    const viewer =
-        document.getElementById(
-            'storyViewer'
-        );
-
-    viewer.classList.add(
-        'open'
-    );
-
-    document.body.style.overflow =
-        'hidden';
-
-
-    showStory();
-}
-
-
-/* =========================================================
-   NEXT STORY
-   ========================================================= */
-
-function nextStory() {
-
-    if (
-        storyIdx <
-        stories.length - 1
-    ) {
-
-        storyIdx++;
-
-        showStory();
-
-    } else {
-
-        closeStory();
+    /* ---------- pause / tap ---------- */
+    function togglePause() {
+        const el = slides.get(idx);
+        if (!el) return;
+        const v = el._v;
+        if (v.ended) { playCurrent(); return; }
+        if (v.paused) { v.play().catch(() => {}); pauseIc.classList.remove('show'); }
+        else { v.pause(); pauseIc.classList.add('show'); }
     }
-}
-
-
-/* =========================================================
-   PREVIOUS STORY
-   ========================================================= */
-
-function prevStory() {
-
-    if (storyIdx > 0) {
-
-        storyIdx--;
-
-        showStory();
-    }
-}
-
-
-/* =========================================================
-   CLOSE STORY
-   ========================================================= */
-
-function closeStory() {
-
-    clearStage();
-
-    const spinner =
-        document.getElementById(
-            'storySpinner'
-        );
-
-    if (spinner) {
-        spinner.classList.remove(
-            'on'
-        );
-    }
-
-
-    const viewer =
-        document.getElementById(
-            'storyViewer'
-        );
-
-    viewer.classList.remove(
-        'open'
-    );
-
-
-    document.body.style.overflow =
-        '';
-
-
-    renderStories();
-}
-
-
-/* =========================================================
-   LIKE SYSTEM
-   ========================================================= */
-
-function toggleReelLike() {
-
-    if (!stories[storyIdx]) {
-        return;
-    }
-
-
-    const button =
-        document.getElementById(
-            'alveeLikeButton'
-        );
-
-    const count =
-        document.getElementById(
-            'alveeLikeCount'
-        );
-
-
-    if (!button) {
-        return;
-    }
-
-
-    if (!currentReelLiked) {
-
-        currentReelLiked =
-            true;
-
-        button.classList.add(
-            'liked'
-        );
-
-
-        let current =
-            parseCount(
-                count.textContent
-            );
-
-        current++;
-
-
-        if (count) {
-
-            count.textContent =
-                formatCount(
-                    current
-                );
+    function onTap() {
+        const now = Date.now();
+        if (now - lastTap < 300) {
+            clearTimeout(tapTimer); lastTap = 0;
+            if (!likes.has(reels[idx].id)) setLike(true); else showHeart();
+            return;
         }
+        lastTap = now;
+        tapTimer = setTimeout(togglePause, 260);
+    }
 
-
-        showCenterHeart();
-
-
-    } else {
-
-        currentReelLiked =
-            false;
-
-        button.classList.remove(
-            'liked'
-        );
-
-
-        let current =
-            parseCount(
-                count.textContent
-            );
-
-        current =
-            Math.max(
-                0,
-                current - 1
-            );
-
-
-        if (count) {
-
-            count.textContent =
-                formatCount(
-                    current
-                );
+    /* ---------- gestures (touch + mouse via pointer events) ---------- */
+    let ps = null;
+    stage.addEventListener('pointerdown', e => {
+        if (e.target.closest('button,[role=button],.alvee-caption')) return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        ps = { id: e.pointerId, x: e.clientX, y: e.clientY, t: Date.now(), moved: false };
+        try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    stage.addEventListener('pointermove', e => {
+        if (!ps || e.pointerId !== ps.id) return;
+        const dy = e.clientY - ps.y, dx = e.clientX - ps.x;
+        if (!ps.moved && (Math.abs(dy) < 8 || Math.abs(dy) < Math.abs(dx))) return;
+        ps.moved = true;
+        let d = dy;
+        if ((idx === 0 && d > 0) || (idx === reels.length - 1 && d < 0)) d *= .3;
+        drag = d;
+        layout(false);
+    });
+    function endPointer(e, cancelled) {
+        if (!ps || e.pointerId !== ps.id) return;
+        const dy = e.clientY - ps.y, dx = e.clientX - ps.x, p = ps;
+        ps = null;
+        try { stage.releasePointerCapture(e.pointerId); } catch (err) {}
+        if (!p.moved) {
+            if (!cancelled && Math.hypot(dx, dy) < 10 && Date.now() - p.t < 400) onTap();
+            return;
         }
+        drag = 0;
+        const limit = Math.min(90, stage.clientHeight * .14);
+        if (!cancelled && dy < -limit) { if (!go(idx + 1)) layout(true); }
+        else if (!cancelled && dy > limit) { if (!go(idx - 1)) layout(true); }
+        else layout(true);
     }
-}
+    stage.addEventListener('pointerup', e => endPointer(e, false));
+    stage.addEventListener('pointercancel', e => endPointer(e, true));
 
+    viewer.addEventListener('wheel', e => {
+        if (!isOpen || sOverlay.classList.contains('open')) return;
+        e.preventDefault();
+        if (wheelLock || Math.abs(e.deltaY) < 8) return;
+        wheelLock = true;
+        go(idx + (e.deltaY > 0 ? 1 : -1));
+        setTimeout(() => { wheelLock = false; }, 600);
+    }, { passive: false });
+
+    document.addEventListener('keydown', e => {
+        if (!isOpen || sOverlay.classList.contains('open')) return;
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); go(idx + 1); }
+        else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
+    });
+
+    /* ---------- buttons ---------- */
+    $('alveeCloseBtn').addEventListener('click', () => closeViewer());
+    likeBtn.addEventListener('click', () => setLike(!likes.has(reels[idx].id)));
+    soundBtn.addEventListener('click', () => {
+        muted = !muted;
+        const el = slides.get(idx);
+        if (el) { el._v.muted = muted; if (el._v.paused && !el._v.ended && !pauseIc.classList.contains('show')) el._v.play().catch(() => {}); }
+        updateSound();
+    });
+    followBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        following = !following;
+        store.set(FOLLOW_KEY, following);
+        updateFollow();
+    });
+    caption.addEventListener('click', () => caption.classList.toggle('expanded'));
+    hint.addEventListener('click', () => go(idx + 1));
+
+    /* profile click → existing dashboard Profile (popup card / section) */
+    function openAlveeProfile() {
+        closeViewer();
+        setTimeout(() => {
+            const target = document.getElementById('profile') || document.querySelector('[data-profile-section]');
+            if (target && target.scrollIntoView) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            else if (typeof openProfileCard === 'function') openProfileCard();
+        }, 290);
+    }
+    ['alveeBottomAvatar', 'alveeBottomName'].forEach(id => {
+        const el = $(id);
+        el.addEventListener('click', openAlveeProfile);
+        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAlveeProfile(); } });
+    });
+
+    /* ---------- SEARCH ---------- */
+    function renderSearch(q) {
+        q = String(q || '').trim().toLowerCase();
+        const list = reels.map((r, i) => ({ r, i })).filter(({ r }) =>
+            !q || String(r.caption || '').toLowerCase().includes(q) || ALVEE_PROFILE_NAME.toLowerCase().includes(q) && q.length < 3);
+        if (!reels.length) { sResults.innerHTML = '<div class="alvee-search-empty">No reels available.</div>'; return; }
+        if (!list.length) { sResults.innerHTML = '<div class="alvee-search-empty">No matching reels found.</div>'; return; }
+        sResults.innerHTML = list.slice(0, 30).map(({ r, i }) =>
+            '<div class="alvee-search-result" role="button" tabindex="0" data-i="' + i + '">' +
+            '<img alt="" src="' + ALVEE_PROFILE_IMAGE + '"><div><b>' + ALVEE_PROFILE_NAME + '</b><small>' +
+            esc(r.caption || 'Alvee Community Reel') + '</small></div></div>').join('');
+    }
+    function openSearch() {
+        sOverlay.classList.add('open');
+        lockScroll();
+        sInput.value = '';
+        renderSearch('');
+        setTimeout(() => sInput.focus(), 120);
+    }
+    function closeSearch() {
+        if (!sOverlay.classList.contains('open')) return;
+        sOverlay.classList.remove('open');
+        sInput.blur();
+        unlockScroll();
+    }
+    window.closeAlveeSearch = closeSearch;
+    window.alveeSearchIsOpen = () => sOverlay.classList.contains('open');
+    $('alveeMoreButton').addEventListener('click', openSearch);
+    $('alveeSearchClose').addEventListener('click', closeSearch);
+    sInput.addEventListener('input', () => renderSearch(sInput.value));
+    sOverlay.addEventListener('click', e => { if (e.target === sOverlay) closeSearch(); });
+    function pickResult(e) {
+        const t = e.target.closest('.alvee-search-result');
+        if (!t) return;
+        if (e.type === 'keydown' && e.key !== 'Enter') return;
+        const i = Number(t.dataset.i);
+        closeSearch();
+        if (i !== idx) go(i);
+    }
+    sResults.addEventListener('click', pickResult);
+    sResults.addEventListener('keydown', pickResult);
+
+    /* ---------- pause when tab hidden ---------- */
+    document.addEventListener('visibilitychange', () => {
+        if (!isOpen) return;
+        const el = slides.get(idx);
+        if (!el) return;
+        if (document.hidden) el._v.pause();
+        else if (!pauseIc.classList.contains('show') && !el._v.ended) el._v.play().catch(() => {});
+    });
+
+    /* ---------- INIT (also merges videos from existing /api/stories) ---------- */
+    window.initAlveeReels = async function () {
+        renderStories();
+        if (!ALVEE_USE_API) return;
+        try {
+            const res = await fetch('/api/stories', { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+            const list = (Array.isArray(data) ? data : (data.stories || []))
+                .filter(s => s && s.src && s.type === 'video')
+                .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+            if (!list.length || isOpen) return;
+            const have = new Set(reels.map(r => String(r.id)));
+            const add = list.filter(s => !have.has('api-' + s.id)).map(s => ({
+                id: 'api-' + s.id,
+                video: s.src,
+                thumbnail: s.thumb || '',
+                caption: s.caption || s.description || '',
+                views: s.views || s.viewCount || 0,
+                likes: s.likes || s.likeCount || 0
+            }));
+            if (add.length) { reels.unshift(...add); renderStories(); }
+        } catch (e) { /* API unavailable → static reels only */ }
+    };
+})();
 
 /* =========================================================
-   PARSE COUNT
+   ALVEE POPUP PROFILE CARD (existing)
    ========================================================= */
-
-function parseCount(value) {
-
-    if (!value) return 0;
-
-    const text =
-        String(value)
-            .trim()
-            .toUpperCase();
-
-
-    if (text.endsWith('M')) {
-
-        return Math.round(
-            parseFloat(
-                text.slice(0,-1)
-            ) * 1000000
-        );
-    }
-
-
-    if (text.endsWith('K')) {
-
-        return Math.round(
-            parseFloat(
-                text.slice(0,-1)
-            ) * 1000
-        );
-    }
-
-
-    return (
-        parseInt(
-            text.replace(
-                /[^0-9]/g,
-                ''
-            ),
-            10
-        ) || 0
-    );
-}
-
-
-/* =========================================================
-   CENTER HEART ANIMATION
-   ========================================================= */
-
-function showCenterHeart() {
-
-    const heart =
-        document.getElementById(
-            'alveeCenterHeart'
-        );
-
-    if (!heart) {
-        return;
-    }
-
-
-    heart.classList.remove(
-        'show'
-    );
-
-
-    void heart.offsetWidth;
-
-
-    heart.classList.add(
-        'show'
-    );
-
-
-    setTimeout(
-        () => {
-
-            heart.classList.remove(
-                'show'
-            );
-
-        },
-        950
-    );
-}
-
-
-/* =========================================================
-   VIEWS BUTTON
-   ========================================================= */
-
-function showReelViews() {
-
-    const s =
-        stories[storyIdx];
-
-    if (!s) return;
-
-
-    const views =
-        document.getElementById(
-            'alveeViewCount'
-        );
-
-
-    if (views) {
-
-        views.animate(
-            [
-                {
-                    transform:
-                        'scale(1)'
-                },
-                {
-                    transform:
-                        'scale(1.15)'
-                },
-                {
-                    transform:
-                        'scale(1)'
-                }
-            ],
-            {
-                duration: 300
-            }
-        );
-    }
-}
-
-
-/* =========================================================
-   FOLLOW BUTTON
-   ========================================================= */
-
-function toggleFollow(event) {
-
-    if (event) {
-        event.stopPropagation();
-    }
-
-
-    const button =
-        document.getElementById(
-            'alveeFollowButton'
-        );
-
-    if (!button) return;
-
-
-    const following =
-        button.classList.toggle(
-            'following'
-        );
-
-
-    button.textContent =
-        following
-            ? 'Following'
-            : 'Follow';
-}
-
-
-/* =========================================================
-   PROFILE CLICK
-   ========================================================= */
-
-function openAlveeProfile() {
-
-    /*
-     * Dashboard-এর profile section থাকলে
-     * সেখানে smooth scroll করবে।
-     */
-
-    const profileTarget =
-        document.getElementById(
-            'profile'
-        ) ||
-        document.querySelector(
-            '[data-profile-section]'
-        ) ||
-        document.querySelector(
-            '.profile-section'
-        );
-
-
-    if (profileTarget) {
-
-        closeStory();
-
-        setTimeout(
-            () => {
-
-                profileTarget.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-
-            },
-            50
-        );
-
-        return;
-    }
-
-
-    /*
-     * Profile section না পাওয়া গেলে
-     * existing Alvee profile popup খুলবে।
-     */
-
-    closeStory();
-
-    setTimeout(
-        () => openProfileCard(),
-        80
-    );
-}
-
-
-/* =========================================================
-   SEARCH
-   ========================================================= */
-
-function openAlveeSearch() {
-
-    const overlay =
-        document.getElementById(
-            'alveeSearchOverlay'
-        );
-
-    const input =
-        document.getElementById(
-            'alveeSearchInput'
-        );
-
-
-    if (!overlay) return;
-
-
-    overlay.classList.add(
-        'open'
-    );
-
-
-    document.body.style.overflow =
-        'hidden';
-
-
-    renderSearchResults(
-        ''
-    );
-
-
-    setTimeout(
-        () => {
-
-            if (input) {
-                input.focus();
-            }
-
-        },
-        100
-    );
-}
-
-
-function closeAlveeSearch() {
-
-    const overlay =
-        document.getElementById(
-            'alveeSearchOverlay'
-        );
-
-
-    if (!overlay) return;
-
-
-    overlay.classList.remove(
-        'open'
-    );
-
-
-    if (
-        !document
-            .getElementById(
-                'storyViewer'
-            )
-            .classList.contains(
-                'open'
-            )
-        &&
-        !document
-            .getElementById(
-                'pcOverlay'
-            )
-            .classList.contains(
-                'open'
-            )
-    ) {
-
-        document.body.style.overflow =
-            '';
-    }
-}
-
-
-function renderSearchResults(query) {
-
-    const box =
-        document.getElementById(
-            'alveeSearchResults'
-        );
-
-
-    if (!box) return;
-
-
-    const q =
-        String(query || '')
-            .trim()
-            .toLowerCase();
-
-
-    if (!stories.length) {
-
-        box.innerHTML =
-            `<div class="alvee-search-empty">
-                No reels available.
-             </div>`;
-
-        return;
-    }
-
-
-    const filtered =
-        stories.filter(
-            s => {
-
-                const caption =
-                    String(
-                        s.caption ||
-                        s.description ||
-                        ''
-                    ).toLowerCase();
-
-                const title =
-                    String(
-                        s.title ||
-                        ALVEE_PROFILE_NAME
-                    ).toLowerCase();
-
-                return (
-                    !q ||
-                    caption.includes(q) ||
-                    title.includes(q)
-                );
-            }
-        );
-
-
-    if (!filtered.length) {
-
-        box.innerHTML =
-            `<div class="alvee-search-empty">
-                No matching reels found.
-             </div>`;
-
-        return;
-    }
-
-
-    box.innerHTML =
-        filtered
-            .slice(0,20)
-            .map(
-                (s, index) => {
-
-                    const caption =
-                        s.caption ||
-                        s.description ||
-                        'Alvee Community Reel';
-
-
-                    return `
-                        <div
-                            class="alvee-search-result"
-                            data-story-id="${String(
-                                s.id || index
-                            )}"
-                        >
-                            <strong>
-                                Alvee Community
-                            </strong>
-                            <br>
-                            ${escapeHTML(
-                                caption
-                            )}
-                        </div>
-                    `;
-                }
-            )
-            .join('');
-
-
-    box
-        .querySelectorAll(
-            '.alvee-search-result'
-        )
-        .forEach(
-            (element, index) => {
-
-                element.addEventListener(
-                    'click',
-                    () => {
-
-                        const selected =
-                            filtered[index];
-
-                        const storyPosition =
-                            stories.indexOf(
-                                selected
-                            );
-
-
-                        closeAlveeSearch();
-
-
-                        if (
-                            storyPosition >= 0
-                        ) {
-
-                            setTimeout(
-                                () => {
-
-                                    openStory(
-                                        storyPosition
-                                    );
-
-                                },
-                                150
-                            );
-                        }
-                    }
-                );
-            }
-        );
-}
-
-
-function escapeHTML(value) {
-
-    return String(value)
-        .replace(
-            /&/g,
-            '&amp;'
-        )
-        .replace(
-            /</g,
-            '&lt;'
-        )
-        .replace(
-            />/g,
-            '&gt;'
-        )
-        .replace(
-            /"/g,
-            '&quot;'
-        )
-        .replace(
-            /'/g,
-            '&#039;'
-        );
-}
-
-
-/* =========================================================
-   SEARCH INPUT
-   ========================================================= */
-
-document.addEventListener(
-    'DOMContentLoaded',
-    function () {
-
-        const input =
-            document.getElementById(
-                'alveeSearchInput'
-            );
-
-
-        if (input) {
-
-            input.addEventListener(
-                'input',
-                function () {
-
-                    renderSearchResults(
-                        this.value
-                    );
-
-                }
-            );
-        }
-
-
-        const overlay =
-            document.getElementById(
-                'alveeSearchOverlay'
-            );
-
-
-        if (overlay) {
-
-            overlay.addEventListener(
-                'click',
-                function (event) {
-
-                    if (
-                        event.target ===
-                        overlay
-                    ) {
-
-                        closeAlveeSearch();
-                    }
-                }
-            );
-        }
-    }
-);
-
-
-/* =========================================================
-   SWIPE SYSTEM
-   ========================================================= */
-
-document.addEventListener(
-    'DOMContentLoaded',
-    function () {
-
-        const stage =
-            document.getElementById(
-                'storyStage'
-            );
-
-        if (!stage) return;
-
-
-        stage.addEventListener(
-            'touchstart',
-            function (event) {
-
-                if (!event.touches.length) {
-                    return;
-                }
-
-                touchStartX =
-                    event.touches[0].clientX;
-
-                touchStartY =
-                    event.touches[0].clientY;
-
-                touchEndX =
-                    touchStartX;
-
-                touchEndY =
-                    touchStartY;
-
-            },
-            {
-                passive: true
-            }
-        );
-
-
-        stage.addEventListener(
-            'touchmove',
-            function (event) {
-
-                if (!event.touches.length) {
-                    return;
-                }
-
-                touchEndX =
-                    event.touches[0].clientX;
-
-                touchEndY =
-                    event.touches[0].clientY;
-
-            },
-            {
-                passive: true
-            }
-        );
-
-
-        stage.addEventListener(
-            'touchend',
-            function () {
-
-                const diffX =
-                    touchEndX -
-                    touchStartX;
-
-                const diffY =
-                    touchEndY -
-                    touchStartY;
-
-
-                /*
-                 * Vertical swipe
-                 */
-
-                if (
-                    Math.abs(diffY) > 65 &&
-                    Math.abs(diffY) >
-                    Math.abs(diffX)
-                ) {
-
-                    if (diffY < 0) {
-
-                        nextStory();
-
-                    } else {
-
-                        prevStory();
-                    }
-
-                    return;
-                }
-
-
-                /*
-                 * Horizontal swipe
-                 */
-
-                if (
-                    Math.abs(diffX) > 80 &&
-                    Math.abs(diffX) >
-                    Math.abs(diffY)
-                ) {
-
-                    if (diffX < 0) {
-                        nextStory();
-                    } else {
-                        prevStory();
-                    }
-                }
-
-            },
-            {
-                passive: true
-            }
-        );
-    }
-);
-
-
-/* =========================================================
-   DESKTOP MOUSE WHEEL
-   ========================================================= */
-
-document.addEventListener(
-    'DOMContentLoaded',
-    function () {
-
-        const stage =
-            document.getElementById(
-                'storyStage'
-            );
-
-        if (!stage) return;
-
-
-        let wheelLock = false;
-
-
-        stage.addEventListener(
-            'wheel',
-            function (event) {
-
-                if (
-                    !document
-                        .getElementById(
-                            'storyViewer'
-                        )
-                        .classList.contains(
-                            'open'
-                        )
-                ) {
-                    return;
-                }
-
-
-                event.preventDefault();
-
-
-                if (wheelLock) {
-                    return;
-                }
-
-
-                wheelLock = true;
-
-
-                if (event.deltaY > 0) {
-
-                    nextStory();
-
-                } else {
-
-                    prevStory();
-                }
-
-
-                setTimeout(
-                    () => {
-                        wheelLock = false;
-                    },
-                    500
-                );
-
-            },
-            {
-                passive: false
-            }
-        );
-    }
-);
-
-
-/* =========================================================
-   ALVEE POPUP PROFILE CARD
-   ========================================================= */
-
 const PROFILE_STATS = [
-
-    {
-        value: '328K',
-        label: 'Subscribers',
-        icon:
-            '<circle cx="9" cy="8" r="3.2"/>' +
-            '<path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/>' +
-            '<circle cx="17.5" cy="9" r="2.4"/>' +
-            '<path d="M17 14.2c2.5.2 4.5 2 4.5 4.8"/>'
-    },
-
-    {
-        value: '1.4K',
-        label: 'Posts',
-        icon:
-            '<rect x="3" y="4" width="18" height="16" rx="3"/>' +
-            '<path d="M10 9l5 3-5 3V9z"/>'
-    },
-
-    {
-        value: '320',
-        label: 'Media',
-        icon:
-            '<rect x="3" y="4" width="18" height="16" rx="3"/>' +
-            '<circle cx="9" cy="10" r="1.8"/>' +
-            '<path d="M4 18l5-5 4 4 3-3 4 4"/>'
-    }
-
+    { value: '328K', label: 'Subscribers', icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M17 14.2c2.5.2 4.5 2 4.5 4.8"/>' },
+    { value: '1.4K', label: 'Posts', icon: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 9l5 3-5 3V9z"/>' },
+    { value: '320', label: 'Media', icon: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/>' }
 ];
-
-
-/* =========================================================
-   LOVE STICKERS
-   ========================================================= */
 
 const LOVE_STICKERS = [
-
     '<svg viewBox="0 0 32 32"><use href="#hp" fill="url(#gRed)"/><ellipse cx="10" cy="9" rx="4" ry="2.3" fill="#fff" opacity=".55" transform="rotate(-35 10 9)"/></svg>',
-
     '<svg viewBox="0 0 32 32"><use href="#hp" fill="url(#gPink)" stroke="#fff" stroke-width="1.2"/></svg>',
-
     '<svg viewBox="0 0 32 32"><path d="M2.5 16c4-5 8-7.5 13.5-4.2C21.5 8.5 25.5 11 29.5 16c-4 8-9.5 10-13.5 10S6.5 24 2.5 16z" fill="url(#gLip)"/><path d="M3 16.2c8 3 18 3 26 0" fill="none" stroke="#7a0a30" stroke-width="1.4" stroke-linecap="round"/><ellipse cx="11" cy="14.2" rx="3.2" ry="1.2" fill="#fff" opacity=".5"/></svg>',
-
     '<svg viewBox="0 0 40 36"><use href="#hp" x="0" y="5" width="22" height="22" fill="#ff3d78"/><use href="#hp" x="14" y="9" width="24" height="24" fill="url(#gPink)" stroke="#fff" stroke-width="1"/></svg>',
-
     '<svg viewBox="0 0 40 36"><use href="#hp" x="4" y="4" width="30" height="30" fill="url(#gRed)"/><use href="#st" x="26" y="0" width="10" height="10" fill="#ffe27a"/><use href="#st" x="0" y="2" width="7" height="7" fill="#fff"/><use href="#st" x="31" y="16" width="6" height="6" fill="#fff"/></svg>',
-
     '<svg viewBox="0 0 32 32"><g transform="rotate(-18 16 16)"><path d="M3 16c3.5-4.5 7-6.5 13-3.8 6-2.7 9.5-.7 13 3.8-3.5 7-8 9-13 9S6.5 23 3 16z" fill="#ff9ec4" stroke="#ff4d8d" stroke-width="1.4"/><path d="M4 16c7 2.6 17 2.6 24 0" fill="none" stroke="#ff4d8d" stroke-width="1.2" stroke-linecap="round"/></g><use href="#st" x="22" y="2" width="7" height="7" fill="#ff7fb0"/></svg>'
-
 ];
 
-
-const REDUCED_MOTION =
-    window.matchMedia(
-        '(prefers-reduced-motion: reduce)'
-    );
-
-
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
 let pcLastFocus = null;
 
-
-/* =========================================================
-   INIT PROFILE CARD
-   ========================================================= */
-
 function initProfileCard() {
+    const overlay = document.getElementById('pcOverlay');
+    const sub = document.getElementById('pcSub');
+    const bell = document.getElementById('pcBell');
+    const heart = document.getElementById('pcHeart');
 
-    const overlay =
-        document.getElementById(
-            'pcOverlay'
-        );
+    document.getElementById('pcStats').innerHTML = PROFILE_STATS.map(s =>
+        `<div class="pc-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg><div><b>${s.value}</b><small>${s.label}</small></div></div>`
+    ).join('');
 
-    const sub =
-        document.getElementById(
-            'pcSub'
-        );
+    document.getElementById('pcClose').addEventListener('click', closeProfileCard);
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeProfileCard(); });
 
-    const bell =
-        document.getElementById(
-            'pcBell'
-        );
+    const chip = document.querySelector('.header-profile');
+    chip.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openProfileCard(); }
+    });
 
-    const heart =
-        document.getElementById(
-            'pcHeart'
-        );
+    sub.addEventListener('click', () => {
+        const on = sub.classList.toggle('subscribed');
+        sub.setAttribute('aria-pressed', on);
+        document.getElementById('pcSubText').textContent = on ? 'Subscribed' : 'Subscribe';
+        if (on) { setBell(true); ringBell(); }
+    });
 
+    bell.addEventListener('click', () => {
+        const on = !bell.classList.contains('on');
+        setBell(on);
+        if (on) ringBell();
+    });
 
-    document.getElementById(
-        'pcStats'
-    ).innerHTML = PROFILE_STATS
-        .map(
-            s =>
-                `<div class="pc-stat">
-                    <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        ${s.icon}
-                    </svg>
-
-                    <div>
-                        <b>${s.value}</b>
-                        <small>${s.label}</small>
-                    </div>
-                </div>`
-        )
-        .join('');
-
-
-    document
-        .getElementById('pcClose')
-        .addEventListener(
-            'click',
-            closeProfileCard
-        );
-
-
-    overlay.addEventListener(
-        'click',
-        e => {
-
-            if (
-                e.target === overlay
-            ) {
-
-                closeProfileCard();
-            }
-        }
-    );
-
-
-    const chip =
-        document.querySelector(
-            '.header-profile'
-        );
-
-
-    chip.addEventListener(
-        'keydown',
-        e => {
-
-            if (
-                e.key === 'Enter' ||
-                e.key === ' '
-            ) {
-
-                e.preventDefault();
-
-                openProfileCard();
-            }
-        }
-    );
-
-
-    sub.addEventListener(
-        'click',
-        () => {
-
-            const on =
-                sub.classList.toggle(
-                    'subscribed'
-                );
-
-            sub.setAttribute(
-                'aria-pressed',
-                on
-            );
-
-
-            document.getElementById(
-                'pcSubText'
-            ).textContent =
-                on
-                    ? 'Subscribed'
-                    : 'Subscribe';
-
-
-            if (on) {
-
-                setBell(true);
-
-                ringBell();
-            }
-        }
-    );
-
-
-    bell.addEventListener(
-        'click',
-        () => {
-
-            const on =
-                !bell.classList.contains(
-                    'on'
-                );
-
-            setBell(on);
-
-            if (on) {
-                ringBell();
-            }
-        }
-    );
-
-
-    heart.addEventListener(
-        'click',
-        () => loveBurst(heart)
-    );
+    heart.addEventListener('click', () => loveBurst(heart));
 }
-
-
-/* =========================================================
-   BELL
-   ========================================================= */
 
 function setBell(on) {
-
-    const bell =
-        document.getElementById(
-            'pcBell'
-        );
-
-    bell.classList.toggle(
-        'on',
-        on
-    );
-
-    bell.setAttribute(
-        'aria-pressed',
-        on
-    );
-
-    bell.setAttribute(
-        'aria-label',
-        on
-            ? 'Notifications on'
-            : 'Notifications off'
-    );
+    const bell = document.getElementById('pcBell');
+    bell.classList.toggle('on', on);
+    bell.setAttribute('aria-pressed', on);
+    bell.setAttribute('aria-label', on ? 'Notifications on' : 'Notifications off');
 }
-
 
 function ringBell() {
-
-    const bell =
-        document.getElementById(
-            'pcBell'
-        );
-
-    bell.classList.remove(
-        'ring-anim',
-        'glow'
-    );
-
+    const bell = document.getElementById('pcBell');
+    bell.classList.remove('ring-anim', 'glow');
     void bell.offsetWidth;
-
-    bell.classList.add(
-        'ring-anim',
-        'glow'
-    );
-
-    setTimeout(
-        () => {
-
-            bell.classList.remove(
-                'ring-anim',
-                'glow'
-            );
-
-        },
-        2200
-    );
+    bell.classList.add('ring-anim', 'glow');
+    setTimeout(() => { bell.classList.remove('ring-anim', 'glow'); }, 2200);
 }
-
-
-/* =========================================================
-   OPEN PROFILE CARD
-   ========================================================= */
 
 function openProfileCard() {
-
-    const overlay =
-        document.getElementById(
-            'pcOverlay'
-        );
-
-    pcLastFocus =
-        document.activeElement;
-
-
-    overlay.classList.add(
-        'open'
-    );
-
-
-    overlay.setAttribute(
-        'aria-hidden',
-        'false'
-    );
-
-
-    document.body.style.overflow =
-        'hidden';
-
-
-    document
-        .getElementById(
-            'pcCard'
-        )
-        .focus({
-            preventScroll: true
-        });
+    const overlay = document.getElementById('pcOverlay');
+    pcLastFocus = document.activeElement;
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('pcCard').focus({ preventScroll: true });
 }
-
-
-/* =========================================================
-   CLOSE PROFILE CARD
-   ========================================================= */
 
 function closeProfileCard() {
-
-    const overlay =
-        document.getElementById(
-            'pcOverlay'
-        );
-
-
-    if (
-        !overlay.classList.contains(
-            'open'
-        )
-    ) {
-        return;
+    const overlay = document.getElementById('pcOverlay');
+    if (!overlay.classList.contains('open')) return;
+    overlay.classList.remove('open');
+    overlay.setAttribute('aria-hidden', 'true');
+    if (location.hash === '#profile') {
+        history.replaceState(null, '', location.pathname + location.search);
     }
-
-
-    overlay.classList.remove(
-        'open'
-    );
-
-
-    overlay.setAttribute(
-        'aria-hidden',
-        'true'
-    );
-
-
-    if (
-        location.hash === '#profile'
-    ) {
-
-        history.replaceState(
-            null,
-            '',
-            location.pathname +
-            location.search
-        );
-    }
-
-
-    if (
-        !document
-            .getElementById(
-                'storyViewer'
-            )
-            .classList.contains(
-                'open'
-            )
-    ) {
-
-        document.body.style.overflow =
-            '';
-    }
-
-
-    if (
-        pcLastFocus &&
-        pcLastFocus.focus
-    ) {
-
-        pcLastFocus.focus({
-            preventScroll: true
-        });
-    }
+    if (window.alveeUnlockScroll) window.alveeUnlockScroll(); else document.body.style.overflow = '';
+    if (pcLastFocus && pcLastFocus.focus) pcLastFocus.focus({ preventScroll: true });
 }
-
-
-/* =========================================================
-   EXISTING LOVE BURST
-   ========================================================= */
 
 function loveBurst(btn) {
+    if (REDUCED_MOTION.matches) return;
+    const layer = document.getElementById('loveLayer');
+    const r = btn.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const order = shuffled(LOVE_STICKERS);
+    const count = 5 + Math.round(Math.random());
 
-    if (
-        REDUCED_MOTION.matches
-    ) {
-        return;
-    }
-
-
-    const layer =
-        document.getElementById(
-            'loveLayer'
-        );
-
-
-    const r =
-        btn.getBoundingClientRect();
-
-
-    const cx =
-        r.left +
-        r.width / 2;
-
-
-    const cy =
-        r.top +
-        r.height / 2;
-
-
-    const order =
-        shuffled(
-            LOVE_STICKERS
-        );
-
-
-    const count =
-        5 +
-        Math.round(
-            Math.random()
-        );
-
-
-    for (
-        let i = 0;
-        i < count;
-        i++
-    ) {
-
-        const size =
-            26 +
-            Math.random() * 18;
-
-
-        const p =
-            document.createElement(
-                'div'
-            );
-
-
-        p.className =
-            'love-p';
-
-
-        p.style.width =
-            p.style.height =
-            size + 'px';
-
-
-        p.innerHTML =
-            order[
-                i % order.length
-            ];
-
-
+    for (let i = 0; i < count; i++) {
+        const size = 26 + Math.random() * 18;
+        const p = document.createElement('div');
+        p.className = 'love-p';
+        p.style.width = p.style.height = size + 'px';
+        p.innerHTML = order[i % order.length];
         layer.appendChild(p);
 
+        const base = -Math.PI / 2;
+        const ang = base + (Math.random() - .5) * Math.PI * 1.25;
+        const dist = 70 + Math.random() * 90;
+        const dx = Math.cos(ang) * dist;
+        const dy = Math.sin(ang) * dist - 30 - Math.random() * 40;
+        const rot = (Math.random() - .5) * 120;
+        const s0 = .3;
+        const s1 = .9 + Math.random() * .5;
+        const x0 = cx - size / 2;
+        const y0 = cy - size / 2;
 
-        const base =
-            -Math.PI / 2;
-
-
-        const ang =
-            base +
-            (Math.random() - .5) *
-            Math.PI * 1.25;
-
-
-        const dist =
-            70 +
-            Math.random() * 90;
-
-
-        const dx =
-            Math.cos(ang) *
-            dist;
-
-
-        const dy =
-            Math.sin(ang) *
-            dist -
-            30 -
-            Math.random() * 40;
-
-
-        const rot =
-            (Math.random() - .5) *
-            120;
-
-
-        const s0 =
-            .3;
-
-
-        const s1 =
-            .9 +
-            Math.random() * .5;
-
-
-        const x0 =
-            cx -
-            size / 2;
-
-
-        const y0 =
-            cy -
-            size / 2;
-
-
-        const anim =
-            p.animate(
-                [
-                    {
-                        transform:
-                            `translate(${x0}px,${y0}px) scale(${s0}) rotate(0deg)`,
-                        opacity: 0
-                    },
-
-                    {
-                        transform:
-                            `translate(${x0 + dx * .45}px,${y0 + dy * .45}px) scale(${s1}) rotate(${rot * .5}deg)`,
-                        opacity: 1,
-                        offset: .3
-                    },
-
-                    {
-                        transform:
-                            `translate(${x0 + dx}px,${y0 + dy - 40}px) scale(${s1 * .85}) rotate(${rot}deg)`,
-                        opacity: 0
-                    }
-                ],
-                {
-                    duration:
-                        1100 +
-                        Math.random() *
-                        600,
-
-                    easing:
-                        'cubic-bezier(.2,.7,.3,1)',
-
-                    fill:
-                        'forwards'
-                }
-            );
-
-
-        anim.onfinish =
-            anim.oncancel =
-            () => p.remove();
+        const anim = p.animate([
+            { transform: `translate(${x0}px,${y0}px) scale(${s0}) rotate(0deg)`, opacity: 0 },
+            { transform: `translate(${x0 + dx * .45}px,${y0 + dy * .45}px) scale(${s1}) rotate(${rot * .5}deg)`, opacity: 1, offset: .3 },
+            { transform: `translate(${x0 + dx}px,${y0 + dy - 40}px) scale(${s1 * .85}) rotate(${rot}deg)`, opacity: 0 }
+        ], {
+            duration: 1100 + Math.random() * 600,
+            easing: 'cubic-bezier(.2,.7,.3,1)',
+            fill: 'forwards'
+        });
+        anim.onfinish = anim.oncancel = () => p.remove();
     }
 }
-
 
 /* =========================================================
    ESC KEY
    ========================================================= */
-
-document.addEventListener(
-    'keydown',
-    function (event) {
-
-        if (
-            event.key !==
-            'Escape'
-        ) {
-            return;
-        }
-
-
-        const search =
-            document.getElementById(
-                'alveeSearchOverlay'
-            );
-
-
-        if (
-            search &&
-            search.classList.contains(
-                'open'
-            )
-        ) {
-
-            closeAlveeSearch();
-
-            return;
-        }
-
-
-        if (
-            document
-                .getElementById(
-                    'pcOverlay'
-                )
-                .classList.contains(
-                    'open'
-                )
-        ) {
-
-            closeProfileCard();
-
-            return;
-        }
-
-
-        closeStory();
-
-        closeModal();
-
-    }
-);
-
+document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    if (window.alveeSearchIsOpen && window.alveeSearchIsOpen()) { window.closeAlveeSearch(); return; }
+    if (document.getElementById('pcOverlay').classList.contains('open')) { closeProfileCard(); return; }
+    if (window.alveeReelsIsOpen && window.alveeReelsIsOpen()) { window.closeAlveeReels(); return; }
+    closeModal();
+});
 </script>
 
 </body>
