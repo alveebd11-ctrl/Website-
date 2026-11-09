@@ -122,6 +122,30 @@ WEBSITE_MARKER = "#website"
 # চ্যানেলে আপলোড-সম্পূর্ণ মেসেজে এই কী দিয়ে অ্যালবামের আইডি লেখা থাকে (ডুপ্লিকেট রোধে ব্যবহৃত)
 ALBUM_REF_KEY = "albumref"
 
+# ============================================================
+# নতুন বটের (#newweb) স্টোরেজ চ্যানেল থেকে অ্যালবাম সিঙ্ক
+# ============================================================
+# এই চ্যানেলে বট প্রতিটা অ্যালবামের ফটো/ভিডিও (প্রথম ফাইলে টাইটেল + #newweb ক্যাপশন) আপলোড করে
+# এবং অ্যালবাম শেষে "✅ Album completed" মেসেজ দেয়। সেই মেসেজ দেখে অ্যালবাম শেষ ধরা হয়।
+# Render Environment-এ NEWWEB_CHANNEL_ID দিয়ে বদলানো যায়।
+_raw_newweb_id = os.environ.get("NEWWEB_CHANNEL_ID", "-1004306320018").strip()
+if not _raw_newweb_id:
+  NEWWEB_CHANNEL_ID = 0
+else:
+  _nw_digits = _raw_newweb_id.lstrip("-")
+  if not _nw_digits.isdigit():
+    raise ValueError("Invalid NEWWEB_CHANNEL_ID")
+  if _nw_digits.startswith("100"):
+    NEWWEB_CHANNEL_ID = -int(_nw_digits)
+  else:
+    NEWWEB_CHANNEL_ID = -int("100" + _nw_digits)
+
+NEWWEB_TAG = (os.environ.get("NEWWEB_TAG", "#newweb").strip() or "#newweb")
+NEWWEB_DONE_TEXT = "album completed"
+# অন্য চ্যানেলের মেসেজ আইডির সাথে যেন না মেলে, তাই এই চ্যানেলের আইডির সাথে এই সংখ্যা যোগ করে ডাটাবেসে রাখা হয়
+NEWWEB_ID_OFFSET = 10_000_000_000
+NEWWEB_SYNC_INTERVAL = max(15, int(os.environ.get("NEWWEB_SYNC_INTERVAL", "60") or 60))
+
 SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
 
 # ওয়েবসাইট থেকে আনা (#website) পোস্ট আপনার সাইটে দেখানো হবে কি না।
@@ -161,6 +185,7 @@ DOWNLOAD_PARALLEL = max(1, int(os.environ.get("DOWNLOAD_PARALLEL", "6") or 6))
 CHUNK_PAUSE = max(0.0, float(os.environ.get("CHUNK_PAUSE", "1") or 1))
 
 print("OC & Story Storage Channel ID:", STORAGE_CHANNEL_ID)
+print("Newweb Album Channel ID:", NEWWEB_CHANNEL_ID)
 for _name, _val in (
     ("BOT_TOKEN", BOT_TOKEN),
     ("API_ID", API_ID),
@@ -228,6 +253,7 @@ total_logged_in_users = 0
 telethon_reader_client = None
 telethon_channel_entity = None
 telethon_story_entity = None
+telethon_newweb_entity = None
 pyrogram_client = None
 _services_started = False
 _services_lock = threading.Lock()
@@ -881,6 +907,8 @@ _photo_cache = {}
 def _entity_for_kind(kind):
   if kind == "story":
     return telethon_story_entity
+  if kind == "newweb":
+    return telethon_newweb_entity
   return telethon_channel_entity
 
 
@@ -1441,7 +1469,7 @@ def verify_code_api():
 
 
 async def start_telethon_reader():
-  global telethon_reader_client, telethon_channel_entity, telethon_story_entity
+  global telethon_reader_client, telethon_channel_entity, telethon_story_entity, telethon_newweb_entity
   if not TELETHON_SESSION_STRING:
     return False
 
@@ -1468,6 +1496,25 @@ async def start_telethon_reader():
       telethon_reader_client = client
       telethon_channel_entity = channel_entity
       telethon_story_entity = channel_entity
+
+      # নতুন বটের (#newweb) অ্যালবাম চ্যানেল (না পেলেও বাকি সব আগের মতোই চলবে)
+      if NEWWEB_CHANNEL_ID:
+        nw_entity = None
+        try:
+          nw_entity = await client.get_entity(NEWWEB_CHANNEL_ID)
+        except Exception:
+          try:
+            nw_entity = await _find_entity_in_dialogs(client, NEWWEB_CHANNEL_ID)
+          except Exception:
+            nw_entity = None
+        telethon_newweb_entity = nw_entity
+        if nw_entity is None:
+          newweb_sync_state["error"] = (
+              "Newweb channel not accessible — add the Telethon account to channel "
+              + str(NEWWEB_CHANNEL_ID)
+          )
+          print("[Newweb]", newweb_sync_state["error"])
+
       telethon_status["state"] = "connected"
       return True
     except Exception as e:
@@ -1667,7 +1714,11 @@ def albums_api():
     return jsonify({
         "ok": True,
         "albums": albums,
-        "syncing": bool(album_sync_state["running"] or album_sync_state["restoring"]),
+        "syncing": bool(
+            album_sync_state["running"]
+            or album_sync_state["restoring"]
+            or newweb_sync_state["restoring"]
+        ),
     })
   except Exception:
     return jsonify({"ok": False, "albums": []}), 500
@@ -1873,6 +1924,234 @@ def album_sync_status():
   return jsonify(dict(album_sync_state))
 
 
+# ------------------------------------------------------------
+# নতুন বটের (#newweb) চ্যানেল → oc-collection অ্যালবাম সিঙ্ক
+# ------------------------------------------------------------
+# নিয়ম:
+#  • চ্যানেলে "#newweb" ক্যাপশনওয়ালা ফটো/ভিডিও অ্যালবামের ফাইল (ক্যাপশন থাকে অ্যালবামের প্রথম ফাইলে)
+#  • অ্যালবাম শেষে "✅ Album completed" মেসেজ আসলে ওই পর্যন্ত ফাইলগুলো একটা অ্যালবাম
+#  • টাইটেল = ক্যাপশন থেকে হ্যাশট্যাগ বাদ দিয়ে; হ্যাশট্যাগ সাইটে দেখানো হয় না
+#  • কভার = অ্যালবামের সবচেয়ে বেশি রেজোলিউশনের ফটো (ফটো না থাকলে প্রথম ভিডিওর থাম্বনেইল)
+
+newweb_sync_state = {
+    "running": False, "checked": 0, "found": 0, "added": 0, "error": "",
+    "last_run": 0, "loop_started": False,
+    "restoring": bool(TELETHON_SESSION_STRING and API_ID and API_HASH and NEWWEB_CHANNEL_ID),
+    "channel_id": NEWWEB_CHANNEL_ID,
+}
+
+
+def _nw_vid(real_id):
+  return NEWWEB_ID_OFFSET + int(real_id)
+
+
+def _newweb_title(text):
+  t = re.sub(r"#\S+", "", text or "")
+  t = re.sub(r"\s+", " ", t).strip()
+  return t[:250]
+
+
+def _get_counter(name):
+  try:
+    with db_connect() as conn:
+      row = conn.execute("SELECT value FROM site_counters WHERE name = ?", (name,)).fetchone()
+    return int(row[0]) if row else 0
+  except Exception:
+    return 0
+
+
+def _set_counter(name, value):
+  with db_connect() as conn:
+    conn.execute(
+        "INSERT INTO site_counters (name, value) VALUES (?, ?) "
+        "ON CONFLICT(name) DO UPDATE SET value = excluded.value",
+        (name, int(value)),
+    )
+    conn.commit()
+
+
+def _save_newweb_album(slug, title, cover_vid, items):
+  now = datetime.now(timezone.utc).isoformat()
+  with db_connect() as conn:
+    existed = conn.execute(
+        "SELECT 1 FROM website_albums WHERE slug = ?", (slug,)
+    ).fetchone() is not None
+    conn.execute(
+        "INSERT OR IGNORE INTO website_albums (slug, title, created_at, batch, site_order, cover_id) VALUES (?, ?, ?, 0, 0, ?)",
+        (slug, title, now, cover_vid),
+    )
+    conn.execute(
+        "UPDATE website_albums SET title = ?, cover_id = ? WHERE slug = ?",
+        (title, cover_vid, slug),
+    )
+    conn.execute("DELETE FROM website_album_items WHERE slug = ?", (slug,))
+    for pos, (vid, mtype, mime) in enumerate(items):
+      conn.execute(
+          "INSERT OR REPLACE INTO website_album_items (message_id, slug, media_type, mime_type, pos) VALUES (?, ?, ?, ?, ?)",
+          (vid, slug, mtype, mime, pos),
+      )
+    conn.commit()
+  return not existed
+
+
+async def sync_newweb_albums(full=False):
+  st = newweb_sync_state
+  client = telethon_reader_client
+  entity = telethon_newweb_entity
+  if not client:
+    raise RuntimeError("Telethon reader is not connected.")
+  if entity is None:
+    raise RuntimeError(
+        "Newweb channel is not accessible — add the Telethon account to channel "
+        + str(NEWWEB_CHANNEL_ID)
+    )
+
+  last_id = 0 if full else await asyncio.to_thread(_get_counter, "newweb_last_id")
+  tag = NEWWEB_TAG.lower()
+
+  records = []
+  async for msg in client.iter_messages(
+      entity, min_id=last_id, reverse=True, limit=None, wait_time=0.5
+  ):
+    st["checked"] += 1
+    text = msg.message or ""
+    info = _classify_media_for_scan(msg)
+    if info:
+      area = 0
+      try:
+        f = getattr(msg, "file", None)
+        area = int(getattr(f, "width", 0) or 0) * int(getattr(f, "height", 0) or 0)
+      except Exception:
+        area = 0
+      records.append({
+          "kind": "media",
+          "id": msg.id,
+          "type": "video" if info[0] in ("video", "animation") else "photo",
+          "mime": info[1],
+          "text": text,
+          "group": getattr(msg, "grouped_id", None),
+          "area": area,
+      })
+    elif NEWWEB_DONE_TEXT in text.lower():
+      records.append({"kind": "done", "id": msg.id, "text": text})
+
+  # একই গ্রুপের যেকোনো মেসেজে ক্যাপশন থাকলে পুরো গ্রুপের ক্যাপশন ধরা হবে
+  group_caps = {}
+  for r in records:
+    if (
+        r["kind"] == "media"
+        and r["group"]
+        and (r["text"] or "").strip()
+        and r["group"] not in group_caps
+    ):
+      group_caps[r["group"]] = r["text"]
+
+  pending = []
+  pending_title = ""
+  committed = last_id
+
+  for r in records:
+    if r["kind"] == "media":
+      eff = r["text"] if (r["text"] or "").strip() else (
+          group_caps.get(r["group"], "") if r["group"] else ""
+      )
+      if tag not in eff.lower():
+        continue
+      title = _newweb_title(eff)
+      if pending and title and pending_title and title != pending_title:
+        # নতুন টাইটেল শুরু হয়েছে কিন্তু আগের অ্যালবামের "completed" মেসেজ আসেনি — আগেরটা অসম্পূর্ণ, বাদ
+        pending = []
+      if title:
+        pending_title = title
+      pending.append(r)
+      continue
+
+    # "Album completed" মেসেজ — এখানে অ্যালবাম শেষ
+    if pending:
+      title = pending_title
+      if not title:
+        m_title = re.search(r"📁\s*(.+)", r["text"] or "")
+        title = _newweb_title(m_title.group(1)) if m_title else ""
+      slug = f"nw-{r['id']}"
+      if not title:
+        title = slug
+
+      photos = [x for x in pending if x["type"] == "photo"]
+      cover = max(photos, key=lambda x: x["area"]) if photos else pending[0]
+      items = [(_nw_vid(x["id"]), x["type"], x["mime"]) for x in pending]
+
+      is_new = await asyncio.to_thread(
+          _save_newweb_album, slug, title, _nw_vid(cover["id"]), items
+      )
+      st["found"] += 1
+      if is_new:
+        st["added"] += 1
+
+    pending = []
+    pending_title = ""
+    committed = r["id"]
+
+  # অসম্পূর্ণ (এখনো চলমান) অ্যালবামের ফাইলগুলো পরের বার আবার পড়া হবে
+  if committed > last_id:
+    await asyncio.to_thread(_set_counter, "newweb_last_id", committed)
+
+
+async def _newweb_sync_job(full=False):
+  st = newweb_sync_state
+  if st["running"]:
+    return
+  st.update(running=True, checked=0, found=0, added=0, error="")
+  try:
+    await sync_newweb_albums(full=full)
+  except Exception as e:
+    print("Newweb sync error:", traceback.format_exc())
+    st["error"] = str(e) or type(e).__name__
+  finally:
+    st["running"] = False
+    st["restoring"] = False
+    st["last_run"] = int(time.time())
+
+
+async def _newweb_sync_loop():
+  await asyncio.sleep(5)
+  while True:
+    try:
+      if telethon_reader_client and telethon_newweb_entity is not None:
+        await _newweb_sync_job()
+      else:
+        newweb_sync_state["restoring"] = False
+    except Exception:
+      print("Newweb loop error:", traceback.format_exc())
+    await asyncio.sleep(NEWWEB_SYNC_INTERVAL)
+
+
+def _start_newweb_loop():
+  if newweb_sync_state["loop_started"]:
+    return False
+  newweb_sync_state["loop_started"] = True
+  asyncio.run_coroutine_threadsafe(_newweb_sync_loop(), telethon_loop)
+  return True
+
+
+@app.route("/api/newweb/sync", methods=["POST"])
+def newweb_sync_start():
+  ok = _admin_key_status()
+  if ok is None:
+    return jsonify({"ok": False, "code": 503, "error": "ADMIN_SYNC_KEY is not set on the server"}), 503
+  if not ok:
+    return jsonify({"ok": False, "code": 401, "error": "Invalid admin key"}), 401
+  if not telethon_reader_client or telethon_newweb_entity is None:
+    return jsonify({"ok": False, "code": 503, "error": "Newweb channel not connected, try again shortly"}), 503
+  full = request.args.get("full", "") == "1"
+  asyncio.run_coroutine_threadsafe(_newweb_sync_job(full=full), telethon_loop)
+  return jsonify({"ok": True, "running": True, "full": full})
+
+
+@app.route("/api/newweb/status", methods=["GET"])
+def newweb_sync_status():
+  return jsonify(dict(newweb_sync_state))
+
+
 @app.route("/api/upload-link", methods=["GET"])
 def upload_link_api():
   return jsonify({
@@ -1979,7 +2258,11 @@ def get_channel_thumb(message_id):
     row, row_kind = find_media_row(message_id, request.args.get("kind", ""))
     if not row:
       return "", 404
-    content = run_async(get_post_thumb_bytes(message_id, row_kind), timeout=60)
+    real_id = message_id
+    if message_id >= NEWWEB_ID_OFFSET:
+      real_id = message_id - NEWWEB_ID_OFFSET
+      row_kind = "newweb"
+    content = run_async(get_post_thumb_bytes(real_id, row_kind), timeout=60)
     if not content:
       return "", 404
     return Response(
@@ -2000,21 +2283,26 @@ def get_channel_media(message_id):
     media_type = (row["media_type"] or "photo").lower()
     default_mime = "video/mp4" if media_type in ("video", "animation") else "image/jpeg"
 
+    real_id = message_id
+    if message_id >= NEWWEB_ID_OFFSET:
+      real_id = message_id - NEWWEB_ID_OFFSET
+      row_kind = "newweb"
+
     cached_path = find_cached_media(message_id)
     if cached_path and cached_path.is_file():
       return send_file(cached_path, mimetype=default_mime, conditional=True, as_attachment=False)
 
-    info = run_async(get_media_info(message_id, row_kind), timeout=60)
+    info = run_async(get_media_info(real_id, row_kind), timeout=60)
     if info:
       if info["is_photo"]:
-        photo_data = run_async(get_photo_bytes(message_id, row_kind), timeout=120)
+        photo_data = run_async(get_photo_bytes(real_id, row_kind), timeout=120)
         if photo_data:
           return Response(
               photo_data, mimetype=info["mime"] or default_mime,
               headers={"Cache-Control": "public, max-age=3600"},
           )
       elif info["size"] > 0:
-        return stream_telegram_media(message_id, row_kind, info["size"], info["mime"] or default_mime)
+        return stream_telegram_media(real_id, row_kind, info["size"], info["mime"] or default_mime)
 
     return jsonify({"ok": False, "error": "Media unavailable."}), 404
   except Exception:
@@ -2899,9 +3187,16 @@ def _init_background_services_worker():
           _start_album_sync()
         except Exception:
           album_sync_state["restoring"] = False
+        try:
+          _start_newweb_loop()
+        except Exception:
+          newweb_sync_state["restoring"] = False
+          print("[Newweb] could not start sync loop:", traceback.format_exc())
 
   if not album_sync_state["running"]:
     album_sync_state["restoring"] = False
+  if telethon_newweb_entity is None:
+    newweb_sync_state["restoring"] = False
 
 
 def _keepalive_loop():
