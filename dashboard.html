@@ -360,15 +360,17 @@ body {
     padding: 10px 25px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 15px;
 }
 
-/* NAUGHTY NONSTOP */
-.naughty-window {
-    position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh;
-    background: #080d20; z-index: 2000; display: none; flex-direction: column; overflow: hidden;
+/* ===== HOME: TWO CARDS STACKED (ONE ON TOP, ONE BELOW), NO GAP, CENTERED ON SCREEN ===== */
+#homeView.active-view {
+    flex-direction: column;
+    gap: 0;
+    margin-top: auto;
+    margin-bottom: auto;
 }
-.naughty-window.open { display: flex; }
-.naughty-window iframe {
-    display: block; width: 100%; height: 100%; min-height: 0; flex: 1; border: 0; background: #080d20;
-}
+#homeView .profile-card:first-child { border-radius: 32px 32px 0 0; }
+#homeView .profile-card:last-child  { border-radius: 0 0 32px 32px; }
+#homeView .oc-collection-card.attention::before { border-radius: 32px 32px 0 0; }
+#homeView .oc-collection-card.attention::after  { border-radius: 34px 34px 0 0; }
 </style>
 
 </head>
@@ -419,38 +421,6 @@ body {
             <span class="tap-hint">👆 TAP HERE</span>
         </div>
 
-        <!-- NAUGHTY NONSTOP (moved below) -->
-        <div class="profile-card blink-glow" onclick="openNaughtyWithLandAnimation()">
-            <div class="user-info-wrapper">
-                <div class="avatar-container">
-                    <img src="https://carder.top/imagens/1792065172414-739661966.jpg" alt="Naughty NonStop" class="avatar">
-                    <div class="image-shield"></div>
-                </div>
-                <div class="user-details">
-                    <h3>⛔Naughty NonStop🚫</h3>
-                    <p>Open Media 💋</p>
-                </div>
-            </div>
-            <div class="live-badge-container">
-                <span class="live-dot"></span>
-                <span class="live-text">LIVE</span>
-            </div>
-        </div>
-
-        <div class="profile-card" onclick="openProfile('Desi Magi Premium','Lock Media')">
-            <div class="user-info-wrapper">
-                <div class="avatar-container">
-                    <img src="https://carder.top/imagens/1792065179592-849568981.jpg" alt="Desi Magi Premium" class="avatar">
-                    <div class="image-shield"></div>
-                </div>
-                <div class="user-details">
-                    <h3>Desi Magi Premium</h3>
-                    <p>Lock Media</p>
-                </div>
-            </div>
-            <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
-        </div>
-
         <div class="profile-card" onclick="openProfile('BD Sensual','Lock Media')">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
@@ -459,20 +429,6 @@ body {
                 </div>
                 <div class="user-details">
                     <h3>BD Sensual</h3>
-                    <p>Lock Media</p>
-                </div>
-            </div>
-            <div class="live-badge-container"><span class="live-dot"></span><span class="live-text">LIVE</span></div>
-        </div>
-
-        <div class="profile-card" onclick="openProfile('Bangladeshi Non Stop 🫦','Lock Media')">
-            <div class="user-info-wrapper">
-                <div class="avatar-container">
-                    <img src="https://carder.top/imagens/1792065176794-158050465.jpg" alt="Bangladeshi Non Stop" class="avatar">
-                    <div class="image-shield"></div>
-                </div>
-                <div class="user-details">
-                    <h3>Bangladeshi Non Stop 🫦</h3>
                     <p>Lock Media</p>
                 </div>
             </div>
@@ -514,11 +470,6 @@ body {
         </div>
     </div>
 
-    <!-- NAUGHTY NONSTOP -->
-    <div class="naughty-window" id="naughtyWindow">
-        <iframe src="naughty.html" title="Naughty NonStop" loading="eager"></iframe>
-    </div>
-
     <!-- PROFILE MODAL -->
     <div class="modal-overlay" id="profileModal">
         <div class="modal-box">
@@ -533,17 +484,16 @@ body {
 <script>
 /* ========================================
    HEADER NAME (unicode escapes => never breaks when copied)
-   𝆺𝅥⃝🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀𝆺𝅥♥️⟵꯭
    ======================================== */
 const HEADER_NAME =
-    "\u{1D1BA}\u{1D165}\u20DD" +      // 𝆺𝅥⃝
-    "\u{1F5A4}" +                      // 🖤
-    "\u0F0F\u0640\uABED\u0640\uABED" + // ༏ـ꯭ـ꯭
-    "\u{1F1E6}" +                      // 🇦
-    "\u{1D647}\u{1D651}\u{1D640}\u{1D640}" + // 𝙇𝙑𝙀𝙀
-    "\u{1D1BA}\u{1D165}" +            // 𝆺𝅥
-    "\u2665\uFE0F" +                   // ♥️
-    "\u27F5\uABED";                    // ⟵꯭
+    "\u{1D1BA}\u{1D165}\u20DD" +
+    "\u{1F5A4}" +
+    "\u0F0F\u0640\uABED\u0640\uABED" +
+    "\u{1F1E6}" +
+    "\u{1D647}\u{1D651}\u{1D640}\u{1D640}" +
+    "\u{1D1BA}\u{1D165}" +
+    "\u2665\uFE0F" +
+    "\u27F5\uABED";
 document.getElementById('headerName').textContent = HEADER_NAME;
 
 /* ========================================
@@ -638,15 +588,6 @@ function closeModal() {
     const modal = document.getElementById('profileModal');
     if (modal) modal.style.display = 'none';
 }
-function openNaughtyWithLandAnimation() {
-    const modal = document.getElementById('naughtyWindow');
-    if (modal) { modal.classList.add('open'); document.body.style.overflow = 'hidden'; }
-}
-function closeNaughtyWindow() {
-    const modal = document.getElementById('naughtyWindow');
-    if (modal) { modal.classList.remove('open'); }
-    document.body.style.overflow = '';
-}
 function logoutUser() {
     try { localStorage.removeItem('isLoggedIn'); localStorage.removeItem('userPhone'); } catch (error) {}
     window.location.href = 'verify.html';
@@ -698,7 +639,7 @@ function renderStories() {
 function normalize(list) {
     return (Array.isArray(list) ? list : [])
         .filter(s => s && s.src)
-        .sort((a, b) => (b.ts || 0) - (a.ts || 0)); // newest first => leftmost
+        .sort((a, b) => (b.ts || 0) - (a.ts || 0));
 }
 
 async function loadStories() {
@@ -779,7 +720,6 @@ function closeStory() {
 document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
         closeStory();
-        closeNaughtyWindow();
         closeModal();
     }
 });
