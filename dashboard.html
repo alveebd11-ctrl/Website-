@@ -148,6 +148,8 @@ body {
 
 /* HOME VIEW: two cards centered on screen, stacked with no gap */
 #homeView { flex: 1; justify-content: center; gap: 0; }
+#homeView > .oc-collection-card { z-index: 1; }
+#homeView > .oc-collection-card:first-child { z-index: 2; }
 
 /* STORIES (inside sticky header, still swipes left/right) */
 .stories-row {
@@ -561,7 +563,7 @@ body {
             <span class="tap-hint">👆 TAP HERE</span>
         </div>
 
-        <div class="profile-card" onclick="openProfile('BD Sensual','Lock Media')">
+        <div class="profile-card blink-glow oc-collection-card attention" onclick="openProfile('BD Sensual','Lock Media')">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
                     <img src="https://carder.top/imagens/1792065182673-804452797.jpg" alt="BD Sensual" class="avatar">
