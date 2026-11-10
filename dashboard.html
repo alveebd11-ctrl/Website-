@@ -10,15 +10,12 @@
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html,body{width:100%;min-height:100%}
 body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;align-items:center;position:relative;overflow-x:hidden}
-/* BACKGROUND */
 .bg-container{position:fixed;inset:0;width:100%;height:100%;z-index:-1;overflow:hidden;pointer-events:none;background:#0a1128;transform:translateZ(0)}
 .bg-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0;filter:blur(3px);transition:opacity .7s ease;will-change:opacity}
 .bg-image.visible{opacity:1}
 .bg-shade{position:absolute;inset:0;background:transparent}
 #bgLoader{display:none!important}
-/* DASHBOARD */
 #dashboardWrapper{opacity:1;width:100%;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 15px 40px;position:relative;z-index:2}
-/* GLASS HEADER */
 .glass-header{position:sticky;top:0;z-index:50;width:calc(100% + 30px);margin:0 -15px 12px;padding:calc(env(safe-area-inset-top,0px) + 8px) 15px 8px;display:flex;flex-direction:column;align-items:center;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05));backdrop-filter:blur(3px) saturate(160%);-webkit-backdrop-filter:blur(3px) saturate(160%);border-bottom:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
 .header-nav{width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:40px}
 .header-btn{position:relative;background:linear-gradient(145deg,#ff9bb0,#ff708f);border:0;border-radius:50px;color:#fff;cursor:pointer;box-shadow:0 4px 10px #0004;display:flex;align-items:center;justify-content:center;transition:all .3s ease;text-decoration:none}
@@ -26,24 +23,18 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .refresh-btn.loading{width:28px;border-radius:50%;color:transparent;pointer-events:none}
 .refresh-btn.loading::after{content:"";position:absolute;width:14px;height:14px;border:2px solid #ffffff66;border-top-color:#fff;border-radius:50%;animation:spinLoader .6s linear infinite}
 @keyframes spinLoader{to{transform:rotate(360deg)}}
-/* profile chip */
 .header-profile{display:flex;align-items:center;gap:8px;min-width:0;max-width:68%;padding:3px 12px 3px 3px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:50px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .16s ease}
 .header-profile:active{transform:scale(.95)}
 .header-profile .pname{color:#fff;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-/* ring */
 .ring{flex:0 0 auto;border-radius:50%;padding:2.5px;background:conic-gradient(from 210deg,#ffc400,#ff7a00,#ff0069,#d300c5,#7638fa,#ffc400);display:inline-flex}
 .ring>img,.ring>.ph{width:100%;height:100%;border-radius:50%;border:2px solid #fff;object-fit:cover;background:#1b2240;pointer-events:none;display:block}
 .ring.sm{width:34px;height:34px}
 .view-section{width:100%;max-width:440px;display:none;flex-direction:column;gap:15px}
 .view-section.active-view{display:flex}
-/* HOME VIEW */
 #homeView{flex:1;justify-content:flex-start;gap:24px;padding-top:20px}
 #homeView>.oc-collection-card{z-index:1}
 #homeView>.oc-collection-card:first-child{z-index:2}
 
-/* =========================================================
-   ALVEE STORY SYSTEM
-   ========================================================= */
 .alvee-story-section{width:100%;max-width:440px;margin:0 0 18px;position:relative;z-index:2;background:transparent!important;box-shadow:none!important;border:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .alvee-story-row{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;padding:5px 20px 10px!important;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x pan-y;background:transparent!important;box-shadow:none!important}
 .alvee-story-row::-webkit-scrollbar{display:none}
@@ -60,9 +51,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .alvee-story-card:hover .alvee-story-play{opacity:1}
 .alvee-story-play svg{width:32px;height:32px;fill:#fff;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
 
-/* =========================================================
-   ALVEE REELS VIEWER
-   ========================================================= */
 .alvee-reels-viewer{position:fixed;inset:0;height:100vh;height:100dvh;z-index:3000;background:#000;display:none;align-items:center;justify-content:center;opacity:0;transform:scale(.97);transition:opacity .25s ease,transform .25s ease;overscroll-behavior:contain;touch-action:none}
 .alvee-reels-viewer.show{display:flex}
 .alvee-reels-viewer.visible{opacity:1;transform:none}
@@ -74,9 +62,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .alvee-slide{position:absolute;inset:0;will-change:transform;transition:transform .35s cubic-bezier(.22,.8,.25,1);background:#000}
 .alvee-slide.drag{transition:none}
 .alvee-slide video{width:100%;height:100%;object-fit:cover;display:block;background:#000;pointer-events:none}
-.alvee-reels-bars{position:absolute;z-index:30;top:calc(env(safe-area-inset-top,0px) + 24px);left:10px;right:60px;display:flex;gap:3px}
-.alvee-reels-bars span{flex:1;height:3px;border-radius:3px;background:rgba(255,255,255,.3);overflow:hidden}
-.alvee-reels-bars i{display:block;height:100%;width:0;background:#fff;transition:width .2s linear}
 .alvee-reels-close{position:absolute;top:calc(env(safe-area-inset-top,0px) + 6px);right:10px;z-index:50;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.4);color:#fff;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .2s ease,background .2s ease;-webkit-tap-highlight-color:transparent}
 .alvee-reels-close svg{width:20px;height:20px}
 .alvee-reels-close:hover{background:rgba(255,70,100,.75)}
@@ -91,8 +76,7 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .alvee-next-hint.show{opacity:1;transform:translate(-50%,0)}
 .alvee-next-hint svg{width:14px;height:14px;animation:alveeBob 1s ease-in-out infinite}
 @keyframes alveeBob{50%{transform:translateY(3px)}}
-/* RIGHT ACTION PANEL */
-.alvee-reels-actions{position:absolute;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);z-index:40;display:flex;flex-direction:column;align-items:center;gap:16px}
+.alvee-reels-actions{position:absolute;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 176px);z-index:40;display:flex;flex-direction:column;align-items:center;gap:16px}
 .alvee-action{width:48px;min-height:48px;border:0;background:transparent;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;text-shadow:0 2px 7px rgba(0,0,0,.8);-webkit-tap-highlight-color:transparent;transition:transform .18s ease}
 .alvee-action:active{transform:scale(.82)}
 .alvee-action svg{width:30px;height:30px;overflow:visible;filter:drop-shadow(0 2px 5px rgba(0,0,0,.5))}
@@ -105,13 +89,11 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .alvee-sound-button .on-icon{display:none}
 .alvee-sound-button.unmuted .on-icon{display:block}
 .alvee-sound-button.unmuted .off-icon{display:none}
-/* CENTER HEART */
 .alvee-center-heart{position:absolute;left:50%;top:50%;width:110px;height:110px;z-index:70;transform:translate(-50%,-50%) scale(.35);opacity:0;pointer-events:none}
 .alvee-center-heart.show{animation:alveeCenterHeart .95s cubic-bezier(.2,.8,.25,1) forwards}
 .alvee-center-heart svg{width:100%;height:100%;display:block;filter:drop-shadow(0 0 8px rgba(255,0,30,.85)) drop-shadow(0 0 22px rgba(255,0,30,.55))}
 @keyframes alveeCenterHeart{0%{opacity:0;transform:translate(-50%,-50%) scale(.35)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}40%{opacity:1;transform:translate(-50%,-50%) scale(.96)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.3)}}
-/* BOTTOM PROFILE */
-.alvee-reels-bottom{position:absolute;left:12px;right:68px;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);z-index:40;color:#fff}
+.alvee-reels-bottom{position:absolute;left:12px;right:68px;bottom:calc(env(safe-area-inset-bottom,0px) + 50px);z-index:40;color:#fff}
 .alvee-reels-profile{display:flex;align-items:center;gap:9px;min-width:0}
 .alvee-reels-avatar{width:44px;height:44px;flex:0 0 44px;border-radius:50%;padding:2px;background:linear-gradient(135deg,#00b7ff,#4267ff,#9b3dff,#00d4ff);cursor:pointer}
 .alvee-reels-avatar img{width:100%;height:100%;border-radius:50%;border:2px solid #000;object-fit:cover;display:block;pointer-events:none}
@@ -125,7 +107,13 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .alvee-caption{margin-top:9px;max-width:100%;color:#fff;font-size:12.5px;line-height:1.45;font-weight:400;text-shadow:0 2px 7px rgba(0,0,0,.8);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;word-break:break-word}
 .alvee-caption.expanded{-webkit-line-clamp:unset;max-height:30vh;overflow-y:auto;display:block}
 .alvee-caption:empty{display:none}
-/* SEARCH OVERLAY */
+.alvee-seek{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);height:32px;z-index:45;display:flex;align-items:center;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.alvee-seek-track{position:relative;width:100%;height:6px;border-radius:6px;background:rgba(255,255,255,.28);transition:height .15s ease}
+.alvee-seek-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:6px;background:rgba(255,255,255,.7)}
+.alvee-seek-thumb{position:absolute;top:50%;left:0;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#e6e6e6;box-shadow:0 1px 6px rgba(0,0,0,.5);transition:transform .15s ease}
+.alvee-seek.dragging .alvee-seek-track{height:8px}
+.alvee-seek.dragging .alvee-seek-thumb{transform:scale(1.35)}
+
 .alvee-search-overlay{position:fixed;inset:0;z-index:5000;display:none;align-items:flex-start;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 70px) 16px 20px;background:rgba(0,0,0,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .alvee-search-overlay.open{display:flex;animation:alveeSearchFade .2s ease}
 @keyframes alveeSearchFade{from{opacity:0}to{opacity:1}}
@@ -146,7 +134,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .alvee-search-result small{display:block;color:#aab2c5;font-size:11px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .alvee-search-empty{color:#8d96aa;text-align:center;font-size:12px;padding:15px 5px}
 
-/* PROFILE CARDS */
 .profile-card{background:rgba(20,25,45,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid #ffffff1a;border-radius:50px;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px;box-shadow:0 10px 30px #0008;cursor:pointer;transition:transform .18s ease,border-color .3s ease;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .profile-card.blink-glow{background:linear-gradient(135deg,#ff708f4d,rgba(20,25,45,.85));border:1.5px solid #ff708f;animation:cardBlink 2s infinite ease-in-out}
 @keyframes cardBlink{0%,100%{box-shadow:0 0 10px #ff708f66;border-color:#ff708f80}50%{box-shadow:0 0 25px #ff708fe6;border-color:#ff708f}}
@@ -172,13 +159,11 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .live-dot{width:9px;height:9px;background:#ff1a1a;border-radius:50%;box-shadow:0 0 8px #ff1a1a;animation:livePulse 1.8s infinite;margin-right:8px}
 @keyframes livePulse{0%,100%{transform:scale(1)}70%{transform:scale(1.18)}}
 .live-text{color:#fff;font-size:12px;font-weight:700;letter-spacing:1.2px}
-/* modal */
 .modal-overlay{position:fixed;inset:0;background:#000d;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;z-index:999}
 .modal-box{background:#141c3a;border:1.5px solid #ff708f66;width:90%;max-width:340px;padding:25px;border-radius:24px;text-align:center;color:#fff;box-shadow:0 15px 40px #000b}
 .modal-box h3{margin-bottom:15px;color:#ff708f;font-size:20px}
 .close-btn{background:linear-gradient(135deg,#ff9bb0,#ff708f);color:#fff;border:0;padding:10px 25px;border-radius:12px;font-weight:700;cursor:pointer;margin-top:15px}
 
-/* ================= ALVEE POPUP PROFILE CARD ================= */
 .pc-overlay{position:fixed;inset:0;z-index:3500;display:none;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:rgba(30,6,36,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .pc-overlay.open{display:flex;animation:pcFade .25s ease}
 @keyframes pcFade{from{opacity:0}}
@@ -195,11 +180,11 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .pc-close svg{width:18px;height:18px}
 .pc-head{position:relative;z-index:2;margin-top:-78px;text-align:center;padding:0 18px}
 .pc-avatar{width:128px;height:128px;margin:0 auto;border-radius:50%;border:4px solid #fff;background:#fff;box-shadow:0 8px 24px rgba(229,18,125,.35),0 0 0 3px rgba(255,150,190,.55);overflow:hidden}
-.pc-avatar img{width:100%;height:100%;object-fit:cover;display:block;image-rendering:auto;pointer-events:none}
+.pc-avatar img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 .pc-wordmark{display:block;width:210px;max-width:70%;height:auto;margin:6px auto 0;overflow:visible}
 .pc-actions{display:flex;gap:10px;padding:14px 16px 0;align-items:center}
 .pc-sub{flex:1;min-width:0;height:54px;border:0;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700;color:#fff;background:linear-gradient(90deg,#ff4d8d,#e5127d 60%,#c40a8f);box-shadow:0 10px 22px rgba(229,18,125,.4),0 0 18px rgba(255,77,141,.35);transition:transform .2s ease,box-shadow .2s ease,filter .2s ease;-webkit-tap-highlight-color:transparent}
-.pc-sub:hover{filter:brightness(1.06);box-shadow:0 12px 28px rgba(229,18,125,.55),0 0 26px rgba(255,77,141,.5)}
+.pc-sub:hover{filter:brightness(1.06)}
 .pc-sub:active{transform:scale(.95)}
 .pc-sub svg{width:22px;height:22px;flex:0 0 auto}
 .pc-sub.subscribed{background:linear-gradient(90deg,#6d2a78,#3b0a45);box-shadow:0 8px 18px rgba(59,10,69,.4)}
@@ -212,8 +197,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .pc-bell.glow{animation:bellGlow 1.6s ease-in-out 1}
 @keyframes bellRing{0%,100%{transform:rotate(0)}15%{transform:rotate(22deg)}35%{transform:rotate(-20deg)}55%{transform:rotate(14deg)}75%{transform:rotate(-10deg)}}
 @keyframes bellGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,77,141,0)}30%,70%{box-shadow:0 0 0 7px rgba(255,77,141,.28),0 0 26px rgba(255,77,141,.8)}}
-.pc-heart:active svg{transform:scale(.8)}
-.pc-heart svg{transition:transform .15s ease}
 .pc-cats{display:flex;gap:8px;padding:14px 16px 0}
 .pc-cat{flex:1 1 0;min-width:0;height:42px;padding:0 6px;border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-size:11.5px;font-weight:600;white-space:nowrap;text-decoration:none;transition:transform .2s ease,box-shadow .25s ease;-webkit-tap-highlight-color:transparent}
 .pc-cat span{overflow:hidden;text-overflow:ellipsis}
@@ -222,10 +205,8 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .pc-cat:active{transform:scale(.94)}
 .pc-cat.excl{background:#1d1424;color:#fff;border:0;box-shadow:0 6px 14px rgba(20,10,30,.35)}
 .pc-cat.excl svg{color:#ffc400}
-.pc-cat.excl:hover{box-shadow:0 8px 18px rgba(255,196,0,.35)}
 .pc-cat.shift{background:linear-gradient(145deg,#2a2133,#14101a);color:#f4e6b8;border:1px solid rgba(226,196,120,.7)}
 .pc-cat.shift svg{color:#e6c675}
-.pc-cat.shift:hover{box-shadow:0 0 18px rgba(226,196,120,.55)}
 .pc-eyes{position:relative;margin:16px 16px 0;height:168px;border-radius:22px;overflow:hidden;border:1.5px solid rgba(255,120,170,.55);box-shadow:0 10px 26px rgba(229,18,125,.28);display:grid;place-items:center;text-align:center;color:#fff}
 .pc-eyes .bgb{position:absolute;inset:-24px;background-size:cover;background-position:center;filter:blur(18px) saturate(1.1);transform:scale(1.1)}
 .pc-eyes::before{content:"";position:absolute;inset:0;z-index:1;background:rgba(48,14,56,.5)}
@@ -241,7 +222,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .pc-stat svg{width:22px;height:22px;color:#6d4a78;flex:0 0 auto}
 .pc-stat b{display:block;font-size:16px;line-height:1.15;font-weight:700}
 .pc-stat small{display:block;font-size:10.5px;color:#8b6a95;font-weight:500}
-/* love particles */
 .love-layer{position:fixed;inset:0;z-index:3600;pointer-events:none;overflow:hidden}
 .love-p{position:absolute;left:0;top:0;will-change:transform,opacity}
 .love-p svg{width:100%;height:100%;display:block;overflow:visible}
@@ -268,28 +248,11 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .alvee-center-heart.show,.alvee-like-button.liked svg,.alvee-next-hint svg{animation:none}
 .alvee-slide,.alvee-reels-viewer{transition:none}
 }
-
-/* ===== STORY UPDATE ===== */
 :root{--story-w:128px;--story-h:clamp(160px,24vh,200px)}
 .alvee-story-card{width:var(--story-w)!important;height:var(--story-h)!important}
-
-/* ডট প্রগ্রেস লাইন বন্ধ */
-.alvee-reels-bars{display:none!important}
-
-/* ওপেন/ক্লোজ জুম অ্যানিমেশনের জন্য */
 .alvee-reels-viewer{opacity:1!important;transform:none!important;background:rgba(0,0,0,0);transition:background .38s ease!important}
 .alvee-reels-viewer.visible{background:#000}
 .alvee-reels-stage{will-change:transform,clip-path}
-
-/* ক্যাপশনের নিচে সিক বার */
-.alvee-reels-actions{bottom:calc(env(safe-area-inset-bottom,0px) + 176px)}
-.alvee-reels-bottom{bottom:calc(env(safe-area-inset-bottom,0px) + 50px)}
-.alvee-seek{position:absolute;left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);height:32px;z-index:45;display:flex;align-items:center;touch-action:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.alvee-seek-track{position:relative;width:100%;height:6px;border-radius:6px;background:rgba(255,255,255,.28);transition:height .15s ease}
-.alvee-seek-fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:6px;background:rgba(255,255,255,.7)}
-.alvee-seek-thumb{position:absolute;top:50%;left:0;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#e6e6e6;box-shadow:0 1px 6px rgba(0,0,0,.5);transition:transform .15s ease}
-.alvee-seek.dragging .alvee-seek-track{height:8px}
-.alvee-seek.dragging .alvee-seek-thumb{transform:scale(1.35)}
 </style>
 </head>
 <body>
@@ -297,7 +260,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 <div id="bgLoader" style="display:none !important;"></div>
 <div class="bg-container" id="bgContainer"><div class="bg-shade"></div></div>
 
-<!-- shared SVG defs -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
 <defs>
 <radialGradient id="gRed" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#ff7a8a"/><stop offset=".45" stop-color="#e3172f"/><stop offset="1" stop-color="#8e0618"/></radialGradient>
@@ -310,7 +272,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 
 <div id="dashboardWrapper">
 
-    <!-- GLASS HEADER -->
     <header class="glass-header">
         <div class="header-nav">
             <div class="header-profile" onclick="openProfileCard()" role="button" tabindex="0" aria-label="Open profile" aria-haspopup="dialog">
@@ -321,13 +282,10 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
         </div>
     </header>
 
-    <!-- ALVEE STORY SECTION START -->
     <section class="alvee-story-section" id="alveeStorySection" aria-label="Alvee Community stories" hidden>
         <div class="alvee-story-row" id="alveeStoryRow"></div>
     </section>
-    <!-- ALVEE STORY SECTION END -->
 
-    <!-- HOME VIEW -->
     <div id="homeView" class="view-section active-view">
 
         <div class="profile-card blink-glow oc-collection-card attention" onclick="window.location.href='/oc-collection.html'">
@@ -362,7 +320,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 
     </div>
 
-    <!-- PROFILE MODAL -->
     <div class="modal-overlay" id="profileModal">
         <div class="modal-box">
             <h3 id="modalName">User Profile</h3>
@@ -373,15 +330,10 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 
 </div>
 
-<!-- =====================================================
-     ALVEE REELS VIEWER
-     ===================================================== -->
 <div class="alvee-reels-viewer" id="alveeReelsViewer" role="dialog" aria-modal="true" aria-label="Alvee Community reels">
     <div class="alvee-reels-stage" id="alveeReelsStage">
 
         <div class="alvee-track" id="alveeTrack"></div>
-
-        <div class="alvee-reels-bars" id="alveeBars"></div>
 
         <button type="button" class="alvee-reels-close" id="alveeCloseBtn" aria-label="Close">
             <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
@@ -398,7 +350,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </div>
 
-        <!-- CENTER HEART -->
         <div class="alvee-center-heart" id="alveeCenterHeart" aria-hidden="true">
             <svg viewBox="0 0 100 100">
                 <defs><linearGradient id="centerHeartGradient" x1="20" y1="10" x2="80" y2="90"><stop offset="0" stop-color="#ff566b"/><stop offset=".45" stop-color="#ff173d"/><stop offset="1" stop-color="#c90022"/></linearGradient></defs>
@@ -406,7 +357,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
             </svg>
         </div>
 
-        <!-- RIGHT ACTION PANEL -->
         <div class="alvee-reels-actions">
 
             <button type="button" class="alvee-action alvee-like-button" id="alveeLikeButton" aria-label="Like">
@@ -430,12 +380,10 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 
         </div>
 
-        <!-- SEEK BAR -->
         <div class="alvee-seek" id="alveeSeek" role="slider" aria-label="Seek video" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
             <div class="alvee-seek-track"><div class="alvee-seek-fill" id="alveeSeekFill"></div><div class="alvee-seek-thumb" id="alveeSeekThumb"></div></div>
         </div>
 
-        <!-- BOTTOM PROFILE -->
         <div class="alvee-reels-bottom">
             <div class="alvee-reels-profile">
                 <div class="alvee-reels-avatar" id="alveeBottomAvatar" role="button" tabindex="0" aria-label="Open Alvee Community profile">
@@ -455,7 +403,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
     </div>
 </div>
 
-<!-- SEARCH OVERLAY -->
 <div class="alvee-search-overlay" id="alveeSearchOverlay" role="dialog" aria-modal="true" aria-label="Search reels">
     <div class="alvee-search-box">
         <div class="alvee-search-head">
@@ -470,16 +417,12 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
     </div>
 </div>
 
-<!-- ================= ALVEE POPUP PROFILE CARD ================= -->
 <div class="pc-overlay" id="pcOverlay" aria-hidden="true">
 <section class="pc-card" id="pcCard" role="dialog" aria-modal="true" aria-label="ALVEE profile" tabindex="-1">
-
     <div class="pc-cover"><img src="https://carder.top/imagens/1793546742526-646878459.jpg" alt="" draggable="false"></div>
-
     <button type="button" class="pc-close" id="pcClose" aria-label="Close profile">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
     </button>
-
     <div class="pc-head">
         <div class="pc-avatar"><img src="https://carder.top/imagens/1793417411592-885991335.jpg" alt="ALVEE profile picture" draggable="false"></div>
         <svg class="pc-wordmark" viewBox="0 0 220 64" role="img" aria-label="ALVEE">
@@ -488,7 +431,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
             </g>
         </svg>
     </div>
-
     <div class="pc-actions">
         <button type="button" class="pc-sub" id="pcSub" aria-pressed="false">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 11H5L3 8z"/></svg>
@@ -501,7 +443,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20.5C5 15 3 11.5 3 8.7 3 6.2 4.9 4.5 7.1 4.5c2 0 3.7 1.1 4.9 3 1.2-1.9 2.9-3 4.9-3C19.1 4.5 21 6.2 21 8.7c0 2.8-2 6.3-9 11.8z"/></svg>
         </button>
     </div>
-
     <div class="pc-cats">
         <a class="pc-cat excl" href="https://www.alveecommunity.com/oc-collection.html">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11L10 22l9-12h-6.5L13 2z"/></svg>
@@ -512,7 +453,6 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
             <span>Member Shift</span>
         </a>
     </div>
-
     <div class="pc-eyes" role="img" aria-label="Your eyes only. Private media preview.">
         <div class="bgb" style="background-image:url('https://carder.top/imagens/1793546742526-646878459.jpg')"></div>
         <div class="lock">
@@ -525,28 +465,21 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
             <div class="txt">Your eyes only</div>
         </div>
     </div>
-
     <div class="pc-stats" id="pcStats"></div>
-
 </section>
 </div>
 
 <div class="love-layer" id="loveLayer" aria-hidden="true"></div>
 
 <script>
-/* =========================================================
-   CONFIGURATION
-   ========================================================= */
+/* ============ CONFIG ============ */
 const ALVEE_PROFILE_IMAGE = "https://files.catbox.moe/jz5vy5.jpg";
 const ALVEE_PROFILE_NAME  = "Alvee Community";
 const ALVEE_DEFAULT_CAPTION = "Welcome to Alvee Community — exclusive reels, daily updates and premium content.";
-
 const ALVEE_AUTO_NEXT = true;
 const ALVEE_USE_API = true;
 
-/* =========================================================
-   HEADER NAME
-   ========================================================= */
+/* ============ HEADER NAME ============ */
 const HEADER_NAME =
     "\u{1D1BA}\u{1D165}\u20DD" + "\u{1F5A4}" +
     "\u0F0F\u0640\uABED\u0640\uABED" + "\u{1F1E6}" +
@@ -554,9 +487,7 @@ const HEADER_NAME =
     "\u{1D1BA}\u{1D165}" + "\u2665\uFE0F" + "\u27F5\uABED";
 document.getElementById('headerName').textContent = HEADER_NAME;
 
-/* =========================================================
-   BACKGROUND IMAGE
-   ========================================================= */
+/* ============ BACKGROUND ============ */
 const backgroundImages = [
     "https://carder.top/imagens/1792211356900-71480222.jpg",
     "https://carder.top/imagens/1792211360124-891549584.jpg",
@@ -608,9 +539,7 @@ function initRandomBackground() {
     img.src = selected;
 }
 
-/* =========================================================
-   DASHBOARD INITIALIZATION
-   ========================================================= */
+/* ============ INIT ============ */
 function initializeDashboard() {
     let loggedIn = false;
     try { loggedIn = localStorage.getItem('isLoggedIn') === 'true'; } catch (error) {}
@@ -630,9 +559,6 @@ if (document.readyState === 'loading') {
     initializeDashboard();
 }
 
-/* =========================================================
-   REFRESH
-   ========================================================= */
 function triggerRefresh(button) {
     if (button) {
         button.classList.add('loading');
@@ -641,9 +567,6 @@ function triggerRefresh(button) {
     setTimeout(() => window.location.reload(), 300);
 }
 
-/* =========================================================
-   EXISTING PROFILE MODAL
-   ========================================================= */
 function openProfile(name, subtitle) {
     const modalName = document.getElementById('modalName');
     const info = document.getElementById('modalInfo');
@@ -659,53 +582,15 @@ function closeModal() {
     if (modal) modal.style.display = 'none';
 }
 
-function logoutUser() {
-    try {
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('userPhone');
-    } catch (error) {}
-    window.location.href = 'verify.html';
-}
+/* ============ ALVEE REELS ============ */
+const reels = [];
 
-/* =========================================================
-   ALVEE REELS DATA — static fallback (API না থাকলে)
-   ========================================================= */
-const reels = [
-    {
-        id: 1,
-        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-        thumbnail: "",
-        caption: "Welcome to Alvee Community — exclusive reels, daily updates and premium content.",
-        views: "67K",
-        likes: "423"
-    },
-    {
-        id: 2,
-        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-        thumbnail: "",
-        caption: "Another caption here. আপনি যেকোনো সময় এই লেখা বদলাতে পারবেন।",
-        views: "32K",
-        likes: "812"
-    },
-    {
-        id: 3,
-        video: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-        thumbnail: "",
-        caption: "Third reel — replace this video URL with your own vertical video.",
-        views: "12.4K",
-        likes: "96"
-    }
-];
-
-/* =========================================================
-   ALVEE REELS SYSTEM
-   ========================================================= */
 (function () {
     'use strict';
 
     const $ = id => document.getElementById(id);
     const viewer = $('alveeReelsViewer'), stage = $('alveeReelsStage'), track = $('alveeTrack'),
-          bars = $('alveeBars'), spin = $('alveeSpinner'), hint = $('alveeNextHint'),
+          spin = $('alveeSpinner'), hint = $('alveeNextHint'),
           pauseIc = $('alveePauseIcon'), heart = $('alveeCenterHeart'),
           likeBtn = $('alveeLikeButton'), likeCnt = $('alveeLikeCount'), viewCnt = $('alveeViewCount'),
           soundBtn = $('alveeSoundButton'), followBtn = $('alveeFollowButton'), caption = $('alveeCaption'),
@@ -723,7 +608,6 @@ const reels = [
     const likes = new Set(store.get(LIKE_KEY, []));
     let following = !!store.get(FOLLOW_KEY, false);
 
-    /* ---------- helpers ---------- */
     function parseCount(v) {
         if (typeof v === 'number') return v;
         const t = String(v || '').trim().toUpperCase();
@@ -749,44 +633,32 @@ const reels = [
     }
     window.alveeUnlockScroll = unlockScroll;
 
-    /* ---------- STORY LINE (random order) ---------- */
     function renderStories() {
         const sec = $('alveeStorySection'), row = $('alveeStoryRow');
         row.innerHTML = '';
         if (!reels.length) { sec.hidden = true; return; }
         sec.hidden = false;
 
-        const io = 'IntersectionObserver' in window
-            ? new IntersectionObserver(es => es.forEach(en => {
-                if (!en.isIntersecting) return;
-                const v = en.target;
-                v.preload = 'metadata';
-                v.src = v.dataset.src;
-                io.unobserve(v);
-            }), { root: row, rootMargin: '0px 200px' })
-            : null;
-
         reels.forEach((r, i) => {
             const b = document.createElement('button');
             b.type = 'button';
             b.className = 'alvee-story-card';
-            b.setAttribute('aria-label', 'Open ' + ALVEE_PROFILE_NAME + ' story ' + (i + 1));
+            b.setAttribute('aria-label', 'Open story ' + (i + 1));
 
             let t;
             if (r.thumbnail) {
                 t = new Image();
-                t.loading = 'lazy'; t.decoding = 'async'; t.alt = ''; t.draggable = false;
+                t.loading = 'eager'; t.decoding = 'async'; t.alt = ''; t.draggable = false;
                 t.className = 'alvee-story-thumb';
                 t.onload = () => t.classList.add('ready');
                 t.src = r.thumbnail;
             } else {
                 t = document.createElement('video');
                 t.className = 'alvee-story-thumb';
-                t.muted = true; t.playsInline = true; t.preload = 'none';
+                t.muted = true; t.playsInline = true; t.preload = 'metadata';
                 t.setAttribute('playsinline', '');
-                t.dataset.src = r.video + '#t=0.5';
+                t.src = r.video + '#t=0.5';
                 t.addEventListener('loadeddata', () => t.classList.add('ready'));
-                if (io) io.observe(t); else { t.preload = 'metadata'; t.src = t.dataset.src; }
             }
             b.appendChild(t);
 
@@ -810,7 +682,6 @@ const reels = [
         });
     }
 
-    /* ---------- SLIDES (only prev / current / next exist) ---------- */
     function createSlide(i) {
         const r = reels[i];
         const el = document.createElement('div');
@@ -823,7 +694,6 @@ const reels = [
         v.addEventListener('playing', () => { if (i === idx) spin.classList.remove('on'); });
         v.addEventListener('canplay', () => { if (i === idx) spin.classList.remove('on'); });
         v.addEventListener('error', () => { if (i === idx) spin.classList.remove('on'); });
-        v.addEventListener('timeupdate', () => { if (i === idx && v.duration) setFill(i, v.currentTime / v.duration * 100); });
         v.addEventListener('ended', () => { if (i === idx) onEnded(); });
         el.appendChild(v);
         el._v = v;
@@ -852,28 +722,6 @@ const reels = [
             el.style.transform = 'translate3d(0,calc(' + ((i - idx) * 100) + '% + ' + drag + 'px),0)';
         });
     }
-
-    /* ---------- progress bars ---------- */
-    function buildBars() {
-        bars.innerHTML = '';
-        reels.forEach(() => {
-            const s = document.createElement('span');
-            s.appendChild(document.createElement('i'));
-            bars.appendChild(s);
-        });
-    }
-    function setFill(i, p) {
-        const b = bars.children[i];
-        if (b) b.firstChild.style.width = Math.min(100, p) + '%';
-    }
-    function resetBars() {
-        const fills = [...bars.querySelectorAll('i')];
-        fills.forEach((f, i) => { f.style.transition = 'none'; f.style.width = i < idx ? '100%' : '0'; });
-        void bars.offsetWidth;
-        fills.forEach(f => { f.style.transition = ''; });
-    }
-
-    /* ---------- UI sync ---------- */
     function updateUI() {
         const r = reels[idx];
         if (!r) return;
@@ -895,7 +743,6 @@ const reels = [
         soundBtn.classList.toggle('unmuted', !muted);
         soundBtn.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
     }
-
     function sync() {
         [...slides.keys()].forEach(k => { if (Math.abs(k - idx) > 1) detach(k); });
         for (let i = idx - 1; i <= idx + 1; i++) {
@@ -905,11 +752,9 @@ const reels = [
         if (idx + 1 < reels.length) attach(idx + 1, 'metadata');
         if (idx - 1 >= 0) attach(idx - 1, 'metadata');
         layout(true);
-        resetBars();
         updateUI();
         playCurrent();
     }
-
     function playCurrent() {
         clearTimeout(endTimer);
         hideHint();
@@ -926,15 +771,12 @@ const reels = [
             if (!v.muted) { muted = true; v.muted = true; updateSound(); v.play().catch(() => {}); }
         });
     }
-
     function go(n) {
         if (n < 0 || n >= reels.length) { drag = 0; layout(true); return false; }
         idx = n; drag = 0;
         sync();
         return true;
     }
-
-    /* ---------- video completion ---------- */
     function showHint() {
         hint.classList.add('show');
         clearTimeout(hintTimer);
@@ -942,7 +784,6 @@ const reels = [
     }
     function hideHint() { clearTimeout(hintTimer); hint.classList.remove('show'); }
     function onEnded() {
-        setFill(idx, 100);
         if (idx < reels.length - 1) showHint();
         if (!ALVEE_AUTO_NEXT) return;
         endTimer = setTimeout(() => {
@@ -951,7 +792,6 @@ const reels = [
         }, 1200);
     }
 
-    /* ---------- open / close (zoom animation) ---------- */
     const DUR = 420, EASE = 'cubic-bezier(.22,.8,.25,1)';
     let anim = null;
     const FULL = { transform: 'translate(0,0) scale(1)', clipPath: 'inset(0px 0px round 0px)' };
@@ -972,7 +812,6 @@ const reels = [
         if (anim) { anim.cancel(); anim = null; }
         idx = Math.max(0, Math.min(i, reels.length - 1));
         drag = 0; isOpen = true;
-        buildBars();
         viewer.classList.add('show');
         lockScroll();
         const from = zoomFrame(cardFor(idx));
@@ -1012,7 +851,6 @@ const reels = [
     window.alveeReelsIsOpen = () => isOpen;
     window.openAlveeReels = function() { openViewer(0); };
 
-    /* ---------- like / heart ---------- */
     function showHeart() {
         heart.classList.remove('show');
         void heart.offsetWidth;
@@ -1028,8 +866,6 @@ const reels = [
         updateUI();
         if (on) showHeart();
     }
-
-    /* ---------- pause / tap ---------- */
     function togglePause() {
         const el = slides.get(idx);
         if (!el) return;
@@ -1049,7 +885,6 @@ const reels = [
         tapTimer = setTimeout(togglePause, 260);
     }
 
-    /* ---------- gestures (touch + mouse via pointer events) ---------- */
     let ps = null;
     stage.addEventListener('pointerdown', e => {
         if (e.target.closest('button,[role=button],.alvee-caption,.alvee-seek')) return;
@@ -1100,7 +935,6 @@ const reels = [
         else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
     });
 
-    /* ---------- buttons ---------- */
     $('alveeCloseBtn').addEventListener('click', () => closeViewer());
     likeBtn.addEventListener('click', () => setLike(!likes.has(reels[idx].id)));
     soundBtn.addEventListener('click', () => {
@@ -1118,7 +952,6 @@ const reels = [
     caption.addEventListener('click', () => caption.classList.toggle('expanded'));
     hint.addEventListener('click', () => go(idx + 1));
 
-    /* ---------- profile click → profile card over video ---------- */
     let profPaused = false;
     function openAlveeProfile() {
         const el = slides.get(idx);
@@ -1137,11 +970,10 @@ const reels = [
         el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAlveeProfile(); } });
     });
 
-    /* ---------- SEARCH ---------- */
     function renderSearch(q) {
         q = String(q || '').trim().toLowerCase();
         const list = reels.map((r, i) => ({ r, i })).filter(({ r }) =>
-            !q || String(r.caption || '').toLowerCase().includes(q) || ALVEE_PROFILE_NAME.toLowerCase().includes(q) && q.length < 3);
+            !q || String(r.caption || '').toLowerCase().includes(q));
         if (!reels.length) { sResults.innerHTML = '<div class="alvee-search-empty">No reels available.</div>'; return; }
         if (!list.length) { sResults.innerHTML = '<div class="alvee-search-empty">No matching reels found.</div>'; return; }
         sResults.innerHTML = list.slice(0, 30).map(({ r, i }) =>
@@ -1179,7 +1011,6 @@ const reels = [
     sResults.addEventListener('click', pickResult);
     sResults.addEventListener('keydown', pickResult);
 
-    /* ---------- pause when tab hidden ---------- */
     document.addEventListener('visibilitychange', () => {
         if (!isOpen) return;
         const el = slides.get(idx);
@@ -1188,7 +1019,6 @@ const reels = [
         else if (!pauseIc.classList.contains('show') && !el._v.ended) el._v.play().catch(() => {});
     });
 
-    /* ---------- SEEK BAR ---------- */
     const seek = $('alveeSeek'), seekTrack = seek.querySelector('.alvee-seek-track'),
           seekFill = $('alveeSeekFill'), seekThumb = $('alveeSeekThumb');
     let seeking = false, seekWas = false;
@@ -1235,7 +1065,6 @@ const reels = [
         const el = slides.get(idx);
         if (el && el._v.duration) seekTo((el._v.currentTime + (e.key === 'ArrowRight' ? 5 : -5)) / el._v.duration);
     });
-    /* 60fps smooth update */
     (function loop() {
         if (isOpen && !seeking) {
             const el = slides.get(idx), v = el && el._v;
@@ -1244,7 +1073,6 @@ const reels = [
         requestAnimationFrame(loop);
     })();
 
-    /* ---------- INIT: random fetch & merge ---------- */
     function randomShuffle(arr) {
         const a = arr.slice();
         for (let i = a.length - 1; i > 0; i--) {
@@ -1255,13 +1083,13 @@ const reels = [
     }
 
     window.initAlveeReels = async function () {
-        let apiLoaded = false;
+        let loaded = false;
         if (ALVEE_USE_API) {
             try {
                 const res = await fetch('/api/reels', { cache: 'no-store' });
                 if (res.ok) {
                     const data = await res.json();
-                    const list = (Array.isArray(data) ? data : (data.stories || data.reels || []))
+                    const list = (Array.isArray(data) ? data : (data.stories || []))
                         .filter(s => s && (s.src || s.video));
                     if (list.length) {
                         const mapped = list.map(s => ({
@@ -1272,26 +1100,24 @@ const reels = [
                             views: s.views != null ? s.views : 0,
                             likes: s.likes != null ? s.likes : 0
                         }));
-                        // random order — refresh every page load
                         reels.splice(0, reels.length, ...randomShuffle(mapped));
-                        apiLoaded = true;
+                        loaded = true;
                     }
                 }
-            } catch (e) {
-                console.warn('[alvee] /api/reels fetch failed:', e);
-            }
+            } catch (e) { console.warn('[alvee] /api/reels failed:', e); }
         }
-        if (!apiLoaded) {
-            // fallback static reels — also shuffled for random order
-            reels.splice(0, reels.length, ...randomShuffle(reels.slice()));
+        if (!loaded) {
+            const demo = [
+                { id: 'demo-1', video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', thumbnail: '', caption: ALVEE_DEFAULT_CAPTION, views: 0, likes: 0 },
+                { id: 'demo-2', video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', thumbnail: '', caption: ALVEE_DEFAULT_CAPTION, views: 0, likes: 0 }
+            ];
+            reels.splice(0, reels.length, ...randomShuffle(demo));
         }
         renderStories();
     };
 })();
 
-/* =========================================================
-   ALVEE POPUP PROFILE CARD
-   ========================================================= */
+/* ============ PROFILE CARD ============ */
 const PROFILE_STATS = [
     { value: '328K', label: 'Subscribers', icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M17 14.2c2.5.2 4.5 2 4.5 4.8"/>' },
     { value: '1.4K', label: 'Posts', icon: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M10 9l5 3-5 3V9z"/>' },
@@ -1389,7 +1215,6 @@ function loveBurst(btn) {
     const cy = r.top + r.height / 2;
     const order = shuffled(LOVE_STICKERS);
     const count = 5 + Math.round(Math.random());
-
     for (let i = 0; i < count; i++) {
         const size = 26 + Math.random() * 18;
         const p = document.createElement('div');
@@ -1397,34 +1222,24 @@ function loveBurst(btn) {
         p.style.width = p.style.height = size + 'px';
         p.innerHTML = order[i % order.length];
         layer.appendChild(p);
-
         const base = -Math.PI / 2;
         const ang = base + (Math.random() - .5) * Math.PI * 1.25;
         const dist = 70 + Math.random() * 90;
         const dx = Math.cos(ang) * dist;
         const dy = Math.sin(ang) * dist - 30 - Math.random() * 40;
         const rot = (Math.random() - .5) * 120;
-        const s0 = .3;
-        const s1 = .9 + Math.random() * .5;
-        const x0 = cx - size / 2;
-        const y0 = cy - size / 2;
-
+        const s0 = .3, s1 = .9 + Math.random() * .5;
+        const x0 = cx - size / 2, y0 = cy - size / 2;
         const anim = p.animate([
             { transform: `translate(${x0}px,${y0}px) scale(${s0}) rotate(0deg)`, opacity: 0 },
             { transform: `translate(${x0 + dx * .45}px,${y0 + dy * .45}px) scale(${s1}) rotate(${rot * .5}deg)`, opacity: 1, offset: .3 },
             { transform: `translate(${x0 + dx}px,${y0 + dy - 40}px) scale(${s1 * .85}) rotate(${rot}deg)`, opacity: 0 }
-        ], {
-            duration: 1100 + Math.random() * 600,
-            easing: 'cubic-bezier(.2,.7,.3,1)',
-            fill: 'forwards'
-        });
+        ], { duration: 1100 + Math.random() * 600, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
         anim.onfinish = anim.oncancel = () => p.remove();
     }
 }
 
-/* =========================================================
-   ESC KEY
-   ========================================================= */
+/* ============ ESC ============ */
 document.addEventListener('keydown', function (event) {
     if (event.key !== 'Escape') return;
     if (window.alveeSearchIsOpen && window.alveeSearchIsOpen()) { window.closeAlveeSearch(); return; }
