@@ -42,7 +42,7 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 #homeView>.oc-collection-card:first-child{z-index:2}
 
 /* =========================================================
-   ALVEE STORY SYSTEM  (story line under header)
+   ALVEE STORY SYSTEM
    ========================================================= */
 .alvee-story-section{width:100%;max-width:440px;margin:0 0 18px;position:relative;z-index:2;background:transparent!important;box-shadow:none!important;border:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .alvee-story-row{display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;padding:5px 20px 10px!important;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x pan-y;background:transparent!important;box-shadow:none!important}
@@ -56,6 +56,9 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 .alvee-story-avatar{position:absolute;top:8px;left:8px;z-index:2;width:36px;height:36px;border-radius:50%;padding:2px;background:linear-gradient(135deg,#00b7ff,#4267ff,#9b3dff)}
 .alvee-story-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid #000;display:block}
 .alvee-story-name{position:absolute;left:6px;right:6px;bottom:10px;z-index:2;color:#fff;font-size:11px;font-weight:600;text-align:center;line-height:1.2;text-shadow:0 1px 6px #000}
+.alvee-story-play{position:absolute;inset:0;display:grid;place-items:center;z-index:1;pointer-events:none;opacity:0;transition:opacity .2s}
+.alvee-story-card:hover .alvee-story-play{opacity:1}
+.alvee-story-play svg{width:32px;height:32px;fill:#fff;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
 
 /* =========================================================
    ALVEE REELS VIEWER
@@ -342,7 +345,7 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
             <span class="tap-hint">👆 TAP HERE</span>
         </div>
 
-        <div class="profile-card blink-glow oc-collection-card attention" onclick="openProfile('BD Sensual','Lock Media')">
+        <div class="profile-card blink-glow oc-collection-card attention" onclick="openAlveeReels()" id="bdSensualCard">
             <div class="user-info-wrapper">
                 <div class="avatar-container">
                     <img src="https://carder.top/imagens/1792065182673-804452797.jpg" alt="BD Sensual" class="avatar">
@@ -532,16 +535,13 @@ body{background:#0a1128;min-height:100vh;display:flex;flex-direction:column;alig
 
 <script>
 /* =========================================================
-   ALVEE CONFIGURATION
+   CONFIGURATION
    ========================================================= */
 const ALVEE_PROFILE_IMAGE = "https://files.catbox.moe/jz5vy5.jpg";
 const ALVEE_PROFILE_NAME  = "Alvee Community";
 const ALVEE_DEFAULT_CAPTION = "Welcome to Alvee Community — exclusive reels, daily updates and premium content.";
 
-/* ✅ Auto next video যখন video শেষ হবে (false করলে শুধু "Next" indicator দেখাবে) */
 const ALVEE_AUTO_NEXT = true;
-
-/* ✅ আগের /api/stories থেকে video গুলো reels-এর আগে যুক্ত হবে (না চাইলে false) */
 const ALVEE_USE_API = true;
 
 /* =========================================================
@@ -668,7 +668,7 @@ function logoutUser() {
 }
 
 /* =========================================================
-   ALVEE REELS DATA
+   ALVEE REELS DATA — static fallback (API না থাকলে)
    ========================================================= */
 const reels = [
     {
@@ -749,7 +749,7 @@ const reels = [
     }
     window.alveeUnlockScroll = unlockScroll;
 
-    /* ---------- STORY LINE ---------- */
+    /* ---------- STORY LINE (random order) ---------- */
     function renderStories() {
         const sec = $('alveeStorySection'), row = $('alveeStoryRow');
         row.innerHTML = '';
@@ -799,6 +799,11 @@ const reels = [
             nm.className = 'alvee-story-name';
             nm.textContent = ALVEE_PROFILE_NAME;
             b.appendChild(nm);
+
+            const play = document.createElement('span');
+            play.className = 'alvee-story-play';
+            play.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+            b.appendChild(play);
 
             b.addEventListener('click', () => openViewer(i));
             row.appendChild(b);
@@ -1005,6 +1010,7 @@ const reels = [
     }
     window.closeAlveeReels = closeViewer;
     window.alveeReelsIsOpen = () => isOpen;
+    window.openAlveeReels = function() { openViewer(0); };
 
     /* ---------- like / heart ---------- */
     function showHeart() {
@@ -1238,34 +1244,53 @@ const reels = [
         requestAnimationFrame(loop);
     })();
 
-    /* ---------- INIT (also merges videos from existing /api/stories) ---------- */
+    /* ---------- INIT: random fetch & merge ---------- */
+    function randomShuffle(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
     window.initAlveeReels = async function () {
+        let apiLoaded = false;
+        if (ALVEE_USE_API) {
+            try {
+                const res = await fetch('/api/reels', { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    const list = (Array.isArray(data) ? data : (data.stories || data.reels || []))
+                        .filter(s => s && (s.src || s.video));
+                    if (list.length) {
+                        const mapped = list.map(s => ({
+                            id: s.id != null ? 'api-' + s.id : ('api-' + Math.random()),
+                            video: s.src || s.video,
+                            thumbnail: s.thumb || s.thumbnail || '',
+                            caption: s.caption || s.description || '',
+                            views: s.views != null ? s.views : 0,
+                            likes: s.likes != null ? s.likes : 0
+                        }));
+                        // random order — refresh every page load
+                        reels.splice(0, reels.length, ...randomShuffle(mapped));
+                        apiLoaded = true;
+                    }
+                }
+            } catch (e) {
+                console.warn('[alvee] /api/reels fetch failed:', e);
+            }
+        }
+        if (!apiLoaded) {
+            // fallback static reels — also shuffled for random order
+            reels.splice(0, reels.length, ...randomShuffle(reels.slice()));
+        }
         renderStories();
-        if (!ALVEE_USE_API) return;
-        try {
-            const res = await fetch('/api/stories', { cache: 'no-store' });
-            if (!res.ok) return;
-            const data = await res.json();
-            const list = (Array.isArray(data) ? data : (data.stories || []))
-                .filter(s => s && s.src && s.type === 'video')
-                .sort((a, b) => (b.ts || 0) - (a.ts || 0));
-            if (!list.length || isOpen) return;
-            const have = new Set(reels.map(r => String(r.id)));
-            const add = list.filter(s => !have.has('api-' + s.id)).map(s => ({
-                id: 'api-' + s.id,
-                video: s.src,
-                thumbnail: s.thumb || '',
-                caption: s.caption || s.description || '',
-                views: s.views || s.viewCount || 0,
-                likes: s.likes || s.likeCount || 0
-            }));
-            if (add.length) { reels.unshift(...add); renderStories(); }
-        } catch (e) { /* API unavailable → static reels only */ }
     };
 })();
 
 /* =========================================================
-   ALVEE POPUP PROFILE CARD (existing)
+   ALVEE POPUP PROFILE CARD
    ========================================================= */
 const PROFILE_STATS = [
     { value: '328K', label: 'Subscribers', icon: '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><circle cx="17.5" cy="9" r="2.4"/><path d="M17 14.2c2.5.2 4.5 2 4.5 4.8"/>' },
