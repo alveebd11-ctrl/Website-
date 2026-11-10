@@ -27,7 +27,7 @@ try:
 except ImportError:
   cf_requests = None
 
-# Python 3.12+ Event Loop Fix (Fixes "There is no current event loop in thread 'MainThread'")
+# Python 3.12+ Event Loop Fix
 try:
   asyncio.get_event_loop()
 except RuntimeError:
@@ -35,7 +35,7 @@ except RuntimeError:
   asyncio.set_event_loop(_main_loop)
 
 try:
-  import fcntl  # Linux (Render) — একই সার্ভারে একাধিক worker হলে সেশন ডুপ্লিকেট রোধ
+  import fcntl
 except ImportError:
   fcntl = None
 
@@ -45,7 +45,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import RequestEntityTooLarge
 
-# Telethon imports (Used for Login & Channel Reading)
+# Telethon imports
 from telethon import TelegramClient, utils, events as telethon_events
 from telethon.sessions import StringSession
 from telethon.tl.types import (
@@ -54,7 +54,7 @@ from telethon.tl.types import (
     MessageMediaPhoto,
 )
 
-# Pyrogram imports (Used exclusively for Bot & Media Upload Handling)
+# Pyrogram imports
 try:
   from pyrogram import Client, filters
   from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument
@@ -89,14 +89,9 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
 API_ID = _env_int("API_ID")
 API_HASH = os.environ.get("API_HASH", "").strip()
 ADMIN_ID = _env_int("ADMIN_ID")
-
-# ওয়েবসাইটের "Upload Album" বাটন যে বটে নিয়ে যাবে (@ ছাড়া ইউজারনেম)
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "").strip().lstrip("@")
-
-# Telethon user session for channel reader
 TELETHON_SESSION_STRING = os.environ.get("TELETHON_SESSION_STRING", "").strip()
 
-# Storage channel ID normalization (-1004322205565)
 _raw_channel_id = os.environ.get("STORAGE_CHANNEL_ID", "-1004322205565").strip()
 
 if not _raw_channel_id:
@@ -116,15 +111,10 @@ STORY_BACKUP_CHANNEL_ID = int(
 STORY_MARKER = "#STORY"
 DEFAULT_STORY_THUMB = "https://carder.top/imagens/1792065174675-662575987.jpg"
 
-# ওয়েবসাইট থেকে আনা সব মিডিয়া চিহ্নিত করার ক্যাপশন ট্যাগ
 WEBSITE_MARKER = "#website"
-
-# চ্যানেলে আপলোড-সম্পূর্ণ মেসেজে এই কী দিয়ে অ্যালবামের আইডি লেখা থাকে (ডুপ্লিকেট রোধে ব্যবহৃত)
 ALBUM_REF_KEY = "albumref"
 
-# ============================================================
-# নতুন বটের (#newweb) স্টোরেজ চ্যানেল থেকে অ্যালবাম সিঙ্ক
-# ============================================================
+# ---- NEWWEB channel ----
 _raw_newweb_id = os.environ.get("NEWWEB_CHANNEL_ID", "-1004306320018").strip()
 if not _raw_newweb_id:
   NEWWEB_CHANNEL_ID = 0
@@ -144,7 +134,6 @@ NEWWEB_SYNC_INTERVAL = max(15, int(os.environ.get("NEWWEB_SYNC_INTERVAL", "60") 
 
 SEPARATE_STORY_CHANNEL = int(STORY_BACKUP_CHANNEL_ID) != int(STORAGE_CHANNEL_ID)
 
-# ওয়েবসাইট থেকে আনা (#website) পোস্ট আপনার সাইটে দেখানো হবে কি না।
 SYNC_WEBSITE_POSTS = os.environ.get("SYNC_WEBSITE_POSTS", "0").strip() == "1"
 
 COLLECTION_INCLUDE_CAPTIONED = (
@@ -156,11 +145,11 @@ if COLLECTION_INCLUDE_CAPTIONED:
 else:
   OC_WHERE = "TRIM(COALESCE(text, '')) = ''"
 PRECACHE_MEDIA = os.environ.get("PRECACHE_MEDIA", "0").strip() == "1"
-STREAM_REQUEST_SIZE = 512 * 1024  # Telethon download chunk (512 KB)
-MSG_CACHE_TTL = 600  # সেকেন্ড
+STREAM_REQUEST_SIZE = 512 * 1024
+MSG_CACHE_TTL = 600
 TELETHON_START_DELAY = float(os.environ.get("TELETHON_START_DELAY", "40") or 0)
 
-# ---- Scraper configuration ----
+# ---- Scraper (mostly unused) ----
 TARGET_SITE_URL = os.environ.get("TARGET_SITE_URL", "https://mmsdesi.me").strip().rstrip("/")
 SCRAPER_PROXY = os.environ.get("SCRAPER_PROXY", "").strip()
 SCRAPER_PAGES = max(1, int(os.environ.get("SCRAPER_PAGES", "2") or 2))
@@ -201,17 +190,9 @@ CHAT_BACKUP_MARKER = "[CHAT_BACKUP]"
 CHAT_BACKUP_TEXT_MARKER = "[CHAT_BACKUP_TEXT]"
 
 DB_PATH = Path(os.environ.get("CHAT_DB_PATH", str(BASE_DIR / "chat_messages.db")))
-MEDIA_DIR = Path(
-    os.environ.get("CHAT_MEDIA_DIR", str(BASE_DIR / "static" / "chat_media"))
-)
-BG_DIR = Path(
-    os.environ.get("BACKGROUND_DIR", str(BASE_DIR / "static" / "backgrounds"))
-)
-CACHE_DIR = Path(
-    os.environ.get(
-        "TELETHON_CACHE_DIR", str(BASE_DIR / "static" / "telethon_cache")
-    )
-)
+MEDIA_DIR = Path(os.environ.get("CHAT_MEDIA_DIR", str(BASE_DIR / "static" / "chat_media")))
+BG_DIR = Path(os.environ.get("BACKGROUND_DIR", str(BASE_DIR / "static" / "backgrounds")))
+CACHE_DIR = Path(os.environ.get("TELETHON_CACHE_DIR", str(BASE_DIR / "static" / "telethon_cache")))
 
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 BG_DIR.mkdir(parents=True, exist_ok=True)
@@ -219,7 +200,7 @@ CACHE_DIR.mkdir(parents=True, exist_ok=True)
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 # ============================================================
-# NEW: REELS SYNC CONFIGURATION (#reels → Cloudinary)
+# REELS SYNC CONFIGURATION (#reels → Cloudinary)
 # ============================================================
 _raw_reels_id = os.environ.get("REELS_CHANNEL_ID", "-1004306320018").strip()
 if not _raw_reels_id:
@@ -300,7 +281,7 @@ telethon_reader_client = None
 telethon_channel_entity = None
 telethon_story_entity = None
 telethon_newweb_entity = None
-telethon_reels_entity = None  # NEW: #reels channel entity
+telethon_reels_entity = None  # NEW
 pyrogram_client = None
 _services_started = False
 _services_lock = threading.Lock()
@@ -378,7 +359,7 @@ def run_pyrogram_async(coro, timeout=180):
 
 
 # ============================================================
-# SQLite Database Initialization
+# SQLite Database
 # ============================================================
 
 
@@ -472,7 +453,7 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_chat_created_at
             ON chat_messages(created_at)
         """)
-    # NEW: reel thumbnail cache table
+    # reel thumbnail cache
     conn.execute("""
             CREATE TABLE IF NOT EXISTS reel_thumbs (
                 message_id INTEGER PRIMARY KEY,
@@ -531,12 +512,8 @@ def get_message_by_id(message_id):
 
 def get_chat_stats():
   with db_connect() as conn:
-    total_messages = conn.execute(
-        "SELECT COUNT(*) FROM chat_messages"
-    ).fetchone()[0]
-    total_clients = conn.execute(
-        "SELECT COUNT(DISTINCT client_id) FROM chat_messages"
-    ).fetchone()[0]
+    total_messages = conn.execute("SELECT COUNT(*) FROM chat_messages").fetchone()[0]
+    total_clients = conn.execute("SELECT COUNT(DISTINCT client_id) FROM chat_messages").fetchone()[0]
   return {
       "total_chat_messages": int(total_messages or 0),
       "total_chat_clients": int(total_clients or 0),
@@ -559,7 +536,7 @@ def find_media_row(message_id, kind=""):
 
 
 # ============================================================
-# Telegram Bot API & Scraping Helpers
+# Telegram Bot API Helpers
 # ============================================================
 
 
@@ -576,9 +553,7 @@ def telegram_api(method, data=None, files=None, timeout=(10, 180)):
     raise TelegramNotConfiguredError("BOT_TOKEN is not configured.")
   url = f"https://api.telegram.org/bot{BOT_TOKEN}/{method}"
   try:
-    response = requests.post(
-        url, data=data or {}, files=files, timeout=timeout
-    )
+    response = requests.post(url, data=data or {}, files=files, timeout=timeout)
     try:
       payload = response.json()
     except ValueError:
@@ -645,9 +620,9 @@ def download_telegram_file(file_id):
     return None, None
 
 
-# ------------------------------------------------------------
-# স্ক্র্যাপার হেল্পার (বন্ধ — বট থেকে এখন আর কোথাও কল হয় না)
-# ------------------------------------------------------------
+# ============================================================
+# Scraper helpers (unused but kept for compatibility)
+# ============================================================
 
 scrape_diag = {}
 
@@ -710,9 +685,7 @@ def _fetch_html(scraper, url, timeout=25):
   if cf_requests is not None and not SCRAPER_PROXY:
     for browser_ver in ("chrome120", "chrome116", "safari17_0"):
       try:
-        res = cf_requests.get(
-            url, impersonate=browser_ver, headers=BROWSER_HEADERS, timeout=timeout
-        )
+        res = cf_requests.get(url, impersonate=browser_ver, headers=BROWSER_HEADERS, timeout=timeout)
         if res.status_code < 400 and not _is_cf_blocked(res.status_code, res.text):
           return res.status_code, res.text or ""
       except Exception:
@@ -751,10 +724,7 @@ def _find_caption_and_thumb(link_tag, base_url, slug):
     if not thumb:
       img = node.find('img')
       if img:
-        thumb = (
-            img.get('src') or img.get('data-src')
-            or img.get('data-lazy-src') or ''
-        )
+        thumb = (img.get('src') or img.get('data-src') or img.get('data-lazy-src') or '')
         if not thumb and img.get('srcset'):
           thumb = img.get('srcset').split()[0]
     if caption and thumb:
@@ -783,8 +753,7 @@ def fetch_target_albums(target_count=ALBUM_SCAN_LIMIT):
   scrape_diag = diag
 
   if not base_url:
-    diag["error"] = "TARGET_SITE_URL is not set (add it in Render → Environment)"
-    print("[Scraper] TARGET_SITE_URL is not set!")
+    diag["error"] = "TARGET_SITE_URL is not set"
     return []
 
   scraper = _make_scraper()
@@ -880,18 +849,11 @@ def describe_scrape_diag():
   else:
     lines.append(f"🌐 Site: {d.get('base_url')}")
     lines.append(f"📄 Pages loaded: {d.get('pages_ok', 0)} | Failed: {len(d.get('pages_failed', []))}")
-    lines.append(
-        f"🔗 Album links found: {d.get('links_found', 0)} "
-        f"(already uploaded: {d.get('skipped_posted', 0)})"
-    )
+    lines.append(f"🔗 Album links found: {d.get('links_found', 0)} (already uploaded: {d.get('skipped_posted', 0)})")
     if d.get("blocked"):
-      lines.append("❌ Error Code 403\nReason: Site is blocking the bot (Cloudflare). Set SCRAPER_PROXY.")
+      lines.append("❌ Error Code 403\nReason: Site is blocking the bot.")
     for f in (d.get("pages_failed") or [])[:3]:
       lines.append(f"• {f}")
-    if d.get("links_found", 0) == 0 and not d.get("blocked") and d.get("pages_ok", 0) > 0:
-      lines.append("❌ Error Code 404\nReason: No /watch/ links found on the page.")
-    if d.get("links_found", 0) > 0 and d.get("skipped_posted", 0) >= d.get("links_found", 0):
-      lines.append("ℹ️ All albums are already logged as uploaded. Send /resetslugs to clear the log.")
   return "\n".join(lines)
 
 
@@ -930,17 +892,8 @@ def extract_album_media(album_url, fallback_thumb):
           full = urljoin(album_url, src)
           if full not in videos:
             videos.append(full)
-      for meta in soup.find_all('meta', attrs={'property': re.compile(r'^og:video')}):
-        c = meta.get('content')
-        if c and '.mp4' in c.lower():
-          full = urljoin(album_url, c)
-          if full not in videos:
-            videos.append(full)
     except Exception:
       pass
-
-    videos.sort(key=lambda u: html_text.find(u) if html_text.find(u) >= 0 else 10**9)
-    photos.sort(key=lambda u: html_text.find(u) if html_text.find(u) >= 0 else 10**9)
 
     if not photos and not videos and fallback_thumb:
       photos.append(fallback_thumb)
@@ -966,7 +919,7 @@ def _entity_for_kind(kind):
   if kind == "newweb":
     return telethon_newweb_entity
   if kind == "reels":
-    return telethon_reels_entity  # NEW
+    return telethon_reels_entity
   return telethon_channel_entity
 
 
@@ -1013,9 +966,7 @@ async def get_media_info(message_id, kind="post"):
   is_photo = bool(getattr(msg, "photo", None))
   file_obj = getattr(msg, "file", None)
   size = int(getattr(file_obj, "size", 0) or 0)
-  mime = getattr(file_obj, "mime_type", None) or (
-      "image/jpeg" if is_photo else "video/mp4"
-  )
+  mime = getattr(file_obj, "mime_type", None) or ("image/jpeg" if is_photo else "video/mp4")
   return {"size": size, "mime": mime, "is_photo": is_photo}
 
 
@@ -1049,9 +1000,7 @@ async def get_telethon_thumb_bytes(message_id, kind="story"):
     msg = await get_cached_message(message_id, kind)
     if not msg or not getattr(msg, "media", None):
       return None
-    data = await telethon_reader_client.download_media(
-        msg, file=bytes, thumb=-1
-    )
+    data = await telethon_reader_client.download_media(msg, file=bytes, thumb=-1)
     return data or None
   except Exception as exc:
     print(f"[Thumb] Telethon thumb failed for {message_id}: {exc}")
@@ -1066,9 +1015,7 @@ async def get_post_thumb_bytes(message_id, kind="post"):
     is_photo = bool(getattr(msg, "photo", None))
     for t in ((-1, 1, 0) if is_photo else (-1,)):
       try:
-        data = await telethon_reader_client.download_media(
-            msg, file=bytes, thumb=t
-        )
+        data = await telethon_reader_client.download_media(msg, file=bytes, thumb=t)
       except Exception:
         data = None
       if data:
@@ -1079,9 +1026,7 @@ async def get_post_thumb_bytes(message_id, kind="post"):
     return None
 
 
-async def telegram_stream_producer(
-    q, stop, message_id, kind, aligned_offset, n_chunks, file_size
-):
+async def telegram_stream_producer(q, stop, message_id, kind, aligned_offset, n_chunks, file_size):
   loop = asyncio.get_running_loop()
 
   def put(item):
@@ -1149,9 +1094,7 @@ async def cache_channel_media_telethon(message_id: int, kind: str = "post") -> b
         pass
 
     target = CACHE_DIR / str(message_id)
-    downloaded_path = await telethon_reader_client.download_media(
-        msg, file=str(target)
-    )
+    downloaded_path = await telethon_reader_client.download_media(msg, file=str(target))
     return bool(downloaded_path)
   except Exception as e:
     print(f"[Cache] Telethon error for message {message_id}: {e}")
@@ -1172,7 +1115,7 @@ def find_cached_media(message_id: int) -> Optional[Path]:
 
 
 # ============================================================
-# Channel Scanning & Syncing
+# Channel Scanning
 # ============================================================
 
 
@@ -1209,9 +1152,7 @@ async def _scan_one_channel(entity, progress=None):
   total = 0
   found = 0
 
-  async for msg in telethon_reader_client.iter_messages(
-      entity, limit=None, wait_time=0.5
-  ):
+  async for msg in telethon_reader_client.iter_messages(entity, limit=None, wait_time=0.5):
     total += 1
     all_ids.add(msg.id)
 
@@ -1251,9 +1192,7 @@ def _split_records(records):
       text = group_caps.get(r["group"], "")
     stripped = text.strip()
 
-    if stripped.startswith(CHAT_BACKUP_MARKER) or stripped.startswith(
-        CHAT_BACKUP_TEXT_MARKER
-    ):
+    if stripped.startswith(CHAT_BACKUP_MARKER) or stripped.startswith(CHAT_BACKUP_TEXT_MARKER):
       continue
 
     item = dict(r, text=text)
@@ -1267,6 +1206,7 @@ def _split_records(records):
         not stripped
         or COLLECTION_INCLUDE_CAPTIONED
         or is_website_post
+        or (REELS_TAG_MARKER in text.lower())  # reels captioned posts
     ):
       posts.append(item)
 
@@ -1317,9 +1257,7 @@ def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
     if do_posts:
       existing = {
           row["message_id"]
-          for row in conn.execute(
-              "SELECT message_id FROM channel_posts"
-          ).fetchall()
+          for row in conn.execute("SELECT message_id FROM channel_posts").fetchall()
       }
       for p in posts:
         if p["id"] in existing:
@@ -1346,9 +1284,7 @@ def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
             if (mid not in all_ids) or (mid in story_ids)
         ]
         if stale:
-          conn.executemany(
-              "DELETE FROM channel_posts WHERE message_id = ?", stale
-          )
+          conn.executemany("DELETE FROM channel_posts WHERE message_id = ?", stale)
           stats["removed"] += len(stale)
 
     conn.commit()
@@ -1359,9 +1295,7 @@ def save_scan_results(stories, posts, all_ids, story_ids, do_story, do_posts):
 async def scan_channel(mode="all", progress=None):
   if not telethon_reader_client or not telethon_channel_entity:
     raise RuntimeError("Telethon reader is not connected.")
-  if mode in ("story", "all") and SEPARATE_STORY_CHANNEL and (
-      telethon_story_entity is None
-  ):
+  if mode in ("story", "all") and SEPARATE_STORY_CHANNEL and (telethon_story_entity is None):
     raise RuntimeError("Story channel is not accessible.")
   if not scan_lock.acquire(blocking=False):
     raise ScanBusyError("A scan is already running.")
@@ -1369,11 +1303,7 @@ async def scan_channel(mode="all", progress=None):
   try:
     plan = []
     if not SEPARATE_STORY_CHANNEL:
-      plan.append((
-          telethon_channel_entity,
-          mode in ("story", "all"),
-          mode in ("collection", "all"),
-      ))
+      plan.append((telethon_channel_entity, mode in ("story", "all"), mode in ("collection", "all")))
     else:
       if mode in ("story", "all"):
         plan.append((telethon_story_entity, True, False))
@@ -1445,7 +1375,7 @@ def _merge_slugs(slugs):
 
 
 # ============================================================
-# NEW: REELS — caption cleaner + Cloudinary thumb generator
+# REELS — caption cleaner + Cloudinary thumb generator
 # ============================================================
 
 
@@ -1487,9 +1417,7 @@ def _save_reel_thumb(message_id: int, cloud_url: str, ts: int):
     print("[Reels] save thumb failed:", exc)
 
 
-async def _generate_and_upload_reel_thumb(
-    message_id: int, kind: str = "reels", ts: int = 0
-) -> Optional[str]:
+async def _generate_and_upload_reel_thumb(message_id: int, kind: str = "reels", ts: int = 0) -> Optional[str]:
   """Download video thumb from Telegram → upload to Cloudinary → return URL."""
   if not CLOUDINARY_ENABLED or cloudinary is None:
     return None
@@ -1534,18 +1462,19 @@ async def _generate_and_upload_reel_thumb(
 async def sync_reels_from_telegram(full: bool = False, limit: Optional[int] = None):
   """
   Iterate all messages in the reels channel, keep only videos whose caption
-  contains '#reels', generate HD thumbnail on Cloudinary, cache to DB.
+  contains '#reels', save to channel_posts so /api/stories can find them,
+  and generate HD thumbnails on Cloudinary.
   """
   if not telethon_reader_client:
     raise RuntimeError("Telethon reader is not connected.")
 
-  # Use the dedicated reels entity if provided, else fall back to the main channel
   entity = telethon_reels_entity or telethon_channel_entity
   if entity is None:
     raise RuntimeError("Reels channel entity not available.")
 
   scanned = 0
   matched = 0
+  saved_to_posts = 0
   thumbs_created = 0
   thumbs_skipped = 0
   errors = 0
@@ -1562,6 +1491,30 @@ async def sync_reels_from_telegram(full: bool = False, limit: Optional[int] = No
 
     matched += 1
     ts = int((msg.date or datetime.now(timezone.utc)).timestamp())
+    mime = getattr(msg.video, "mime_type", None) or "video/mp4"
+
+    # ✅ channel_posts-এ save/update যাতে /api/stories খুঁজে পায়
+    try:
+      with db_connect() as conn:
+        existing = conn.execute(
+            "SELECT 1 FROM channel_posts WHERE message_id = ?", (msg.id,)
+        ).fetchone()
+        if existing:
+          conn.execute(
+              "UPDATE channel_posts SET text = ?, media_type = ?, mime_type = ? WHERE message_id = ?",
+              (text, "video", mime, msg.id),
+          )
+        else:
+          conn.execute(
+              "INSERT OR IGNORE INTO channel_posts (message_id, text, media_type, mime_type, telegram_file_id, created_at) "
+              "VALUES (?, ?, ?, ?, ?, ?)",
+              (msg.id, text, "video", mime, None,
+               (msg.date or datetime.now(timezone.utc)).isoformat()),
+          )
+        conn.commit()
+      saved_to_posts += 1
+    except Exception as exc:
+      print(f"[Reels] channel_posts save failed for {msg.id}: {exc}")
 
     if _get_cached_reel_thumb(msg.id):
       thumbs_skipped += 1
@@ -1575,13 +1528,14 @@ async def sync_reels_from_telegram(full: bool = False, limit: Optional[int] = No
 
     if matched % 5 == 0:
       print(
-          f"[Reels] matched={matched} created={thumbs_created} "
-          f"skipped={thumbs_skipped} errors={errors}"
+          f"[Reels] matched={matched} saved={saved_to_posts} "
+          f"created={thumbs_created} skipped={thumbs_skipped} errors={errors}"
       )
 
   return {
       "scanned": scanned,
       "matched": matched,
+      "saved_to_posts": saved_to_posts,
       "thumbs_created": thumbs_created,
       "thumbs_skipped": thumbs_skipped,
       "errors": errors,
@@ -1700,7 +1654,7 @@ async def start_telethon_reader():
       telethon_channel_entity = channel_entity
       telethon_story_entity = channel_entity
 
-      # নতুন বটের (#newweb) অ্যালবাম চ্যানেল
+      # Newweb channel
       if NEWWEB_CHANNEL_ID:
         nw_entity = None
         try:
@@ -1718,7 +1672,7 @@ async def start_telethon_reader():
           )
           print("[Newweb]", newweb_sync_state["error"])
 
-      # NEW: #reels চ্যানেল entity
+      # Reels channel
       if REELS_CHANNEL_ID:
         reels_entity = None
         try:
@@ -1734,6 +1688,8 @@ async def start_telethon_reader():
               "[Reels] Channel not accessible:", REELS_CHANNEL_ID,
               "— reels sync disabled until account joins the channel."
           )
+        else:
+          print("[Reels] Channel entity resolved:", REELS_CHANNEL_ID)
 
       telethon_status["state"] = "connected"
       return True
@@ -1749,26 +1705,23 @@ async def start_telethon_reader():
 
 
 # ============================================================
-# API Endpoints (Stories, Collection, Media, etc.)
+# API Endpoints
 # ============================================================
 
 
 @app.route("/api/stories", methods=["GET"])
 def get_stories_api():
   """
-  NEW: Returns #reels videos from the reels channel with cleaned captions
-  and Cloudinary HD thumbnails (fallback: /api/stories/thumb/<id>).
-  Includes legacy #STORY items as before so existing behavior is preserved.
+  Returns #reels videos from reels channel (cleaned captions + Cloudinary thumbs)
+  plus legacy #STORY items from stories table.
   """
   try:
     combined = []
 
-    # ---- legacy #STORY items (from stories table) ----
+    # Legacy #STORY items
     try:
       with db_connect() as conn:
-        legacy_rows = conn.execute(
-            "SELECT * FROM stories ORDER BY ts DESC"
-        ).fetchall()
+        legacy_rows = conn.execute("SELECT * FROM stories ORDER BY ts DESC").fetchall()
       for row in legacy_rows:
         mid = row["message_id"]
         m_type = "photo" if row["media_type"] == "photo" else "video"
@@ -1779,47 +1732,43 @@ def get_stories_api():
             "type": m_type,
             "thumb": thumb_url,
             "src": media_url,
-            "caption": "",  # legacy items have no caption
+            "caption": "",
             "ts": int(row["ts"] or 0),
         })
     except Exception as exc:
       print("[Stories] legacy read failed:", exc)
 
-    # ---- NEW: #reels videos from reels channel ----
+    # #reels videos
     try:
-      reels_entity = telethon_reels_entity or telethon_channel_entity
-      if reels_entity is not None:
-        with db_connect() as conn:
-          reel_rows = conn.execute(
-              "SELECT message_id, text, media_type, created_at "
-              "FROM channel_posts "
-              "WHERE LOWER(COALESCE(text,'')) LIKE '%" + REELS_TAG_MARKER + "%' "
-              "AND media_type IN ('video','animation') "
-              "ORDER BY message_id DESC LIMIT 300"
-          ).fetchall()
-        for row in reel_rows:
-          mid = row["message_id"]
-          raw_cap = row["text"] or ""
-          clean_cap = clean_reel_caption(raw_cap)
-          cloud_thumb = _get_cached_reel_thumb(mid)
-          dt_str = row["created_at"] or ""
-          try:
-            ts = int(datetime.fromisoformat(dt_str).timestamp())
-          except Exception:
-            ts = 0
-          combined.append({
-              "id": f"reel-{mid}",
-              "type": "video",
-              "src": f"/api/channel/media/{mid}?kind=reels",
-              "thumb": cloud_thumb or f"/api/stories/thumb/{mid}",
-              "caption": clean_cap,
-              "ts": ts,
-              "_source": "reels",
-          })
+      with db_connect() as conn:
+        reel_rows = conn.execute(
+            "SELECT message_id, text, media_type, created_at "
+            "FROM channel_posts "
+            "WHERE LOWER(COALESCE(text,'')) LIKE '%" + REELS_TAG_MARKER + "%' "
+            "AND media_type IN ('video','animation') "
+            "ORDER BY message_id DESC LIMIT 300"
+        ).fetchall()
+      for row in reel_rows:
+        mid = row["message_id"]
+        raw_cap = row["text"] or ""
+        clean_cap = clean_reel_caption(raw_cap)
+        cloud_thumb = _get_cached_reel_thumb(mid)
+        dt_str = row["created_at"] or ""
+        try:
+          ts = int(datetime.fromisoformat(dt_str).timestamp())
+        except Exception:
+          ts = 0
+        combined.append({
+            "id": f"reel-{mid}",
+            "type": "video",
+            "src": f"/api/channel/media/{mid}?kind=reels",
+            "thumb": cloud_thumb or f"/api/stories/thumb/{mid}?kind=reels",
+            "caption": clean_cap,
+            "ts": ts,
+        })
     except Exception as exc:
       print("[Stories] reels read failed:", exc)
 
-    # sort newest first
     combined.sort(key=lambda x: x.get("ts", 0), reverse=True)
     return jsonify(combined)
   except Exception as exc:
@@ -1831,7 +1780,6 @@ def get_stories_api():
 def get_story_thumb(message_id):
   try:
     kind = request.args.get("kind", "story")
-    # Try Cloudinary first for reels
     if kind == "reels":
       cached = _get_cached_reel_thumb(message_id)
       if cached:
@@ -1962,7 +1910,7 @@ def albums_api():
           SELECT a.slug, a.title, COUNT(i.message_id) AS n,
                  SUM(CASE WHEN i.media_type = 'video' THEN 1 ELSE 0 END) AS v,
                  MIN(i.message_id) AS first_id, MAX(i.message_id) AS last_id,
-                 a.cover_id AS cover_id, a.batch AS batch, a.site_order AS site_order
+                 a.cover_id AS cover_id
           FROM website_albums a JOIN website_album_items i ON i.slug = a.slug
           GROUP BY a.slug
           """
@@ -2029,9 +1977,9 @@ def album_items_api(slug):
     return jsonify({"ok": False, "items": []}), 500
 
 
-# ------------------------------------------------------------
-# টেলিগ্রাম চ্যানেল → ওয়েবসাইট সিঙ্ক
-# ------------------------------------------------------------
+# ============================================================
+# Album sync state
+# ============================================================
 
 album_sync_state = {
     "running": False, "done": False, "checked": 0, "found": 0,
@@ -2201,9 +2149,9 @@ def album_sync_status():
   return jsonify(dict(album_sync_state))
 
 
-# ------------------------------------------------------------
-# নতুন বটের (#newweb) চ্যানেল → oc-collection অ্যালবাম সিঙ্ক
-# ------------------------------------------------------------
+# ============================================================
+# Newweb album sync state
+# ============================================================
 
 newweb_sync_state = {
     "running": False, "checked": 0, "found": 0, "added": 0, "error": "",
@@ -2421,13 +2369,14 @@ def newweb_sync_status():
 
 
 # ============================================================
-# NEW: REELS sync endpoints (admin-protected)
+# Reels sync state + endpoints
 # ============================================================
 
 reels_sync_state = {
     "running": False,
     "scanned": 0,
     "matched": 0,
+    "saved_to_posts": 0,
     "thumbs_created": 0,
     "thumbs_skipped": 0,
     "errors": 0,
@@ -2458,8 +2407,8 @@ def reels_sync_start():
 
   async def _job():
     reels_sync_state.update(
-        running=True, scanned=0, matched=0, thumbs_created=0,
-        thumbs_skipped=0, errors=0, error="",
+        running=True, scanned=0, matched=0, saved_to_posts=0,
+        thumbs_created=0, thumbs_skipped=0, errors=0, error="",
     )
     try:
       result = await sync_reels_from_telegram(full=full)
@@ -2617,7 +2566,6 @@ def get_channel_media(message_id):
       real_id = message_id - NEWWEB_ID_OFFSET
       row_kind = "newweb"
 
-    # NEW: honour ?kind=reels so that the reels channel's media streams correctly
     if kind_override == "reels":
       row_kind = "reels"
 
@@ -2643,7 +2591,7 @@ def get_channel_media(message_id):
 
 
 # ============================================================
-# Website Frontend Routes
+# Frontend Routes
 # ============================================================
 
 
@@ -2722,7 +2670,7 @@ def health_check():
 
 
 # ============================================================
-# Pyrogram Bot & Scanning Button Setup
+# Pyrogram Bot setup
 # ============================================================
 
 
@@ -2883,10 +2831,7 @@ def _download_bytes(url, name, max_mb=50):
   scraper = _make_scraper()
   base_url = _get_base_url()
   headers = {'Referer': f"{base_url}/"} if base_url else {}
-  res = scraper.get(
-      url, timeout=60, stream=True,
-      headers=headers,
-  )
+  res = scraper.get(url, timeout=60, stream=True, headers=headers)
   res.raise_for_status()
   buf = BytesIO()
   if hasattr(res, "iter_content"):
@@ -2932,15 +2877,11 @@ async def _send_items(chat_id, items, caption):
   if len(items) == 1:
     kind, src = items[0]
     if kind == "video":
-      msg = await pyrogram_client.send_video(
-          chat_id, video=src, caption=caption, supports_streaming=True
-      )
+      msg = await pyrogram_client.send_video(chat_id, video=src, caption=caption, supports_streaming=True)
     else:
       msg = await pyrogram_client.send_photo(chat_id, photo=src, caption=caption)
     return [msg]
-  return await pyrogram_client.send_media_group(
-      chat_id, media=_build_input_media(items, caption)
-  )
+  return await pyrogram_client.send_media_group(chat_id, media=_build_input_media(items, caption))
 
 
 def _download_to_file(url, path, max_mb=50):
@@ -3190,7 +3131,7 @@ def build_done_keyboard():
 
 
 # ============================================================
-# অ্যালবাম আপলোড (বট) লজিক
+# Album upload (bot) logic
 # ============================================================
 MAX_ALBUM_FILES = 10
 album_drafts = {}
@@ -3515,15 +3456,18 @@ def _init_background_services_worker():
           newweb_sync_state["restoring"] = False
           print("[Newweb] could not start sync loop:", traceback.format_exc())
 
-        # NEW: kick off reels sync once at startup (best-effort)
+        # Kick off initial reels sync (best-effort)
         if CLOUDINARY_ENABLED and (telethon_reels_entity is not None):
           try:
             async def _initial_reels_sync():
               try:
                 result = await sync_reels_from_telegram(full=True)
                 print("[Reels] initial sync:", result)
+                reels_sync_state.update(result)
+                reels_sync_state["last_run"] = int(time.time())
               except Exception as exc:
                 print("[Reels] initial sync failed:", exc)
+                reels_sync_state["error"] = str(exc)
             asyncio.run_coroutine_threadsafe(_initial_reels_sync(), telethon_loop)
           except Exception:
             print("[Reels] could not schedule initial sync")
