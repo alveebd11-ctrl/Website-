@@ -8,3 +8,4 @@ cloudscraper
 beautifulsoup4
 gunicorn
 curl_cffi
+cloudinary
