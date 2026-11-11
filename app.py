@@ -1893,8 +1893,10 @@ def _legacy_albums():
   groups = {}
   with db_connect() as conn:
     rows = conn.execute(
-        "SELECT message_id, text, media_type FROM channel_posts "
-        "WHERE TRIM(COALESCE(text, '')) != '' ORDER BY message_id ASC"
+                "SELECT message_id, text, media_type FROM channel_posts "
+        "WHERE TRIM(COALESCE(text, '')) != '' "
+        "AND LOWER(COALESCE(text, '')) NOT LIKE '%#reels%' "
+        "ORDER BY message_id ASC"
     ).fetchall()
   for r in rows:
     title = _clean_title(r["text"])
