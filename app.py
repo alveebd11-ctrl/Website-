@@ -143,7 +143,13 @@ COLLECTION_INCLUDE_CAPTIONED = (
 if COLLECTION_INCLUDE_CAPTIONED:
   OC_WHERE = (
       "LOWER(COALESCE(text, '')) NOT LIKE '%" + WEBSITE_MARKER.lower() + "%' "
-      "AND LOWER(COALESCE(text, '')) NOT LIKE '%" + REELS_TAG_MARKER + "%'"
+      "AND LOWER(COALESCE(text, '')) NOT LIKE '%#reels%'"
+  )
+else:
+  OC_WHERE = (
+      "TRIM(COALESCE(text, '')) = '' "
+      "AND LOWER(COALESCE(text, '')) NOT LIKE '%#reels%'"
+  )
   )
 else:
   OC_WHERE = (
