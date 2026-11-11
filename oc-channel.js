@@ -1575,3 +1575,300 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
     else start();
 
 })();
+
+/* ==========================================
+   OC DESI CONTENT BUTTON
+   Animated replacement for Videos & Photos
+   ========================================== */
+
+(function () {
+    'use strict';
+
+    if (window.__ocDesiButtonLoaded) return;
+    window.__ocDesiButtonLoaded = true;
+
+    function addDesiButton() {
+
+        const heading = document.querySelector(
+            '#ocAlbumsHome .oc-al-head'
+        );
+
+        if (!heading) return;
+
+        if (document.getElementById('ocDesiContentBtn')) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'oc-desi-title-wrap';
+
+        const button = document.createElement('button');
+
+        button.type = 'button';
+        button.id = 'ocDesiContentBtn';
+        button.className = 'oc-desi-title-btn';
+
+        button.setAttribute(
+            'aria-label',
+            'Desi Content'
+        );
+
+        button.innerHTML = `
+            <span class="oc-desi-fire">🔥</span>
+            <span class="oc-desi-text">Desi Content</span>
+            <span class="oc-desi-fire">🔥</span>
+        `;
+
+        wrapper.appendChild(button);
+
+        heading.replaceWith(wrapper);
+
+        button.addEventListener('click', function () {
+
+            const grid = document.getElementById(
+                'ocAlbumsGrid'
+            );
+
+            if (grid) {
+                grid.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+
+        });
+    }
+
+    function injectDesiStyles() {
+
+        if (document.getElementById('oc-desi-button-styles')) {
+            return;
+        }
+
+        const style = document.createElement('style');
+
+        style.id = 'oc-desi-button-styles';
+
+        style.textContent = `
+
+        .oc-desi-title-wrap {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin: 12px 0 22px;
+        }
+
+        .oc-desi-title-btn {
+            position: relative;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 11px;
+
+            padding: 15px 25px;
+
+            border: 1.5px solid #e5a332;
+            border-radius: 17px;
+
+            background: linear-gradient(
+                135deg,
+                #21160b,
+                #422b12,
+                #21160b
+            );
+
+            color: #ffc45c;
+
+            font-family: inherit;
+            font-size: 21px;
+            font-weight: 850;
+            letter-spacing: .4px;
+
+            cursor: pointer;
+            overflow: hidden;
+
+            box-shadow:
+                0 0 10px rgba(255,166,40,.18),
+                inset 0 0 12px rgba(255,190,70,.08);
+
+            animation: ocDesiGlow 3s ease-in-out infinite;
+
+            transition:
+                transform .3s ease,
+                box-shadow .3s ease,
+                border-color .3s ease;
+        }
+
+        .oc-desi-title-btn::before {
+            content: "";
+
+            position: absolute;
+            top: -50%;
+            left: -100%;
+
+            width: 45%;
+            height: 200%;
+
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,.2),
+                transparent
+            );
+
+            transform: rotate(25deg);
+
+            animation: ocDesiShine 4s ease-in-out infinite;
+
+            pointer-events: none;
+        }
+
+        .oc-desi-fire {
+            display: inline-block;
+            font-size: 24px;
+
+            transform-origin: center bottom;
+
+            animation: ocDesiFire .8s ease-in-out infinite alternate;
+        }
+
+        .oc-desi-text {
+            position: relative;
+            z-index: 1;
+
+            text-shadow:
+                0 0 5px rgba(255,190,70,.5),
+                0 0 12px rgba(255,130,20,.3);
+        }
+
+        @keyframes ocDesiGlow {
+
+            0%, 100% {
+                box-shadow:
+                    0 0 10px rgba(255,166,40,.18);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 22px rgba(255,166,40,.42),
+                    0 0 35px rgba(255,100,0,.15);
+            }
+
+        }
+
+        @keyframes ocDesiFire {
+
+            0% {
+                transform: scale(1) rotate(-6deg);
+                filter: brightness(1);
+            }
+
+            50% {
+                transform: scale(1.18) rotate(5deg);
+                filter: brightness(1.3);
+            }
+
+            100% {
+                transform: scale(.96) rotate(-4deg);
+                filter: brightness(1.1);
+            }
+
+        }
+
+        @keyframes ocDesiShine {
+
+            0%, 65% {
+                left: -100%;
+            }
+
+            100% {
+                left: 160%;
+            }
+
+        }
+
+        .oc-desi-title-btn:hover {
+            transform: translateY(-3px) scale(1.035);
+
+            border-color: #ffd36a;
+
+            box-shadow:
+                0 0 22px rgba(255,166,40,.5),
+                0 0 40px rgba(255,100,0,.2);
+        }
+
+        .oc-desi-title-btn:active {
+            transform: scale(.96);
+        }
+
+        @media (max-width: 480px) {
+
+            .oc-desi-title-wrap {
+                margin: 10px 0 20px;
+            }
+
+            .oc-desi-title-btn {
+                padding: 13px 21px;
+                font-size: 19px;
+                gap: 9px;
+                border-radius: 15px;
+            }
+
+            .oc-desi-fire {
+                font-size: 22px;
+            }
+
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .oc-desi-title-btn,
+            .oc-desi-fire,
+            .oc-desi-title-btn::before {
+                animation: none !important;
+                transition: none !important;
+            }
+
+        }
+
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    function initialize() {
+
+        injectDesiStyles();
+
+        addDesiButton();
+
+        const observer = new MutationObserver(function () {
+            addDesiButton();
+        });
+
+        observer.observe(
+            document.body,
+            {
+                childList: true,
+                subtree: true
+            }
+        );
+
+    }
+
+    if (document.readyState === 'loading') {
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            initialize,
+            { once: true }
+        );
+
+    } else {
+
+        initialize();
+
+    }
+
+})();
+
