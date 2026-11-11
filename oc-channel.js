@@ -1575,10 +1575,10 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
     else start();
 
 })();
-
 /* ==========================================
-   OC DESI CONTENT BUTTON
-   Animated replacement for Videos & Photos
+   OC DESI CONTENT BUTTON  (HOT style)
+   Replaces the "Videos & Photos" heading
+   Compact size (like Subscribe), left aligned
    ========================================== */
 
 (function () {
@@ -1587,65 +1587,62 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
     if (window.__ocDesiButtonLoaded) return;
     window.__ocDesiButtonLoaded = true;
 
+    var FLAME_SVG =
+        '<svg class="oc-desi-flame-svg" viewBox="0 0 32 34" aria-hidden="true">' +
+        '<defs>' +
+        '<linearGradient id="ocDesiFlameGrad" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0" stop-color="#ffe45c"/>' +
+        '<stop offset=".55" stop-color="#ffa21f"/>' +
+        '<stop offset="1" stop-color="#ff5a0a"/>' +
+        '</linearGradient>' +
+        '</defs>' +
+        '<path fill="url(#ocDesiFlameGrad)" d="M16 2C16 2 22 8 22 15C22 16.5 21.5 18 21 19C23 17.5 24 15.5 24 14C27 17 28 20 28 22.5C28 27.5 23 31 16 31C9 31 4 27.5 4 22.5C4 18 7 14 10 11.5C10 14 11 15.5 12.5 16C11.5 11 13 6 16 2Z"/>' +
+        '<path fill="#fff" d="M16 15C18.5 18 20 20 20 22.5A4 4 0 0 1 12 22.5C12 20 13.5 18 16 15Z"/>' +
+        '</svg>';
+
     function addDesiButton() {
-
-        const heading = document.querySelector(
-            '#ocAlbumsHome .oc-al-head'
-        );
-
-        if (!heading) return;
 
         if (document.getElementById('ocDesiContentBtn')) return;
 
-        const wrapper = document.createElement('div');
+        var heading = document.querySelector('#ocAlbumsHome .oc-al-head');
+        if (!heading) return;
+
+        var wrapper = document.createElement('div');
         wrapper.className = 'oc-desi-title-wrap';
 
-        const button = document.createElement('button');
-
+        var button = document.createElement('button');
         button.type = 'button';
         button.id = 'ocDesiContentBtn';
         button.className = 'oc-desi-title-btn';
+        button.setAttribute('aria-label', 'Desi Content');
 
-        button.setAttribute(
-            'aria-label',
-            'Desi Content'
-        );
-
-        button.innerHTML = `
-            <span class="oc-desi-fire">🔥</span>
-            <span class="oc-desi-text">Desi Content</span>
-            <span class="oc-desi-fire">🔥</span>
-        `;
+        button.innerHTML =
+            '<span class="oc-desi-flame">' + FLAME_SVG + '</span>' +
+            '<span class="oc-desi-text">Desi Content</span>' +
+            '<span class="oc-desi-spark oc-desi-spark-1"></span>' +
+            '<span class="oc-desi-spark oc-desi-spark-2"></span>' +
+            '<span class="oc-desi-spark oc-desi-spark-3"></span>';
 
         wrapper.appendChild(button);
-
         heading.replaceWith(wrapper);
 
         button.addEventListener('click', function () {
-
-            const grid = document.getElementById(
-                'ocAlbumsGrid'
-            );
-
+            var grid = document.getElementById('ocAlbumsGrid');
             if (grid) {
-                grid.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
+                grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-
         });
     }
 
     function injectDesiStyles() {
 
-        if (document.getElementById('oc-desi-button-styles')) {
-            return;
+        var style = document.getElementById('oc-desi-button-styles');
+
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'oc-desi-button-styles';
+            document.head.appendChild(style);
         }
-
-        const style = document.createElement('style');
-
-        style.id = 'oc-desi-button-styles';
 
         style.textContent = `
 
@@ -1654,221 +1651,221 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            margin: 12px 0 22px;
+            margin: 10px 0 18px;
         }
 
         .oc-desi-title-btn {
             position: relative;
-
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 11px;
+            gap: 7px;
 
-            padding: 15px 25px;
+            height: 38px;
+            padding: 0 16px 0 10px;
 
-            border: 1.5px solid #e5a332;
-            border-radius: 17px;
+            border: 0;
+            border-radius: 999px;
 
-            background: linear-gradient(
-                135deg,
-                #21160b,
-                #422b12,
-                #21160b
-            );
+            background: linear-gradient(180deg, #ff9b2a 0%, #ff6a12 55%, #e8480a 100%);
 
-            color: #ffc45c;
-
+            color: #ffdc3d;
             font-family: inherit;
-            font-size: 21px;
-            font-weight: 850;
-            letter-spacing: .4px;
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: .5px;
+            line-height: 1;
+            white-space: nowrap;
 
             cursor: pointer;
             overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
 
+            /* 3D bottom edge like the HOT reference */
             box-shadow:
-                0 0 10px rgba(255,166,40,.18),
-                inset 0 0 12px rgba(255,190,70,.08);
+                0 3px 0 #b83a05,
+                0 6px 14px rgba(255, 106, 18, .45),
+                inset 0 1px 0 rgba(255, 255, 255, .45);
 
-            animation: ocDesiGlow 3s ease-in-out infinite;
+            animation:
+                ocDesiGlow 2.4s ease-in-out infinite,
+                ocDesiFloat 3s ease-in-out infinite;
 
-            transition:
-                transform .3s ease,
-                box-shadow .3s ease,
-                border-color .3s ease;
+            transition: transform .25s ease, filter .25s ease;
         }
 
-        .oc-desi-title-btn::before {
+        /* glossy top highlight */
+        .oc-desi-title-btn::after {
             content: "";
-
             position: absolute;
-            top: -50%;
-            left: -100%;
-
-            width: 45%;
-            height: 200%;
-
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255,255,255,.2),
-                transparent
-            );
-
-            transform: rotate(25deg);
-
-            animation: ocDesiShine 4s ease-in-out infinite;
-
+            top: 0;
+            left: 8%;
+            right: 8%;
+            height: 45%;
+            border-radius: 999px;
+            background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0));
             pointer-events: none;
         }
 
-        .oc-desi-fire {
-            display: inline-block;
-            font-size: 24px;
+        /* moving shine */
+        .oc-desi-title-btn::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -70%;
+            width: 40%;
+            height: 200%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+            transform: rotate(25deg);
+            animation: ocDesiShine 3.2s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
 
-            transform-origin: center bottom;
+        .oc-desi-flame {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            width: 22px;
+            height: 24px;
+            transform-origin: 50% 100%;
+            animation: ocDesiFlicker .7s ease-in-out infinite alternate;
+            filter: drop-shadow(0 0 4px rgba(255, 220, 60, .8));
+        }
 
-            animation: ocDesiFire .8s ease-in-out infinite alternate;
+        .oc-desi-flame-svg {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
 
         .oc-desi-text {
             position: relative;
             z-index: 1;
-
-            text-shadow:
-                0 0 5px rgba(255,190,70,.5),
-                0 0 12px rgba(255,130,20,.3);
+            text-transform: uppercase;
+            background: linear-gradient(90deg, #ffe45c 0%, #fff6b8 50%, #ffe45c 100%);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            animation: ocDesiTextShimmer 2.6s linear infinite;
+            filter: drop-shadow(0 1px 0 rgba(150, 40, 0, .6));
         }
+
+        /* rising embers */
+        .oc-desi-spark {
+            position: absolute;
+            bottom: 4px;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: #fff3a8;
+            box-shadow: 0 0 5px #ffd23a;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .oc-desi-spark-1 { left: 16px; animation: ocDesiSpark 1.8s ease-out infinite; }
+        .oc-desi-spark-2 { left: 26px; animation: ocDesiSpark 1.8s ease-out .6s infinite; }
+        .oc-desi-spark-3 { left: 38px; animation: ocDesiSpark 1.8s ease-out 1.2s infinite; }
 
         @keyframes ocDesiGlow {
-
             0%, 100% {
                 box-shadow:
-                    0 0 10px rgba(255,166,40,.18);
+                    0 3px 0 #b83a05,
+                    0 6px 12px rgba(255, 106, 18, .35),
+                    inset 0 1px 0 rgba(255, 255, 255, .45);
             }
-
             50% {
                 box-shadow:
-                    0 0 22px rgba(255,166,40,.42),
-                    0 0 35px rgba(255,100,0,.15);
+                    0 3px 0 #b83a05,
+                    0 6px 22px rgba(255, 140, 30, .75),
+                    0 0 28px rgba(255, 90, 10, .35),
+                    inset 0 1px 0 rgba(255, 255, 255, .45);
             }
-
         }
 
-        @keyframes ocDesiFire {
+        @keyframes ocDesiFloat {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-2px); }
+        }
 
-            0% {
-                transform: scale(1) rotate(-6deg);
-                filter: brightness(1);
-            }
-
-            50% {
-                transform: scale(1.18) rotate(5deg);
-                filter: brightness(1.3);
-            }
-
-            100% {
-                transform: scale(.96) rotate(-4deg);
-                filter: brightness(1.1);
-            }
-
+        @keyframes ocDesiFlicker {
+            0%   { transform: scale(1)    rotate(-5deg); filter: drop-shadow(0 0 3px rgba(255,220,60,.7)) brightness(1); }
+            50%  { transform: scale(1.14) rotate(4deg);  filter: drop-shadow(0 0 7px rgba(255,220,60,1))  brightness(1.2); }
+            100% { transform: scale(.96)  rotate(-3deg); filter: drop-shadow(0 0 4px rgba(255,220,60,.8)) brightness(1.05); }
         }
 
         @keyframes ocDesiShine {
-
-            0%, 65% {
-                left: -100%;
-            }
-
-            100% {
-                left: 160%;
-            }
-
+            0%, 60% { left: -70%; }
+            100%    { left: 150%; }
         }
 
-        .oc-desi-title-btn:hover {
-            transform: translateY(-3px) scale(1.035);
+        @keyframes ocDesiTextShimmer {
+            0%   { background-position: 0% 0; }
+            100% { background-position: -200% 0; }
+        }
 
-            border-color: #ffd36a;
-
-            box-shadow:
-                0 0 22px rgba(255,166,40,.5),
-                0 0 40px rgba(255,100,0,.2);
+        @keyframes ocDesiSpark {
+            0%   { transform: translateY(0) scale(1);    opacity: 0; }
+            15%  { opacity: 1; }
+            100% { transform: translateY(-26px) scale(.3); opacity: 0; }
         }
 
         .oc-desi-title-btn:active {
-            transform: scale(.96);
+            transform: translateY(2px) scale(.96);
+            box-shadow:
+                0 1px 0 #b83a05,
+                0 2px 8px rgba(255, 106, 18, .5),
+                inset 0 1px 0 rgba(255, 255, 255, .35);
         }
 
-        @media (max-width: 480px) {
-
-            .oc-desi-title-wrap {
-                margin: 10px 0 20px;
+        @media (hover: hover) {
+            .oc-desi-title-btn:hover {
+                filter: brightness(1.08);
+                transform: translateY(-2px) scale(1.04);
             }
-
-            .oc-desi-title-btn {
-                padding: 13px 21px;
-                font-size: 19px;
-                gap: 9px;
-                border-radius: 15px;
-            }
-
-            .oc-desi-fire {
-                font-size: 22px;
-            }
-
         }
 
         @media (prefers-reduced-motion: reduce) {
-
             .oc-desi-title-btn,
-            .oc-desi-fire,
-            .oc-desi-title-btn::before {
+            .oc-desi-title-btn::before,
+            .oc-desi-flame,
+            .oc-desi-text,
+            .oc-desi-spark {
                 animation: none !important;
                 transition: none !important;
             }
-
+            .oc-desi-spark { display: none; }
         }
 
         `;
-
-        document.head.appendChild(style);
     }
 
     function initialize() {
 
         injectDesiStyles();
-
         addDesiButton();
 
-        const observer = new MutationObserver(function () {
-            addDesiButton();
+        var queued = false;
+
+        var observer = new MutationObserver(function () {
+            if (queued) return;
+            queued = true;
+            requestAnimationFrame(function () {
+                queued = false;
+                addDesiButton();
+            });
         });
 
-        observer.observe(
-            document.body,
-            {
-                childList: true,
-                subtree: true
-            }
-        );
-
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 
     if (document.readyState === 'loading') {
-
-        document.addEventListener(
-            'DOMContentLoaded',
-            initialize,
-            { once: true }
-        );
-
+        document.addEventListener('DOMContentLoaded', initialize, { once: true });
     } else {
-
         initialize();
-
     }
 
 })();
-
