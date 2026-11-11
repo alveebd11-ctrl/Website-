@@ -52,6 +52,7 @@
         adLabel: 'ADVERTISEMENT',
         /* false = পুরনো চ্যানেল-পোস্ট ফিড বন্ধ; শুধু অ্যালবাম দেখাবে */
         showChannelFeed: false,
+        homeAlbumLimit: 10,
         brandText: '🫂🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀🫂♥️⟵꯭'
     };
 
@@ -70,6 +71,7 @@
 
     const albumCards = new Map();
     let albumsList = [];
+    let showAllHome = false;
     let albumsSig = '';
     let isFetchingAlbums = false;
     let albumsTimer = null;
@@ -654,12 +656,11 @@
 
     function ensureSentinel() {
         const container = getContainer();
-        let sentinel = container.querySelector('.oc-feed-sentinel');
-        if (!sentinel) {
-            sentinel = document.createElement('div');
-            sentinel.className = 'oc-feed-sentinel';
-            container.appendChild(sentinel);
-        }
+        let sentinel = document.createElement('div');
+        const existing = container.querySelector('.oc-feed-sentinel');
+        if (existing) return existing;
+        sentinel.className = 'oc-feed-sentinel';
+        container.appendChild(sentinel);
         return sentinel;
     }
 
@@ -840,6 +841,20 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
 .oc-lb-prev{left:10px;top:50%;transform:translateY(-50%);}
 .oc-lb-next{right:10px;top:50%;transform:translateY(-50%);}
 .oc-lb-count{position:absolute;top:calc(env(safe-area-inset-top,0px) + 22px);left:0;right:0;text-align:center;font-size:13px;font-weight:600;color:#e5e7eb;pointer-events:none;}
+.oc-al-more{margin-top:18px;}
+.oc-al-more-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.oc-al-ghost{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;cursor:pointer;
+background:rgba(255,255,255,.05);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:13px;font-weight:600;transition:border-color .2s ease;}
+.oc-al-ghost:hover{border-color:rgba(255,255,255,.4);}
+.oc-al-ghost[hidden]{display:none !important;}
+.oc-al-ghost svg{width:16px;height:16px;animation:ocAlFloat 1.6s ease-in-out infinite;}
+@keyframes ocAlFloat{50%{transform:translateY(-3px);}}
+.oc-al-flag{display:flex;width:100%;height:10px;border-radius:2px;overflow:hidden;background:transparent;}
+.oc-al-flag i{flex:1;display:block;}
+.oc-al-flag i:nth-child(1){background:#008C45;}
+.oc-al-flag i:nth-child(2){background:#F4F5F0;}
+.oc-al-flag i:nth-child(3){background:#CD212A;}
 @media (min-width:720px){.oc-al-grid{gap:14px;}}
 @media (prefers-reduced-motion: reduce){.oc-al-thumb{animation:none !important;}.oc-al-card{transition:none !important;}}
 `;
@@ -909,6 +924,15 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         home.innerHTML =
             '<h2 class="oc-al-head">Videos &amp; Photos</h2>' +
             '<div class="oc-al-grid" id="ocAlbumsGrid"><div class="oc-al-state">Loading...</div></div>' +
+            '<div class="oc-al-more" id="ocAlMore">' +
+                '<div class="oc-al-more-row">' +
+                    '<button class="oc-al-ghost" id="ocAlNewDesi" type="button">' +
+                        '<svg viewBox="0 0 24 24"><defs><linearGradient id="ocNdG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd35a"/><stop offset="1" stop-color="#ff4d8d"/></linearGradient></defs><path fill="url(#ocNdG)" d="M12 2l2.4 6.2L21 9l-5 4.3L17.5 20 12 16.6 6.5 20 8 13.3 3 9l6.6-.8z"/></svg>New Desi Collection' +
+                    '</button>' +
+                    '<button class="oc-al-ghost" id="ocAlSeeAll" type="button">See More All</button>' +
+                '</div>' +
+                '<div class="oc-al-flag"><i></i><i></i><i></i></div>' +
+            '</div>' +
             '<div class="oc-al-sep" id="ocFeedSep" hidden>Latest Posts</div>';
 
         const view = document.createElement('section');
@@ -1020,6 +1044,11 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         byId('ocAlTabV').addEventListener('click', function () { setTab('video'); });
         byId('ocAlTabP').addEventListener('click', function () { setTab('photo'); });
         bindShuffle();
+        byId('ocAlSeeAll').addEventListener('click', function () {
+            showAllHome = true;
+            applySearch();
+            updateSeeAll();
+        });
 
         byId('ocLbClose').addEventListener('click', closeLightbox);
         byId('ocLbPrev').addEventListener('click', function () { stepLightbox(-1); });
@@ -1120,6 +1149,7 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
             const card = document.createElement('article');
             card.className = 'oc-al-card';
             card.dataset.metadata = String(a.title || '').toLowerCase();
+            if (i >= CONFIG.homeAlbumLimit) card.classList.add('oc-al-extra');
             const thumb = makeAlThumb(a.cover, i < 6);
             const label = albumCountLabel(a);
             if (label) {
@@ -1140,12 +1170,18 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         grid.appendChild(frag);
         applySearch();
         updateFeedSep();
+        updateSeeAll();
     }
 
     function updateFeedSep() {
         const sep = byId('ocFeedSep');
         if (!sep) return;
         sep.hidden = !(albumsList.length && mediaCards.size);
+    }
+
+    function updateSeeAll() {
+        const btn = byId('ocAlSeeAll');
+        if (btn) btn.hidden = showAllHome || albumsList.length <= CONFIG.homeAlbumLimit;
     }
 
     async function fetchAlbums(silent) {
@@ -1415,7 +1451,7 @@ background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);backdrop-
         mediaCards.forEach(c => { c.hidden = q ? !c.dataset.metadata.includes(q) : false; });
         let visible = 0;
         albumCards.forEach(c => {
-            const hide = q ? !c.dataset.metadata.includes(q) : false;
+            const hide = q ? !c.dataset.metadata.includes(q) : (c.classList.contains('oc-al-extra') && !showAllHome);
             c.hidden = hide;
             if (!hide) visible++;
         });
