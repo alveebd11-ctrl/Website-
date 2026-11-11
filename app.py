@@ -141,9 +141,15 @@ COLLECTION_INCLUDE_CAPTIONED = (
 )
 
 if COLLECTION_INCLUDE_CAPTIONED:
-  OC_WHERE = "LOWER(COALESCE(text, '')) NOT LIKE '%" + WEBSITE_MARKER.lower() + "%'"
+  OC_WHERE = (
+      "LOWER(COALESCE(text, '')) NOT LIKE '%" + WEBSITE_MARKER.lower() + "%' "
+      "AND LOWER(COALESCE(text, '')) NOT LIKE '%" + REELS_TAG_MARKER + "%'"
+  )
 else:
-  OC_WHERE = "TRIM(COALESCE(text, '')) = ''"
+  OC_WHERE = (
+      "TRIM(COALESCE(text, '')) = '' "
+      "AND LOWER(COALESCE(text, '')) NOT LIKE '%" + REELS_TAG_MARKER + "%'"
+  )
 PRECACHE_MEDIA = os.environ.get("PRECACHE_MEDIA", "0").strip() == "1"
 STREAM_REQUEST_SIZE = 512 * 1024
 MSG_CACHE_TTL = 600
