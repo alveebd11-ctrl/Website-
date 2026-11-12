@@ -1,4 +1,4 @@
-/* oc-enhanced-client v2.4 — অ্যালবামে ক্লিক করলে Photos আগে খোলে; ট্যাবের নাম Videos;
+/* oc-enhanced-client v2.5 — অ্যালবামে ক্লিক করলে Photos আগে খোলে; ট্যাবের নাম Videos;
    হেডারের ব্যাক বাটন অ্যালবাম থেকে লোডিং ছাড়া লিস্টে ফেরায়; হেডার নিচে স্ক্রলে সরে যায়;
    See More All চাপলে Prev/1/2/Next পেজিনেশন (প্রতি পেজে ১০টি অ্যালবাম, লোডিং ছাড়া) */
 (function () {
@@ -1243,9 +1243,9 @@ transition:transform .15s ease,background .2s ease,box-shadow .2s ease;-webkit-t
 
         inner.appendChild(mk('oc-pg-nav', chevL + 'Prev', homePage - 1, homePage <= 1));
 
-        let end = Math.min(pages, Math.max(1, homePage - 2) + 4);
-                let end = Math.min(pages, Math.max(1, homePage - 1) + 2);
+        let end = Math.min(pages, Math.max(1, homePage - 1) + 2);
         let start = Math.max(1, end - 2);
+        for (let p = start; p <= end; p++) {
             const b = mk('oc-pg-num' + (p === homePage ? ' active' : ''), String(p), p, false);
             if (p === homePage) b.setAttribute('aria-current', 'page');
             inner.appendChild(b);
@@ -1952,4 +1952,3 @@ transition:transform .15s ease,background .2s ease,box-shadow .2s ease;-webkit-t
     }
 
 })();
-89
