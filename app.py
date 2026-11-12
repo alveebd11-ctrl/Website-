@@ -468,9 +468,111 @@ def init_db():
                 synced_at TEXT
             )
         """)
+    # album thumbnail cache (Cloudinary)
+    conn.execute("""
+            CREATE TABLE IF NOT EXISTS album_thumbs (
+                message_id INTEGER PRIMARY KEY,
+                cloud_url TEXT,
+                synced_at TEXT
+            )
+        """)
     conn.commit()
 
 
+# ------------------------------------------------------------
+# DB BACKUP / RESTORE (Cloudinary) — ডিপ্লয়ে ডেটাবেস মুছে গেলে ফিরিয়ে আনে
+# ------------------------------------------------------------
+DB_BACKUP_PUBLIC_ID = "alvee_backup/chat_db_backup.bin"
+_last_backup_md5 = ""
+
+
+def _restore_db_from_cloudinary():
+  try:
+    if not CLOUDINARY_CLOUD_NAME:
+      return
+    if DB_PATH.exists() and DB_PATH.stat().st_size > 8192:
+      return
+    import gzip
+    url = f"https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/raw/upload/{DB_BACKUP_PUBLIC_ID}"
+    r = requests.get(url, timeout=60)
+    if r.status_code != 200 or not r.content:
+      print("[Backup] no cloud backup found (HTTP", r.status_code, ")")
+      return
+    data = gzip.decompress(r.content)
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(DB_PATH, "wb") as f:
+      f.write(data)
+    print("[Backup] database restored from Cloudinary:", len(data), "bytes")
+  except Exception as exc:
+    print("[Backup] restore failed:", exc)
+
+
+def _backup_db_to_cloudinary():
+  global _last_backup_md5
+  if not CLOUDINARY_ENABLED or cloudinary is None:
+    return False
+  try:
+    import gzip
+    import tempfile
+    import cloudinary.uploader as _cu
+
+    # খালি/নতুন ডেটাবেস দিয়ে ভালো ব্যাকআপ যেন ওভাররাইট না হয়
+    with db_connect() as conn:
+      n = conn.execute("SELECT COUNT(*) FROM website_albums").fetchone()[0]
+    if not n:
+      return False
+
+    fd, tmp = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+      src = sqlite3.connect(str(DB_PATH), timeout=30)
+      dst = sqlite3.connect(tmp)
+      src.backup(dst)
+      dst.close()
+      src.close()
+      with open(tmp, "rb") as f:
+        raw = f.read()
+    finally:
+      try:
+        os.remove(tmp)
+      except Exception:
+        pass
+
+    md5 = hashlib.md5(raw).hexdigest()
+    if md5 == _last_backup_md5:
+      return False
+
+    blob = gzip.compress(raw, 6)
+    if len(blob) > 9 * 1024 * 1024:
+      print("[Backup] database too large for Cloudinary raw upload:", len(blob))
+      return False
+
+    _cu.upload(
+        BytesIO(blob),
+        public_id=DB_BACKUP_PUBLIC_ID,
+        resource_type="raw",
+        overwrite=True,
+        invalidate=True,
+    )
+    _last_backup_md5 = md5
+    print("[Backup] database backed up to Cloudinary:", len(blob), "bytes")
+    return True
+  except Exception as exc:
+    print("[Backup] backup failed:", exc)
+    return False
+
+
+def _db_backup_loop():
+  time.sleep(180)
+  while True:
+    try:
+      _backup_db_to_cloudinary()
+    except Exception:
+      print("[Backup] loop error:", traceback.format_exc())
+    time.sleep(600)
+
+
+_restore_db_from_cloudinary()
 init_db()
 
 
@@ -1465,6 +1567,202 @@ async def _generate_and_upload_reel_thumb(message_id: int, kind: str = "reels", 
   return None
 
 
+# ============================================================
+# ALBUM THUMBS → Cloudinary (একবার আপলোড, পরে Cloudinary CDN থেকে)
+# ============================================================
+
+album_thumb_state = {
+    "running": False,
+    "uploaded": 0,
+    "skipped": 0,
+    "errors": 0,
+    "last_run": 0,
+    "cloudinary": CLOUDINARY_ENABLED,
+}
+_album_thumb_uploading = set()
+_album_thumb_lock = threading.Lock()
+
+
+def _get_album_thumb(message_id):
+  try:
+    with db_connect() as conn:
+      row = conn.execute(
+          "SELECT cloud_url FROM album_thumbs WHERE message_id = ?",
+          (int(message_id),),
+      ).fetchone()
+    return row["cloud_url"] if row and row["cloud_url"] else None
+  except Exception:
+    return None
+
+
+def _load_album_thumb_map():
+  try:
+    with db_connect() as conn:
+      rows = conn.execute(
+          "SELECT message_id, cloud_url FROM album_thumbs "
+          "WHERE cloud_url IS NOT NULL AND cloud_url != ''"
+      ).fetchall()
+    return {int(r["message_id"]): r["cloud_url"] for r in rows}
+  except Exception:
+    return {}
+
+
+def _thumb_or_proxy(message_id, tmap=None):
+  """Cloudinary লিংক থাকলে সেটা, না থাকলে Telegram প্রক্সি লিংক।"""
+  mid = int(message_id)
+  url = (tmap or {}).get(mid)
+  return url or f"/api/channel/thumb/{mid}"
+
+
+def _upload_album_thumb_bytes(message_id, data):
+  """থাম্বেলের bytes Cloudinary-তে আপলোড করে URL সেভ করে (sync ফাংশন)।"""
+  if not CLOUDINARY_ENABLED or cloudinary is None or not data:
+    return None
+  mid = int(message_id)
+  with _album_thumb_lock:
+    if mid in _album_thumb_uploading:
+      return None
+    _album_thumb_uploading.add(mid)
+  try:
+    import cloudinary.uploader as _cu
+    result = _cu.upload(
+        BytesIO(data),
+        public_id=f"alvee_album_thumbs/m{mid}",
+        resource_type="image",
+        overwrite=False,
+        unique_filename=False,
+        use_filename=False,
+        invalidate=False,
+        transformation=[
+            {"width": 720, "crop": "limit"},
+            {"quality": "auto:good", "fetch_format": "auto"},
+        ],
+    )
+    url = result.get("secure_url")
+    if url:
+      with db_connect() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO album_thumbs (message_id, cloud_url, synced_at) VALUES (?, ?, ?)",
+            (mid, url, datetime.now(timezone.utc).isoformat()),
+        )
+        conn.commit()
+      return url
+  except Exception as exc:
+    print(f"[AlbumThumbs] upload failed for {mid}: {exc}")
+  finally:
+    with _album_thumb_lock:
+      _album_thumb_uploading.discard(mid)
+  return None
+
+
+def _cloud_thumb_exists(mid):
+  """Cloudinary-তে আগে থেকে থাকলে ডেটাবেসে লিংক সেভ করে True দেয়।"""
+  if not CLOUDINARY_CLOUD_NAME:
+    return False
+  url = f"https://res.cloudinary.com/{CLOUDINARY_CLOUD_NAME}/image/upload/alvee_album_thumbs/m{int(mid)}"
+  try:
+    r = requests.head(url, timeout=10, allow_redirects=True)
+    if r.status_code == 200:
+      with db_connect() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO album_thumbs (message_id, cloud_url, synced_at) VALUES (?, ?, ?)",
+            (int(mid), url, datetime.now(timezone.utc).isoformat()),
+        )
+        conn.commit()
+      return True
+  except Exception:
+    pass
+  return False
+
+
+def _album_thumb_targets():
+  """কোন কোন মেসেজের থাম্বেল আপলোড করতে হবে (আগে কভার, চাইলে সব আইটেম)।"""
+  ids = []
+  seen = set()
+
+  def add(x):
+    try:
+      x = int(x)
+    except (TypeError, ValueError):
+      return
+    if x and x not in seen:
+      seen.add(x)
+      ids.append(x)
+
+  with db_connect() as conn:
+    rows = conn.execute(
+        "SELECT a.cover_id AS c, MIN(i.message_id) AS f "
+        "FROM website_albums a JOIN website_album_items i ON i.slug = a.slug "
+        "GROUP BY a.slug ORDER BY MAX(i.message_id) DESC"
+    ).fetchall()
+    for r in rows:
+      add(r["c"] or r["f"])
+
+  try:
+    for g in _legacy_albums().values():
+      if g["items"]:
+        add(g["items"][0][0])
+  except Exception:
+    pass
+
+  # ALBUM_THUMBS_ALL=1 দিলে অ্যালবামের ভেতরের সব ছবি/ভিডিওর থাম্বেলও আপলোড হবে
+  if os.environ.get("ALBUM_THUMBS_ALL", "0").strip() == "1":
+    with db_connect() as conn:
+      for r in conn.execute(
+          "SELECT message_id FROM website_album_items ORDER BY message_id DESC"
+      ).fetchall():
+        add(r["message_id"])
+
+  return ids
+
+
+async def sync_album_thumbs_to_cloud():
+  st = album_thumb_state
+  if st["running"]:
+    return
+  st.update(running=True, uploaded=0, skipped=0, errors=0)
+  try:
+    targets = await asyncio.to_thread(_album_thumb_targets)
+    cached = await asyncio.to_thread(_load_album_thumb_map)
+    for mid in targets:
+      if mid in cached:
+        st["skipped"] += 1
+        continue
+      if await asyncio.to_thread(_cloud_thumb_exists, mid):
+        st["skipped"] += 1
+        continue
+      row, row_kind = await asyncio.to_thread(find_media_row, mid, "")
+      if not row:
+        continue
+      real_id, kind = mid, row_kind
+      if mid >= NEWWEB_ID_OFFSET:
+        real_id, kind = mid - NEWWEB_ID_OFFSET, "newweb"
+      data = await get_post_thumb_bytes(real_id, kind)
+      if not data:
+        st["errors"] += 1
+        continue
+      url = await asyncio.to_thread(_upload_album_thumb_bytes, mid, data)
+      if url:
+        st["uploaded"] += 1
+      else:
+        st["errors"] += 1
+      await asyncio.sleep(0.3)
+  finally:
+    st["running"] = False
+    st["last_run"] = int(time.time())
+
+
+async def _album_thumbs_loop():
+  await asyncio.sleep(60)
+  while True:
+    try:
+      if CLOUDINARY_ENABLED and telethon_reader_client:
+        await sync_album_thumbs_to_cloud()
+    except Exception:
+      print("[AlbumThumbs] loop error:", traceback.format_exc())
+    await asyncio.sleep(300)
+
+
 async def sync_reels_from_telegram(full: bool = False, limit: Optional[int] = None):
   """
   Iterate all messages in the reels channel, keep only videos whose caption
@@ -1880,11 +2178,11 @@ def _clean_title(text):
   return re.sub(re.escape(WEBSITE_MARKER), "", text or "", flags=re.IGNORECASE).strip()
 
 
-def _item_json(mid, media_type):
+def _item_json(mid, media_type, tmap=None):
   return {
       "id": str(mid),
       "type": "video" if media_type in ("video", "animation") else "photo",
-      "thumb": f"/api/channel/thumb/{mid}",
+      "thumb": _thumb_or_proxy(mid, tmap),
       "media": f"/api/channel/media/{mid}",
   }
 
@@ -1923,13 +2221,14 @@ def albums_api():
           GROUP BY a.slug
           """
       ).fetchall()
+    tmap = _load_album_thumb_map()
     for r in rows:
       n, v = int(r["n"] or 0), int(r["v"] or 0)
       albums.append({
           "slug": r["slug"],
           "title": _clean_title(r["title"]) or r["slug"],
           "count": n, "videos": v, "photos": n - v,
-          "cover": f"/api/channel/thumb/{r['cover_id'] or r['first_id']}",
+          "cover": _thumb_or_proxy(r['cover_id'] or r['first_id'], tmap),
           "_key": (-int(r["last_id"] or 0),),
       })
     for slug, g in _legacy_albums().items():
@@ -1938,7 +2237,7 @@ def albums_api():
       albums.append({
           "slug": slug, "title": g["title"],
           "count": len(items), "videos": v, "photos": len(items) - v,
-          "cover": f"/api/channel/thumb/{items[0][0]}",
+          "cover": _thumb_or_proxy(items[0][0], tmap),
           "_key": (-max(m for m, _ in items),),
       })
     albums.sort(key=lambda a: a["_key"])
@@ -1966,19 +2265,20 @@ def album_items_api(slug):
           "SELECT message_id, media_type FROM website_album_items WHERE slug = ? ORDER BY pos ASC, message_id ASC",
           (slug,),
       ).fetchall()
+    tmap = _load_album_thumb_map()
     if head and rows:
       return jsonify({
           "ok": True,
           "title": _clean_title(head["title"]) or slug,
-          "cover": f"/api/channel/thumb/{head['cover_id'] or rows[0]['message_id']}",
-          "items": [_item_json(r["message_id"], r["media_type"]) for r in rows],
+          "cover": _thumb_or_proxy(head['cover_id'] or rows[0]['message_id'], tmap),
+          "items": [_item_json(r["message_id"], r["media_type"], tmap) for r in rows],
       })
     g = _legacy_albums().get(slug)
     if g:
       return jsonify({
           "ok": True, "title": g["title"],
-          "cover": f"/api/channel/thumb/{g['items'][0][0]}",
-          "items": [_item_json(m, t) for m, t in g["items"]],
+          "cover": _thumb_or_proxy(g['items'][0][0], tmap),
+          "items": [_item_json(m, t, tmap) for m, t in g["items"]],
       })
     return jsonify({"ok": False, "items": []}), 404
   except Exception:
@@ -2437,6 +2737,28 @@ def reels_sync_status():
   return jsonify(dict(reels_sync_state))
 
 
+@app.route("/api/albums/thumbs/sync", methods=["POST"])
+def album_thumbs_sync_start():
+  ok = _admin_key_status()
+  if ok is None:
+    return jsonify({"ok": False, "code": 503, "error": "ADMIN_SYNC_KEY is not set on the server"}), 503
+  if not ok:
+    return jsonify({"ok": False, "code": 401, "error": "Invalid admin key"}), 401
+  if not CLOUDINARY_ENABLED:
+    return jsonify({"ok": False, "code": 503, "error": "Cloudinary credentials not configured"}), 503
+  if not telethon_reader_client:
+    return jsonify({"ok": False, "code": 503, "error": "Telethon not connected"}), 503
+  if album_thumb_state["running"]:
+    return jsonify({"ok": True, "running": True, "already": True})
+  asyncio.run_coroutine_threadsafe(sync_album_thumbs_to_cloud(), telethon_loop)
+  return jsonify({"ok": True, "running": True})
+
+
+@app.route("/api/albums/thumbs/status", methods=["GET"])
+def album_thumbs_status():
+  return jsonify(dict(album_thumb_state))
+
+
 @app.route("/api/upload-link", methods=["GET"])
 def upload_link_api():
   return jsonify({
@@ -2540,6 +2862,13 @@ def stream_telegram_media(message_id, kind, size, mime):
 @app.route("/api/channel/thumb/<int:message_id>", methods=["GET"])
 def get_channel_thumb(message_id):
   try:
+    # Cloudinary-তে থাকলে সরাসরি সেখানে পাঠায়
+    cloud = _get_album_thumb(message_id)
+    if cloud:
+      resp = redirect(cloud, code=302)
+      resp.headers["Cache-Control"] = "public, max-age=86400"
+      return resp
+
     row, row_kind = find_media_row(message_id, request.args.get("kind", ""))
     if not row:
       return "", 404
@@ -2550,6 +2879,15 @@ def get_channel_thumb(message_id):
     content = run_async(get_post_thumb_bytes(real_id, row_kind), timeout=60)
     if not content:
       return "", 404
+
+    # প্রথমবার: ব্যাকগ্রাউন্ডে Cloudinary-তে আপলোড, পরেরবার সেখান থেকেই আসবে
+    if CLOUDINARY_ENABLED:
+      threading.Thread(
+          target=_upload_album_thumb_bytes,
+          args=(message_id, content),
+          daemon=True,
+      ).start()
+
     return Response(
         content, status=200, mimetype="image/jpeg",
         headers={"Cache-Control": "public, max-age=604800"},
@@ -3222,6 +3560,13 @@ async def _album_save(callback_query):
     await asyncio.to_thread(_set_cover_id, slug, cover_msg.id)
     await asyncio.to_thread(_mark_slug_done, slug)
 
+    # নতুন অ্যালবামের থাম্বেল সঙ্গে সঙ্গে Cloudinary-তে আপলোড শুরু
+    try:
+      if CLOUDINARY_ENABLED and telethon_reader_client:
+        asyncio.run_coroutine_threadsafe(sync_album_thumbs_to_cloud(), telethon_loop)
+    except Exception:
+      pass
+
     v = sum(1 for m in sent if getattr(m, "video", None))
     confirm = (
         "✅ Album upload complete\n"
@@ -3464,6 +3809,12 @@ def _init_background_services_worker():
           newweb_sync_state["restoring"] = False
           print("[Newweb] could not start sync loop:", traceback.format_exc())
 
+        # Album thumbnails → Cloudinary (background loop)
+        try:
+          asyncio.run_coroutine_threadsafe(_album_thumbs_loop(), telethon_loop)
+        except Exception:
+          print("[AlbumThumbs] could not start loop")
+
         # Kick off initial reels sync (best-effort)
         if CLOUDINARY_ENABLED and (telethon_reels_entity is not None):
           try:
@@ -3516,6 +3867,7 @@ def start_background_services():
   )
   startup_thread.start()
   threading.Thread(target=_keepalive_loop, name="keepalive", daemon=True).start()
+  threading.Thread(target=_db_backup_loop, name="db-backup", daemon=True).start()
 
 
 start_background_services()
