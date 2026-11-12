@@ -1,5 +1,6 @@
-/* oc-enhanced-client v2.3 — অ্যালবামে ক্লিক করলে Photos আগে খোলে; ট্যাবের নাম Videos;
-   হেডারের ব্যাক বাটন অ্যালবাম থেকে লোডিং ছাড়া লিস্টে ফেরায়; হেডার নিচে স্ক্রলে সরে যায় */
+/* oc-enhanced-client v2.4 — অ্যালবামে ক্লিক করলে Photos আগে খোলে; ট্যাবের নাম Videos;
+   হেডারের ব্যাক বাটন অ্যালবাম থেকে লোডিং ছাড়া লিস্টে ফেরায়; হেডার নিচে স্ক্রলে সরে যায়;
+   See More All চাপলে Prev/1/2/Next পেজিনেশন (প্রতি পেজে ১০টি অ্যালবাম, লোডিং ছাড়া) */
 (function () {
     'use strict';
     if (window.__ocEnhancedV2Loaded) return;
@@ -52,6 +53,7 @@
         adLabel: 'ADVERTISEMENT',
         /* false = পুরনো চ্যানেল-পোস্ট ফিড বন্ধ; শুধু অ্যালবাম দেখাবে */
         showChannelFeed: false,
+        /* প্রতি পেজে কয়টি অ্যালবাম দেখাবে */
         homeAlbumLimit: 10,
         brandText: '🫂🖤༏ـ꯭ـ꯭🇦𝙇𝙑𝙀𝙀🫂♥️⟵꯭'
     };
@@ -72,6 +74,8 @@
     const albumCards = new Map();
     let albumsList = [];
     let showAllHome = false;
+    let homePage = 1;
+    let pagerOpen = false;
     let albumsSig = '';
     let isFetchingAlbums = false;
     let albumsTimer = null;
@@ -855,8 +859,21 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
 .oc-al-flag i:nth-child(1){background:#008C45;}
 .oc-al-flag i:nth-child(2){background:#F4F5F0;}
 .oc-al-flag i:nth-child(3){background:#CD212A;}
+.oc-al-pager{display:grid;grid-template-rows:0fr;opacity:0;transform:translateY(-8px);margin-top:0;pointer-events:none;
+transition:grid-template-rows .45s cubic-bezier(.4,0,.2,1),opacity .35s ease,transform .45s cubic-bezier(.4,0,.2,1),margin-top .45s ease;}
+.oc-al-pager.open{grid-template-rows:1fr;opacity:1;transform:none;margin-top:16px;pointer-events:auto;}
+.oc-al-pager-in{min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:6px 0 14px;}
+.oc-pg{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;color:#e5e7eb;
+background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;
+transition:transform .15s ease,background .2s ease,box-shadow .2s ease;-webkit-tap-highlight-color:transparent;}
+.oc-pg:active{transform:scale(.93);}
+.oc-pg-num{width:48px;height:48px;}
+.oc-pg-nav{height:48px;padding:0 18px;}
+.oc-pg-nav svg{width:16px;height:16px;}
+.oc-pg.active{background:#4b3bff;border-color:#7a6dff;color:#fff;box-shadow:0 0 22px rgba(75,59,255,.6);}
+.oc-pg[disabled]{opacity:.4;cursor:default;pointer-events:none;}
 @media (min-width:720px){.oc-al-grid{gap:14px;}}
-@media (prefers-reduced-motion: reduce){.oc-al-thumb{animation:none !important;}.oc-al-card{transition:none !important;}}
+@media (prefers-reduced-motion: reduce){.oc-al-thumb{animation:none !important;}.oc-al-card{transition:none !important;}.oc-al-pager,.oc-pg{transition:none !important;}}
 `;
             (document.head || document.documentElement).appendChild(st);
         } catch (e) { }
@@ -931,6 +948,7 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
                     '</button>' +
                     '<button class="oc-al-ghost" id="ocAlSeeAll" type="button">See More All</button>' +
                 '</div>' +
+                '<div class="oc-al-pager" id="ocAlPager"><div class="oc-al-pager-in" id="ocAlPagerIn"></div></div>' +
                 '<div class="oc-al-flag"><i></i><i></i><i></i></div>' +
             '</div>' +
             '<div class="oc-al-sep" id="ocFeedSep" hidden>Latest Posts</div>';
@@ -1046,8 +1064,14 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
         bindShuffle();
         byId('ocAlSeeAll').addEventListener('click', function () {
             showAllHome = true;
+            pagerOpen = true;
+            renderPager();
             applySearch();
             updateSeeAll();
+            window.setTimeout(function () {
+                const p = byId('ocAlPager');
+                if (p) p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 380);
         });
 
         byId('ocLbClose').addEventListener('click', closeLightbox);
@@ -1149,8 +1173,8 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
             const card = document.createElement('article');
             card.className = 'oc-al-card';
             card.dataset.metadata = String(a.title || '').toLowerCase();
-            if (i >= CONFIG.homeAlbumLimit) card.classList.add('oc-al-extra');
-            const thumb = makeAlThumb(a.cover, i < 6);
+            card.dataset.page = String(Math.floor(i / CONFIG.homeAlbumLimit) + 1);
+            const thumb = makeAlThumb(a.cover, true);
             const label = albumCountLabel(a);
             if (label) {
                 const badge = document.createElement('div');
@@ -1168,9 +1192,67 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
             frag.appendChild(card);
         });
         grid.appendChild(frag);
+        if (homePage > totalPages()) homePage = totalPages();
+        renderPager();
         applySearch();
         updateFeedSep();
         updateSeeAll();
+    }
+
+    /* ---------------- Pagination (প্রতি পেজে ১০টি অ্যালবাম) ---------------- */
+    function totalPages() {
+        return Math.max(1, Math.ceil(albumsList.length / CONFIG.homeAlbumLimit));
+    }
+
+    function updatePager() {
+        const pager = byId('ocAlPager');
+        if (!pager) return;
+        pager.classList.toggle('open', pagerOpen && !currentSearchQuery && totalPages() > 1);
+    }
+
+    /* তাৎক্ষণিক পেজ বদল: কোনো ফেড, দেরি বা লোডিং নেই */
+    function goPage(n) {
+        n = Math.min(Math.max(1, n), totalPages());
+        if (n === homePage) return;
+        homePage = n;
+        applySearch();
+        renderPager();
+        const grid = byId('ocAlbumsGrid');
+        if (grid) grid.scrollIntoView({ block: 'start' });
+    }
+
+    function renderPager() {
+        const inner = byId('ocAlPagerIn');
+        if (!inner) return;
+        const pages = totalPages();
+        if (homePage > pages) homePage = pages;
+        inner.innerHTML = '';
+
+        function mk(cls, html, page, disabled) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'oc-pg ' + cls;
+            b.innerHTML = html;
+            if (disabled) b.disabled = true;
+            b.addEventListener('click', function () { goPage(page); });
+            return b;
+        }
+
+        const chevL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
+        const chevR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+
+        inner.appendChild(mk('oc-pg-nav', chevL + 'Prev', homePage - 1, homePage <= 1));
+
+        let end = Math.min(pages, Math.max(1, homePage - 2) + 4);
+        let start = Math.max(1, end - 4);
+        for (let p = start; p <= end; p++) {
+            const b = mk('oc-pg-num' + (p === homePage ? ' active' : ''), String(p), p, false);
+            if (p === homePage) b.setAttribute('aria-current', 'page');
+            inner.appendChild(b);
+        }
+
+        inner.appendChild(mk('oc-pg-nav', 'Next' + chevR, homePage + 1, homePage >= pages));
+        updatePager();
     }
 
     function updateFeedSep() {
@@ -1448,10 +1530,11 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
 
     function applySearch() {
         const q = currentSearchQuery;
+        updatePager();
         mediaCards.forEach(c => { c.hidden = q ? !c.dataset.metadata.includes(q) : false; });
         let visible = 0;
         albumCards.forEach(c => {
-            const hide = q ? !c.dataset.metadata.includes(q) : (c.classList.contains('oc-al-extra') && !showAllHome);
+            const hide = q ? !c.dataset.metadata.includes(q) : (Number(c.dataset.page) !== homePage);
             c.hidden = hide;
             if (!hide) visible++;
         });
@@ -1869,3 +1952,4 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
     }
 
 })();
+89
