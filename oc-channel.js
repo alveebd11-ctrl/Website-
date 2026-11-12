@@ -862,13 +862,13 @@ border:1px solid rgba(255,255,255,.18);color:#fff;font-family:inherit;font-size:
 .oc-al-pager{display:grid;grid-template-rows:0fr;opacity:0;transform:translateY(-8px);margin-top:0;pointer-events:none;
 transition:grid-template-rows .45s cubic-bezier(.4,0,.2,1),opacity .35s ease,transform .45s cubic-bezier(.4,0,.2,1),margin-top .45s ease;}
 .oc-al-pager.open{grid-template-rows:1fr;opacity:1;transform:none;margin-top:16px;pointer-events:auto;}
-.oc-al-pager-in{min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:6px 0 14px;}
+.oc-al-pager-in{min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap;padding:8px 4px 16px;}
 .oc-pg{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;color:#e5e7eb;
 background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;
 transition:transform .15s ease,background .2s ease,box-shadow .2s ease;-webkit-tap-highlight-color:transparent;}
 .oc-pg:active{transform:scale(.93);}
-.oc-pg-num{width:48px;height:48px;}
-.oc-pg-nav{height:48px;padding:0 18px;}
+.oc-pg-num{flex:0 1 44px;min-width:34px;height:44px;padding:0;}
+.oc-pg-nav{flex:0 0 auto;height:44px;padding:0 12px;gap:5px;font-size:14px;}
 .oc-pg-nav svg{width:16px;height:16px;}
 .oc-pg.active{background:#4b3bff;border-color:#7a6dff;color:#fff;box-shadow:0 0 22px rgba(75,59,255,.6);}
 .oc-pg[disabled]{opacity:.4;cursor:default;pointer-events:none;}
@@ -1244,8 +1244,8 @@ transition:transform .15s ease,background .2s ease,box-shadow .2s ease;-webkit-t
         inner.appendChild(mk('oc-pg-nav', chevL + 'Prev', homePage - 1, homePage <= 1));
 
         let end = Math.min(pages, Math.max(1, homePage - 2) + 4);
-        let start = Math.max(1, end - 4);
-        for (let p = start; p <= end; p++) {
+                let end = Math.min(pages, Math.max(1, homePage - 1) + 2);
+        let start = Math.max(1, end - 2);
             const b = mk('oc-pg-num' + (p === homePage ? ' active' : ''), String(p), p, false);
             if (p === homePage) b.setAttribute('aria-current', 'page');
             inner.appendChild(b);
