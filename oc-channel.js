@@ -1,4 +1,4 @@
-/* oc-enhanced-client v2.5 — অ্যালবামে ক্লিক করলে Photos আগে খোলে; ট্যাবের নাম Videos;
+/* oc-enhanced-client v2.6 — অ্যালবামে ক্লিক করলে Photos আগে খোলে; ট্যাবের নাম Videos;
    হেডারের ব্যাক বাটন অ্যালবাম থেকে লোডিং ছাড়া লিস্টে ফেরায়; হেডার নিচে স্ক্রলে সরে যায়;
    See More All চাপলে Prev/1/2/Next পেজিনেশন (প্রতি পেজে ১০টি অ্যালবাম, লোডিং ছাড়া) */
 (function () {
@@ -80,6 +80,7 @@
     let isFetchingAlbums = false;
     let albumsTimer = null;
     let albumsLoadedOnce = false;
+    let albumRetry = 0;
     let originalTitle = document.title;
     let savedScrollTop = 0;
     let albumReqToken = 0;
@@ -1035,13 +1036,33 @@ transition:transform .15s ease,background .2s ease,box-shadow .2s ease;-webkit-t
         parent.insertBefore(home, container);
         parent.insertBefore(view, container);
 
+        function saveCounts(patch) {
+            try {
+                var c = JSON.parse(safeStorageGet('oc_counts_cache') || '{}') || {};
+                Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
+                safeStorageSet('oc_counts_cache', JSON.stringify(c));
+            } catch (e) { }
+        }
+        /* রিলোডে আগের সংখ্যা সঙ্গে সঙ্গে দেখায়, তারপর নতুন সংখ্যা আসে */
+        try {
+            var cc = JSON.parse(safeStorageGet('oc_counts_cache') || 'null');
+            if (cc) {
+                if (cc.v !== undefined && cc.v !== null) setText('ocStatVideos', fmtN(cc.v));
+                if (cc.p !== undefined && cc.p !== null) setText('ocStatPhotos', fmtN(cc.p));
+                if (cc.w !== undefined && cc.w !== null) setText('ocStatViews', fmtN(cc.w));
+            }
+        } catch (e) { }
         fetch('/api/collection/counts?scope=all', { cache: 'no-store' })
             .then(function (r) { return r.json(); })
-            .then(function (d) { setText('ocStatVideos', fmtN(d.videos)); setText('ocStatPhotos', fmtN(d.photos)); })
+            .then(function (d) {
+                setText('ocStatVideos', fmtN(d.videos));
+                setText('ocStatPhotos', fmtN(d.photos));
+                saveCounts({ v: d.videos, p: d.photos });
+            })
             .catch(function () { });
         fetch('/api/site/views', { method: 'POST', cache: 'no-store' })
             .then(function (r) { return r.json(); })
-            .then(function (d) { setText('ocStatViews', fmtN(d.total)); })
+            .then(function (d) { setText('ocStatViews', fmtN(d.total)); saveCounts({ w: d.total }); })
             .catch(function () { });
 
         if (!byId('ocLb')) {
@@ -1266,16 +1287,41 @@ transition:transform .15s ease,background .2s ease,box-shadow .2s ease;-webkit-t
         if (btn) btn.hidden = showAllHome || albumsList.length <= CONFIG.homeAlbumLimit;
     }
 
+    /* রিলোডে আগের অ্যালবাম লিস্ট সঙ্গে সঙ্গে দেখায় (সার্ভারের জন্য অপেক্ষা ছাড়া) */
+    function loadAlbumsFromCache() {
+        try {
+            const raw = safeStorageGet('oc_albums_cache');
+            if (!raw) return;
+            const list = JSON.parse(raw);
+            if (!Array.isArray(list) || !list.length) return;
+            albumsSig = JSON.stringify(list.map(a => [a.slug, a.title, a.cover, a.videos, a.photos]));
+            albumsList = list;
+            orderedAlbums = list.slice();
+            albumsLoadedOnce = true;
+            renderAlbumGrid();
+            renderAllAlbums();
+        } catch (e) { }
+    }
+
     async function fetchAlbums(silent) {
         if (isFetchingAlbums) return;
         isFetchingAlbums = true;
         try {
-            const response = await fetch(CONFIG.albumsURL, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+            const ctrl = ('AbortController' in window) ? new AbortController() : null;
+            const tmo = ctrl ? window.setTimeout(() => ctrl.abort(), 15000) : null;
+            let response;
+            try {
+                response = await fetch(CONFIG.albumsURL, { headers: { 'Accept': 'application/json' }, cache: 'no-store', signal: ctrl ? ctrl.signal : undefined });
+            } finally {
+                if (tmo) window.clearTimeout(tmo);
+            }
             const data = await response.json();
             if (!data || !data.ok) throw new Error('bad');
             const list = (data.albums || []).filter(a => a && a.slug);
             const sig = JSON.stringify(list.map(a => [a.slug, a.title, a.cover, a.videos, a.photos]));
             albumsLoadedOnce = true;
+            albumRetry = 0;
+            safeStorageSet('oc_albums_cache', JSON.stringify(list.map(a => ({ slug: a.slug, title: a.title, cover: a.cover, videos: a.videos, photos: a.photos }))));
             if (sig !== albumsSig) {
                 albumsSig = sig;
                 albumsList = list;
@@ -1287,7 +1333,10 @@ transition:transform .15s ease,background .2s ease,box-shadow .2s ease;-webkit-t
             }
         } catch (error) {
             console.error('Albums fetch error:', error);
-            if (!silent && !albumsLoadedOnce) {
+            if (albumRetry < 5) {
+                albumRetry++;
+                window.setTimeout(function () { fetchAlbums(silent); }, 2000 * albumRetry);
+            } else if (!silent && !albumsLoadedOnce) {
                 const grid = byId('ocAlbumsGrid');
                 if (grid) stateBox(grid, 'Could not load albums. Please refresh.', true);
             }
@@ -1624,6 +1673,7 @@ transition:transform .15s ease,background .2s ease,box-shadow .2s ease;-webkit-t
         moveTopbar();
         injectAlbumStyles();
         buildAlbumUI();
+        loadAlbumsFromCache();
         bindHeaderBack();
         setupHeaderAutoHide();
         fetchAlbums(false);
